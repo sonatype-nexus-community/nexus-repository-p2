@@ -19,13 +19,17 @@ import org.sonatype.nexus.repository.cache.CacheControllerHolder.CacheType;
 
 /**
  * Asset kinds for P2.
+ *
+ * Examples of all can be found at:
  */
 enum AssetKind
 {
   ARTIFACT_JAR(CacheControllerHolder.METADATA),
   ARTIFACT_XML(CacheControllerHolder.METADATA),
+  ARTIFACT_XML_XZ(CacheControllerHolder.METADATA),
   CONTENT_JAR(CacheControllerHolder.METADATA),
   CONTENT_XML(CacheControllerHolder.METADATA),
+  CONTENT_XML_XZ(CacheControllerHolder.METADATA),
   ARTIFACT_PACK_GZ(CacheControllerHolder.CONTENT),
   ARTIFACT(CacheControllerHolder.CONTENT);
 

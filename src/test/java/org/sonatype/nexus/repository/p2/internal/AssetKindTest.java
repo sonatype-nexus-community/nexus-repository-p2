@@ -23,10 +23,13 @@ import static org.sonatype.nexus.repository.cache.CacheControllerHolder.CONTENT;
 import static org.sonatype.nexus.repository.cache.CacheControllerHolder.METADATA;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_PACK_GZ;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML_XZ;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_JAR;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML_XZ;
+
 
 public class AssetKindTest
     extends TestSupport
@@ -37,6 +40,8 @@ public class AssetKindTest
     assertThat(ARTIFACT_JAR.getCacheType(), is(equalTo(METADATA)));
     assertThat(CONTENT_XML.getCacheType(), is(equalTo(METADATA)));
     assertThat(ARTIFACT_XML.getCacheType(), is(equalTo(METADATA)));
+    assertThat(ARTIFACT_XML_XZ.getCacheType(), is(equalTo(METADATA)));
+    assertThat(CONTENT_XML_XZ.getCacheType(), is(equalTo(METADATA)));
     assertThat(ARTIFACT.getCacheType(), is(equalTo(CONTENT)));
     assertThat(ARTIFACT_PACK_GZ.getCacheType(), is(equalTo(CONTENT)));
   }
