@@ -21,11 +21,23 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.sonatype.nexus.repository.cache.CacheControllerHolder.CONTENT;
 import static org.sonatype.nexus.repository.cache.CacheControllerHolder.METADATA;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_PACK_GZ;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_JAR;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR;
 
 public class AssetKindTest
     extends TestSupport
 {
   @Test
   public void cacheTypes() throws Exception {
+    assertThat(CONTENT_JAR.getCacheType(), is(equalTo(METADATA)));
+    assertThat(ARTIFACT_JAR.getCacheType(), is(equalTo(METADATA)));
+    assertThat(CONTENT_XML.getCacheType(), is(equalTo(METADATA)));
+    assertThat(ARTIFACT_XML.getCacheType(), is(equalTo(METADATA)));
+    assertThat(ARTIFACT.getCacheType(), is(equalTo(CONTENT)));
+    assertThat(ARTIFACT_PACK_GZ.getCacheType(), is(equalTo(CONTENT)));
   }
 }
