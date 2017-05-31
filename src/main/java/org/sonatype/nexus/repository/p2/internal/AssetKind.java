@@ -20,7 +20,7 @@ import org.sonatype.nexus.repository.cache.CacheControllerHolder.CacheType;
 /**
  * Asset kinds for P2.
  *
- * Examples of all can be found at:
+ * Examples of all can be found at: http://download.eclipse.org/technology/m2e/releases/1.7/1.7.0.20160603-1933/?d
  */
 enum AssetKind
 {
@@ -30,6 +30,7 @@ enum AssetKind
   CONTENT_JAR(CacheControllerHolder.METADATA),
   CONTENT_XML(CacheControllerHolder.METADATA),
   CONTENT_XML_XZ(CacheControllerHolder.METADATA),
+  P2_INDEX(CacheControllerHolder.METADATA),
   ARTIFACT_PACK_GZ(CacheControllerHolder.CONTENT),
   ARTIFACT(CacheControllerHolder.CONTENT);
 

@@ -29,6 +29,7 @@ import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML_X
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_JAR;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML_XZ;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.P2_INDEX;
 
 
 public class AssetKindTest
@@ -36,6 +37,7 @@ public class AssetKindTest
 {
   @Test
   public void cacheTypes() throws Exception {
+    assertThat(P2_INDEX.getCacheType(), is(equalTo(METADATA)));
     assertThat(CONTENT_JAR.getCacheType(), is(equalTo(METADATA)));
     assertThat(ARTIFACT_JAR.getCacheType(), is(equalTo(METADATA)));
     assertThat(CONTENT_XML.getCacheType(), is(equalTo(METADATA)));
