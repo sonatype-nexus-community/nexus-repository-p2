@@ -101,7 +101,7 @@ If you are trying to use the P2 plugin permanently, it likely makes more sense t
    ```
    And
    ```
-   + <feature name="nexus-repository-r" description="org.sonatype.nexus.plugins:nexus-repository-p2" version="1.0.0">
+   + <feature name="nexus-repository-p2" description="org.sonatype.nexus.plugins:nexus-repository-p2" version="1.0.0">
    +     <details>org.sonatype.nexus.plugins:nexus-repository-p2</details>
    +     <bundle>mvn:org.sonatype.nexus.plugins/nexus-repository-p2/1.0.0</bundle>
    + </feature>
