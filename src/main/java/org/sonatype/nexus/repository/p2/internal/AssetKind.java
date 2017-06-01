@@ -22,7 +22,7 @@ import org.sonatype.nexus.repository.cache.CacheControllerHolder.CacheType;
  *
  * Examples of all can be found at: http://download.eclipse.org/technology/m2e/releases/1.7/1.7.0.20160603-1933/?d
  */
-enum AssetKind
+public enum AssetKind
 {
   P2_INDEX(CacheControllerHolder.METADATA),
   ARTIFACT_JAR(CacheControllerHolder.METADATA),

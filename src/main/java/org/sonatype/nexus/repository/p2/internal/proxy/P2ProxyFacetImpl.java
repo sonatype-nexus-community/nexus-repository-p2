@@ -12,6 +12,67 @@
  */
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
+import java.io.IOException;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Named;
+
+import org.sonatype.nexus.repository.cache.CacheInfo;
+import org.sonatype.nexus.repository.config.Configuration;
+import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
+import org.sonatype.nexus.repository.proxy.ProxyFacet;
+import org.sonatype.nexus.repository.proxy.ProxyFacetSupport;
+import org.sonatype.nexus.repository.view.Content;
+import org.sonatype.nexus.repository.view.Context;
+import org.sonatype.nexus.repository.p2.internal.AssetKind;
+import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+
+/**
+ * P2 {@link ProxyFacet} implementation.
+ */
+@Named
 public class P2ProxyFacetImpl
+    extends ProxyFacetSupport
 {
+  private final P2PathUtils p2PathUtils;
+
+  @Inject
+  public P2ProxyFacetImpl(final P2PathUtils p2PathUtils) {
+    this.p2PathUtils = checkNotNull(p2PathUtils);
+  }
+
+  // HACK: Workaround for known CGLIB issue, forces an Import-Package for org.sonatype.nexus.repository.config
+  @Override
+  protected void doValidate(final Configuration configuration) throws Exception {
+    super.doValidate(configuration);
+  }
+
+  @Nullable
+  @Override
+  protected Content getCachedContent(final Context context) throws IOException {
+    AssetKind assetKind = context.getAttributes().require(AssetKind.class);
+    TokenMatcher.State matcherState = p2PathUtils.matcherState(context);
+    return null;
+  }
+
+  @Override
+  protected Content store(final Context context, final Content content) throws IOException {
+    return null;
+  }
+
+  @Override
+  protected void indicateVerified(final Context context, final Content content, final CacheInfo cacheInfo)
+      throws IOException
+  {
+
+  }
+
+  @Override
+  protected String getUrl(@Nonnull final Context context) {
+    return null;
+  }
 }
