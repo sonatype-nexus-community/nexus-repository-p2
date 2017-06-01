@@ -21,8 +21,10 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.sonatype.nexus.repository.cache.CacheControllerHolder.CONTENT;
 import static org.sonatype.nexus.repository.cache.CacheControllerHolder.METADATA;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_PACK_GZ;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_FEATURES_JAR;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_FEATURES_PACK_GZ;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_PLUGINS_JAR;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_PLUGINS_PACK_GZ;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML_XZ;
@@ -44,7 +46,9 @@ public class AssetKindTest
     assertThat(ARTIFACT_XML.getCacheType(), is(equalTo(METADATA)));
     assertThat(ARTIFACT_XML_XZ.getCacheType(), is(equalTo(METADATA)));
     assertThat(CONTENT_XML_XZ.getCacheType(), is(equalTo(METADATA)));
-    assertThat(ARTIFACT.getCacheType(), is(equalTo(CONTENT)));
-    assertThat(ARTIFACT_PACK_GZ.getCacheType(), is(equalTo(CONTENT)));
+    assertThat(COMPONENT_PLUGINS_JAR.getCacheType(), is(equalTo(CONTENT)));
+    assertThat(COMPONENT_FEATURES_JAR.getCacheType(), is(equalTo(CONTENT)));
+    assertThat(COMPONENT_PLUGINS_PACK_GZ.getCacheType(), is(equalTo(CONTENT)));
+    assertThat(COMPONENT_FEATURES_PACK_GZ.getCacheType(), is(equalTo(CONTENT)));
   }
 }

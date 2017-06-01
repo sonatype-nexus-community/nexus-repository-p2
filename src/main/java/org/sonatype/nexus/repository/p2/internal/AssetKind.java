@@ -24,15 +24,17 @@ import org.sonatype.nexus.repository.cache.CacheControllerHolder.CacheType;
  */
 enum AssetKind
 {
+  P2_INDEX(CacheControllerHolder.METADATA),
   ARTIFACT_JAR(CacheControllerHolder.METADATA),
   ARTIFACT_XML(CacheControllerHolder.METADATA),
   ARTIFACT_XML_XZ(CacheControllerHolder.METADATA),
   CONTENT_JAR(CacheControllerHolder.METADATA),
   CONTENT_XML(CacheControllerHolder.METADATA),
   CONTENT_XML_XZ(CacheControllerHolder.METADATA),
-  P2_INDEX(CacheControllerHolder.METADATA),
-  ARTIFACT_PACK_GZ(CacheControllerHolder.CONTENT),
-  ARTIFACT(CacheControllerHolder.CONTENT);
+  COMPONENT_PLUGINS_JAR(CacheControllerHolder.CONTENT),
+  COMPONENT_PLUGINS_PACK_GZ(CacheControllerHolder.CONTENT),
+  COMPONENT_FEATURES_JAR(CacheControllerHolder.CONTENT),
+  COMPONENT_FEATURES_PACK_GZ(CacheControllerHolder.CONTENT);
 
   private final CacheType cacheType;
 

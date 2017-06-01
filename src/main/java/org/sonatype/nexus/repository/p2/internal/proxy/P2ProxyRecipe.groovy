@@ -57,6 +57,7 @@ import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher
 
 import static org.sonatype.nexus.repository.http.HttpMethods.GET
 import static org.sonatype.nexus.repository.http.HttpMethods.HEAD
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.*
 
 /**
  * P2 proxy repository recipe.
@@ -151,29 +152,128 @@ class P2ProxyRecipe
   }
 
   Closure assetKindHandler = { Context context, AssetKind value ->
-    context.attributes.set(org.sonatype.nexus.repository.p2.internal.AssetKind, value)
+    context.attributes.set(AssetKind, value)
     return context.proceed()
   }
 
   /**
-   * Matcher for packages mapping.
+   * Matcher for p2.index mapping.
    */
-  static Builder packagesMatcher() {
+  static Builder p2IndexMatcher() {
     new Builder().matcher(
         LogicMatchers.and(
             new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/PACKAGES.gz')
+            new TokenMatcher('/{path:.+}/p2.index')
         ))
   }
 
   /**
-   * Matcher for archive mapping.
+   * Matcher for artifacts.jar mapping.
    */
-  static Builder archiveMatcher() {
+  static Builder artifactsJarMatcher() {
     new Builder().matcher(
         LogicMatchers.and(
             new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/{filename:.+}')
+            new TokenMatcher('/{path:.+}/artifacts.jar')
+        ))
+  }
+
+  /**
+   * Matcher for artifacts.xml mapping.
+   */
+  static Builder artifactsXmlMatcher() {
+    new Builder().matcher(
+        LogicMatchers.and(
+            new ActionMatcher(GET, HEAD),
+            new TokenMatcher('/{path:.+}/artifacts.xml')
+        ))
+  }
+
+  /**
+   * Matcher for artifacts.xml.xz mapping.
+   */
+  static Builder artifactsXmlXzMatcher() {
+    new Builder().matcher(
+        LogicMatchers.and(
+            new ActionMatcher(GET, HEAD),
+            new TokenMatcher('/{path:.+}/artifacts.xml.xz')
+        ))
+  }
+
+  /**
+   * Matcher for content.jar mapping.
+   */
+  static Builder contentJarMatcher() {
+    new Builder().matcher(
+        LogicMatchers.and(
+            new ActionMatcher(GET, HEAD),
+            new TokenMatcher('/{path:.+}/content.jar')
+        ))
+  }
+
+  /**
+   * Matcher for content.xml mapping.
+   */
+  static Builder contentXmlMatcher() {
+    new Builder().matcher(
+        LogicMatchers.and(
+            new ActionMatcher(GET, HEAD),
+            new TokenMatcher('/{path:.+}/content.xml')
+        ))
+  }
+
+  /**
+   * Matcher for content.xml.xz mapping.
+   */
+  static Builder contentXmlXzMatcher() {
+    new Builder().matcher(
+        LogicMatchers.and(
+            new ActionMatcher(GET, HEAD),
+            new TokenMatcher('/{path:.+}/content.xml.xz')
+        ))
+  }
+
+  /**
+   * Matcher for {path}/plugins/{filename}.jar mapping.
+   */
+  static Builder componentPluginJarMatcher() {
+    new Builder().matcher(
+        LogicMatchers.and(
+            new ActionMatcher(GET, HEAD),
+            new TokenMatcher('/{path:.+}/plugins/{filename}.jar')
+        ))
+  }
+
+  /**
+   * Matcher for {path}/features/{filename}.jar mapping.
+   */
+  static Builder componentFeatureJarMatcher() {
+    new Builder().matcher(
+        LogicMatchers.and(
+            new ActionMatcher(GET, HEAD),
+            new TokenMatcher('/{path:.+}/features/{filename}.jar')
+        ))
+  }
+
+  /**
+   * Matcher for {path}/plugins/{filename}.pack.gz mapping.
+   */
+  static Builder componentPluginPackGzMatcher() {
+    new Builder().matcher(
+        LogicMatchers.and(
+            new ActionMatcher(GET, HEAD),
+            new TokenMatcher('/{path:.+}/plugins/{filename}.pack.gz')
+        ))
+  }
+
+  /**
+   * Matcher for {path}/features/{filename}.pack.gz mapping.
+   */
+  static Builder componentFeaturePackGzMatcher() {
+    new Builder().matcher(
+        LogicMatchers.and(
+            new ActionMatcher(GET, HEAD),
+            new TokenMatcher('/{path:.+}/features/{filename}.pack.gz')
         ))
   }
 
@@ -183,9 +283,9 @@ class P2ProxyRecipe
   private ViewFacet configure(final ConfigurableViewFacet facet) {
     Router.Builder builder = new Router.Builder()
 
-    builder.route(packagesMatcher()
+    builder.route(p2IndexMatcher()
         .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(PACKAGES))
+        .handler(assetKindHandler.rcurry(P2_INDEX))
         .handler(securityHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
@@ -196,14 +296,130 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(archiveMatcher()
+    builder.route(artifactsJarMatcher()
         .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(ARCHIVE))
+        .handler(assetKindHandler.rcurry(ARTIFACT_JAR))
         .handler(securityHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(artifactsXmlMatcher()
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(ARTIFACT_XML))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(artifactsXmlXzMatcher()
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(ARTIFACT_XML_XZ))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(contentJarMatcher()
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(CONTENT_JAR))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(contentXmlMatcher()
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(CONTENT_XML))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(contentXmlXzMatcher()
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(CONTENT_XML_XZ))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(componentFeatureJarMatcher()
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(COMPONENT_FEATURES_JAR))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(componentFeaturePackGzMatcher()
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(COMPONENT_FEATURES_PACK_GZ))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(componentPluginJarMatcher()
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(COMPONENT_PLUGINS_JAR))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(componentPluginPackGzMatcher()
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(COMPONENT_PLUGINS_PACK_GZ))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
