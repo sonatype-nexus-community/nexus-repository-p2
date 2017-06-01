@@ -35,7 +35,7 @@ public class P2PathUtils
   /**
    * Utility method encapsulating getting a particular token by name from a matcher, including preconditions.
    */
-  private String match(TokenMatcher.State state, String name) {
+  private String match(final TokenMatcher.State state, final String name) {
     checkNotNull(state);
     String result = state.getTokens().get(name);
     checkNotNull(result);
