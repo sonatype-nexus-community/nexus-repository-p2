@@ -13,6 +13,7 @@
 package org.sonatype.nexus.repository.p2.internal.util;
 
 import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.sonatype.nexus.repository.view.Context;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
@@ -23,6 +24,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Utility methods for working with P2 routes and paths.
  */
 @Named
+@Singleton
 public class P2PathUtils
 {
   /**
