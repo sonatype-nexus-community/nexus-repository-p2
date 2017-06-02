@@ -96,5 +96,4 @@ public class P2DataAccessTest
   @Test
   public void toContent() throws Exception {
   }
-
 }
