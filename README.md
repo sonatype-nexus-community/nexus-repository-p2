@@ -92,7 +92,8 @@ is running. You will still need to start the bundle using the karaf commands men
 If you are trying to use the P2 plugin permanently, it likely makes more sense to do the following:
 
 * Copy the bundle into `<nexus_dir>/system/org/sonatype/nexus/plugins/nexus-repository-p2/1.0.0/nexus-repository-p2-1.0.0.jar`
-* Make the following additions marked with + to `<nexus_dir>/system/com/sonatype/nexus/assemblies/nexus-oss-feature/3.x.y/nexus-oss-feature-3.x.y-features.xml`
+* Make the following additions marked with + to `<nexus_dir>/system/org/sonatype/nexus/assemblies/nexus-core-feature/3.x.y/nexus-core-feature-3.x.y-features.xml`
+
    ```
          <feature prerequisite="false" dependency="false">nexus-repository-rubygems</feature>
    +     <feature prerequisite="false" dependency="false">nexus-repository-p2</feature>
