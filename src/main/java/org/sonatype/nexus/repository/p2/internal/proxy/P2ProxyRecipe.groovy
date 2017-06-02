@@ -41,7 +41,6 @@ import org.sonatype.nexus.repository.types.ProxyType
 import org.sonatype.nexus.repository.purge.PurgeUnusedFacet
 import org.sonatype.nexus.repository.view.ConfigurableViewFacet
 import org.sonatype.nexus.repository.view.Context
-import org.sonatype.nexus.repository.view.Route
 import org.sonatype.nexus.repository.view.Route.Builder
 import org.sonatype.nexus.repository.view.Router
 import org.sonatype.nexus.repository.view.ViewFacet
@@ -133,7 +132,8 @@ class P2ProxyRecipe
   ProxyHandler proxyHandler
 
   @Inject
-  P2ProxyRecipe(@Named(ProxyType.NAME) final Type type, @Named(P2Format.NAME) final Format format) {
+  P2ProxyRecipe(@Named(ProxyType.NAME) final Type type,
+                @Named(P2Format.NAME) final Format format) {
     super(type, format)
   }
 
@@ -174,7 +174,7 @@ class P2ProxyRecipe
     new Builder().matcher(
         LogicMatchers.and(
             new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/artifacts.jar')
+            new TokenMatcher('/{path:.+}/{filename:.+}')
         ))
   }
 
@@ -290,6 +290,7 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
@@ -303,6 +304,7 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
@@ -316,6 +318,7 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
@@ -329,6 +332,7 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
@@ -342,6 +346,7 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
@@ -355,6 +360,7 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
@@ -368,6 +374,7 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
@@ -381,6 +388,7 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
@@ -394,6 +402,7 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
@@ -407,6 +416,7 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
@@ -420,15 +430,11 @@ class P2ProxyRecipe
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
         .handler(partialFetchHandler)
         .handler(contentHeadersHandler)
         .handler(unitOfWorkHandler)
         .handler(proxyHandler)
-        .create())
-
-    builder.route(new Route.Builder()
-        .matcher(BrowseUnsupportedHandler.MATCHER)
-        .handler(browseUnsupportedHandler)
         .create())
 
     builder.defaultHandlers(HttpHandlers.notFound())

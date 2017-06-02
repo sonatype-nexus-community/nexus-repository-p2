@@ -79,11 +79,13 @@ public class P2ProxyFacetImpl
       case CONTENT_XML:
       case CONTENT_XML_XZ:
       case P2_INDEX:
+        log.debug("METADATA" + p2PathUtils.path(matcherState));
         return getAsset(p2PathUtils.path(matcherState));
       case COMPONENT_PLUGINS_JAR:
       case COMPONENT_FEATURES_JAR:
       case COMPONENT_PLUGINS_PACK_GZ:
       case COMPONENT_FEATURES_PACK_GZ:
+        log.debug("METADATA" + p2PathUtils.path(matcherState));
         return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.filename(matcherState)));
       default:
         throw new IllegalStateException();
@@ -102,11 +104,13 @@ public class P2ProxyFacetImpl
       case CONTENT_XML:
       case CONTENT_XML_XZ:
       case P2_INDEX:
+        log.debug("METADATA" + p2PathUtils.path(matcherState));
         return putMetadata(p2PathUtils.path(matcherState), content, assetKind);
       case COMPONENT_PLUGINS_JAR:
       case COMPONENT_FEATURES_JAR:
       case COMPONENT_PLUGINS_PACK_GZ:
       case COMPONENT_FEATURES_PACK_GZ:
+        log.debug("COMPONENT" + p2PathUtils.path(matcherState));
         return putComponent(p2PathUtils.path(matcherState),
             p2PathUtils.filename(matcherState),
             content,
@@ -153,6 +157,7 @@ public class P2ProxyFacetImpl
     }
   }
 
+  @TransactionalStoreBlob
   protected Content doPutComponent(final String path,
                                    final String filename,
                                    final TempBlob componentContent,
