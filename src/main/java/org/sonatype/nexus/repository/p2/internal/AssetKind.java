@@ -31,10 +31,8 @@ public enum AssetKind
   CONTENT_JAR(CacheControllerHolder.METADATA),
   CONTENT_XML(CacheControllerHolder.METADATA),
   CONTENT_XML_XZ(CacheControllerHolder.METADATA),
-  COMPONENT_PLUGINS_JAR(CacheControllerHolder.CONTENT),
-  COMPONENT_PLUGINS_PACK_GZ(CacheControllerHolder.CONTENT),
-  COMPONENT_FEATURES_JAR(CacheControllerHolder.CONTENT),
-  COMPONENT_FEATURES_PACK_GZ(CacheControllerHolder.CONTENT);
+  COMPONENT_PLUGINS(CacheControllerHolder.CONTENT),
+  COMPONENT_FEATURES(CacheControllerHolder.CONTENT);
 
   private final CacheType cacheType;
 

@@ -79,14 +79,12 @@ public class P2ProxyFacetImpl
       case CONTENT_XML:
       case CONTENT_XML_XZ:
       case P2_INDEX:
-        log.debug("METADATA" + p2PathUtils.path(matcherState));
-        return getAsset(p2PathUtils.path(matcherState));
-      case COMPONENT_PLUGINS_JAR:
-      case COMPONENT_FEATURES_JAR:
-      case COMPONENT_PLUGINS_PACK_GZ:
-      case COMPONENT_FEATURES_PACK_GZ:
-        log.debug("METADATA" + p2PathUtils.path(matcherState));
+        log.debug(String.format("METADATA: %s", p2PathUtils.filename(matcherState)));
         return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.filename(matcherState)));
+      case COMPONENT_PLUGINS:
+      case COMPONENT_FEATURES:
+        log.debug(String.format("COMPONENT: %s", p2PathUtils.filename(matcherState)));
+        return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState)));
       default:
         throw new IllegalStateException();
     }
@@ -104,15 +102,17 @@ public class P2ProxyFacetImpl
       case CONTENT_XML:
       case CONTENT_XML_XZ:
       case P2_INDEX:
-        log.debug("METADATA" + p2PathUtils.path(matcherState));
-        return putMetadata(p2PathUtils.path(matcherState), content, assetKind);
-      case COMPONENT_PLUGINS_JAR:
-      case COMPONENT_FEATURES_JAR:
-      case COMPONENT_PLUGINS_PACK_GZ:
-      case COMPONENT_FEATURES_PACK_GZ:
-        log.debug("COMPONENT" + p2PathUtils.path(matcherState));
-        return putComponent(p2PathUtils.path(matcherState),
-            p2PathUtils.filename(matcherState),
+        log.debug("METADATA" + p2PathUtils.filename(matcherState));
+        return putMetadata(p2PathUtils.path(p2PathUtils.path(matcherState),
+            p2PathUtils.filename(matcherState)),
+            content,
+            assetKind);
+      case COMPONENT_PLUGINS:
+      case COMPONENT_FEATURES:
+        log.debug("COMPONENT" + p2PathUtils.filename(matcherState));
+        return putComponent(p2PathUtils.path(p2PathUtils.path(matcherState),
+            p2PathUtils.filename(matcherState)),
+            p2PathUtils.name(matcherState),
             content,
             assetKind);
       default:

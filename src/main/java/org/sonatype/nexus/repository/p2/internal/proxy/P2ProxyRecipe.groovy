@@ -41,6 +41,7 @@ import org.sonatype.nexus.repository.types.ProxyType
 import org.sonatype.nexus.repository.purge.PurgeUnusedFacet
 import org.sonatype.nexus.repository.view.ConfigurableViewFacet
 import org.sonatype.nexus.repository.view.Context
+import org.sonatype.nexus.repository.view.Matcher
 import org.sonatype.nexus.repository.view.Route.Builder
 import org.sonatype.nexus.repository.view.Router
 import org.sonatype.nexus.repository.view.ViewFacet
@@ -51,12 +52,15 @@ import org.sonatype.nexus.repository.view.handlers.ExceptionHandler
 import org.sonatype.nexus.repository.view.handlers.HandlerContributor
 import org.sonatype.nexus.repository.view.handlers.TimingHandler
 import org.sonatype.nexus.repository.view.matchers.ActionMatcher
+import org.sonatype.nexus.repository.view.matchers.RegexMatcher
 import org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher
 
 import static org.sonatype.nexus.repository.http.HttpMethods.GET
 import static org.sonatype.nexus.repository.http.HttpMethods.HEAD
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.*
+import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.and
+import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.or
 
 /**
  * P2 proxy repository recipe.
@@ -67,6 +71,13 @@ class P2ProxyRecipe
     extends RecipeSupport
 {
   public static final String NAME = 'p2-proxy'
+
+  private static final CONTENT_NAME = "content"
+  private static final ARTIFACTS_NAME = "artifacts"
+  private static final XML_EXTENSION = ".*[xX][mM][lL]"
+  private static final XML_XZ_EXTENSION = "${XML_EXTENSION}\\.[xX][zZ]"
+  private static final JAR_EXTENSION = ".*[jJ][aA][rR]"
+  private static final INDEX_EXTENSION = ".*[iI][nN][dD][eE][xX]"
 
   @Inject
   Provider<P2SecurityFacet> securityFacet
@@ -156,125 +167,41 @@ class P2ProxyRecipe
     return context.proceed()
   }
 
-  /**
-   * Matcher for p2.index mapping.
-   */
-  static Builder p2IndexMatcher() {
+  static Builder pluginsMatcher() {
     new Builder().matcher(
-        LogicMatchers.and(
+        and(
             new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/p2.index')
+            new RegexMatcher('\\/plugins\\/.*'),
+            componentFileTypeMatcher()
         ))
   }
 
-  /**
-   * Matcher for artifacts.jar mapping.
-   */
-  static Builder artifactsJarMatcher() {
+  static Builder featuresMatcher() {
     new Builder().matcher(
-        LogicMatchers.and(
+        and(
             new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/{filename:.+}')
+            new RegexMatcher('\\/features\\/.*'),
+            componentFileTypeMatcher()
         ))
   }
 
-  /**
-   * Matcher for artifacts.xml mapping.
-   */
-  static Builder artifactsXmlMatcher() {
+  static Matcher componentFileTypeMatcher() {
+    return or(
+        tokenMatcherForExtensionAndName('jar'),
+        tokenMatcherForExtensionAndName('pack.gz')
+    )
+  }
+
+  static Builder matchRequestWithExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
     new Builder().matcher(
-        LogicMatchers.and(
+        and(
             new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/artifacts.xml')
+            tokenMatcherForExtensionAndName(extension, name, path)
         ))
   }
 
-  /**
-   * Matcher for artifacts.xml.xz mapping.
-   */
-  static Builder artifactsXmlXzMatcher() {
-    new Builder().matcher(
-        LogicMatchers.and(
-            new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/artifacts.xml.xz')
-        ))
-  }
-
-  /**
-   * Matcher for content.jar mapping.
-   */
-  static Builder contentJarMatcher() {
-    new Builder().matcher(
-        LogicMatchers.and(
-            new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/content.jar')
-        ))
-  }
-
-  /**
-   * Matcher for content.xml mapping.
-   */
-  static Builder contentXmlMatcher() {
-    new Builder().matcher(
-        LogicMatchers.and(
-            new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/content.xml')
-        ))
-  }
-
-  /**
-   * Matcher for content.xml.xz mapping.
-   */
-  static Builder contentXmlXzMatcher() {
-    new Builder().matcher(
-        LogicMatchers.and(
-            new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/content.xml.xz')
-        ))
-  }
-
-  /**
-   * Matcher for {path}/plugins/{filename}.jar mapping.
-   */
-  static Builder componentPluginJarMatcher() {
-    new Builder().matcher(
-        LogicMatchers.and(
-            new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/plugins/{filename}.jar')
-        ))
-  }
-
-  /**
-   * Matcher for {path}/features/{filename}.jar mapping.
-   */
-  static Builder componentFeatureJarMatcher() {
-    new Builder().matcher(
-        LogicMatchers.and(
-            new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/features/{filename}.jar')
-        ))
-  }
-
-  /**
-   * Matcher for {path}/plugins/{filename}.pack.gz mapping.
-   */
-  static Builder componentPluginPackGzMatcher() {
-    new Builder().matcher(
-        LogicMatchers.and(
-            new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/plugins/{filename}.pack.gz')
-        ))
-  }
-
-  /**
-   * Matcher for {path}/features/{filename}.pack.gz mapping.
-   */
-  static Builder componentFeaturePackGzMatcher() {
-    new Builder().matcher(
-        LogicMatchers.and(
-            new ActionMatcher(GET, HEAD),
-            new TokenMatcher('/{path:.+}/features/{filename}.pack.gz')
-        ))
+  static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
+    new TokenMatcher("{path:${path}}/{name:${name}}.{extension:${extension}}")
   }
 
   /**
@@ -283,7 +210,7 @@ class P2ProxyRecipe
   private ViewFacet configure(final ConfigurableViewFacet facet) {
     Router.Builder builder = new Router.Builder()
 
-    builder.route(p2IndexMatcher()
+    builder.route(matchRequestWithExtensionAndName(INDEX_EXTENSION, 'p2', '.?')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(P2_INDEX))
         .handler(securityHandler)
@@ -297,7 +224,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(artifactsJarMatcher()
+    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, ARTIFACTS_NAME)
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_JAR))
         .handler(securityHandler)
@@ -311,7 +238,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(artifactsXmlMatcher()
+    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, ARTIFACTS_NAME)
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_XML))
         .handler(securityHandler)
@@ -325,7 +252,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(artifactsXmlXzMatcher()
+    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, ARTIFACTS_NAME)
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_XML_XZ))
         .handler(securityHandler)
@@ -339,7 +266,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(contentJarMatcher()
+    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, CONTENT_NAME)
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_JAR))
         .handler(securityHandler)
@@ -353,7 +280,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(contentXmlMatcher()
+    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, CONTENT_NAME)
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_XML))
         .handler(securityHandler)
@@ -367,7 +294,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(contentXmlXzMatcher()
+    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, CONTENT_NAME)
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_XML_XZ))
         .handler(securityHandler)
@@ -381,9 +308,9 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(componentFeatureJarMatcher()
+    builder.route(featuresMatcher()
         .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPONENT_FEATURES_JAR))
+        .handler(assetKindHandler.rcurry(COMPONENT_FEATURES))
         .handler(securityHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
@@ -395,37 +322,9 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(componentFeaturePackGzMatcher()
+    builder.route(pluginsMatcher()
         .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPONENT_FEATURES_PACK_GZ))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(componentPluginJarMatcher()
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPONENT_PLUGINS_JAR))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(componentPluginPackGzMatcher()
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPONENT_PLUGINS_PACK_GZ))
+        .handler(assetKindHandler.rcurry(COMPONENT_PLUGINS))
         .handler(securityHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)

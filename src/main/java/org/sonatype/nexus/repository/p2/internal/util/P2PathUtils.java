@@ -19,6 +19,7 @@ import org.sonatype.nexus.repository.view.Context;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 /**
  * Utility methods for working with P2 routes and paths.
@@ -45,17 +46,36 @@ public class P2PathUtils
   }
 
   /**
-   * Builds a path to an archive for a particular path and filename.
+   * Builds a path to an archive for a particular path and name.
    */
   public String path(final String path, final String filename) {
-    return path + "/" + filename;
+    if(isNullOrEmpty(path)) {
+      return filename;
+    }
+    else {
+      return path + "/" + filename;
+    }
   }
 
   /**
-   * Returns the filename from a {@link TokenMatcher.State}.
+   * Returns the name from a {@link TokenMatcher.State}.
+   */
+  public String name(final TokenMatcher.State state) {
+    return match(state, "name");
+  }
+
+  /**
+   * Returns the name and extension from a {@link TokenMatcher.State}.
    */
   public String filename(final TokenMatcher.State state) {
-    return match(state, "filename");
+    return name(state) + '.' + extension(state);
+  }
+
+  /**
+   * Returns the extension from a {@link TokenMatcher.State}.
+   */
+  public String extension(final TokenMatcher.State state) {
+    return match(state, "extension");
   }
 
   /**

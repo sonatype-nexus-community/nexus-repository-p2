@@ -69,11 +69,18 @@ public class P2PathUtilsTest
   }
 
   @Test
+  public void pathWithNoPathAndFileName() throws Exception {
+    String path = p2PathUtils.path("", fakeFileName);
+    String expectedResult = fakeFileName;
+    assertThat(path, is(equalTo(expectedResult)));
+  }
+
+  @Test
   public void filename() throws Exception {
-    final Map<String, String> someMap = Collections.singletonMap("filename", fakeFileName);
+    final Map<String, String> someMap = Collections.singletonMap("name", fakeFileName);
     when(state.getTokens())
         .thenReturn(someMap);
-    String filename = p2PathUtils.filename(state);
+    String filename = p2PathUtils.name(state);
     assertThat(filename, is(equalTo(fakeFileName)));
   }
 
