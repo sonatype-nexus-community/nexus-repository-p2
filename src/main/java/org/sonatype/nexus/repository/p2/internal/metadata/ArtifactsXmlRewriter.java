@@ -42,9 +42,6 @@ import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
-import org.apache.commons.compress.compressors.CompressorException;
-import org.apache.commons.compress.compressors.CompressorInputStream;
-import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.w3c.dom.Document;
@@ -64,7 +61,7 @@ import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_A
 public class ArtifactsXmlRewriter
     extends ComponentSupport
 {
-  private final static String MIRRORS_URL_XPATH = "repository/properties/property[@name=\"p2.mirrorsURL\"]";
+  private static final String MIRRORS_URL_XPATH = "repository/properties/property[@name=\"p2.mirrorsURL\"]";
 
   public TempBlob removeMirrorUrlFromArtifactsXml(final TempBlob artifact,
                                                   final Repository repository,
