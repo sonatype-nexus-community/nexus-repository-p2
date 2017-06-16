@@ -121,31 +121,45 @@ public class P2ProxyFacetImpl
   private Content putMetadata(final String path, final Content content, final AssetKind assetKind) throws IOException {
     StorageFacet storageFacet = facet(StorageFacet.class);
     try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), P2DataAccess.HASH_ALGORITHMS)) {
-      return doPutMetadata(path, tempBlob, content, assetKind);
+      return removeMirrorUrlFromArtifactsAndSaveMetadataAsAsset(path, tempBlob, content, assetKind);
     }
   }
 
-  @TransactionalStoreBlob
-  protected Content doPutMetadata(final String path,
+  private Content removeMirrorUrlFromArtifactsAndSaveMetadataAsAsset(final String path,
                                   final TempBlob metadataContent,
                                   final Payload payload,
                                   final AssetKind assetKind) throws IOException {
-    StorageTx tx = UnitOfWork.currentTx();
-    Bucket bucket = tx.findBucket(getRepository());
 
     String assetPath = path;
 
     if (assetKind.equals(AssetKind.ARTIFACT_XML)) {
-      xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml");
+      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml")) {
+        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+      }
     }
+    else if (assetKind.equals(AssetKind.ARTIFACT_JAR)) {
+      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "jar")) {
+        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+      }
+    }
+    else if (assetKind.equals(AssetKind.ARTIFACT_XML_XZ)) {
+      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml.xz")) {
+        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+      }
+    }
+    else {
+      return saveMetadataAsAsset(assetPath, metadataContent, payload, assetKind);
+    }
+  }
 
-    if (assetKind.equals(AssetKind.ARTIFACT_JAR)) {
-      xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "jar");
-    }
-
-    if (assetKind.equals(AssetKind.ARTIFACT_XML_XZ)) {
-      xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml.xz");
-    }
+  @TransactionalStoreBlob
+  protected Content saveMetadataAsAsset(final String assetPath,
+                                        final TempBlob metadataContent,
+                                        final Payload payload,
+                                        final AssetKind assetKind) throws IOException
+  {
+    StorageTx tx = UnitOfWork.currentTx();
+    Bucket bucket = tx.findBucket(getRepository());
 
     Asset asset = p2DataAccess.findAsset(tx, bucket, assetPath);
     if (asset == null) {
