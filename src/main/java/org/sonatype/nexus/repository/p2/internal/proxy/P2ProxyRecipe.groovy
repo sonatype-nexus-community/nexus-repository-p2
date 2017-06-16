@@ -224,7 +224,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, ARTIFACTS_NAME)
+    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, ARTIFACTS_NAME, '.?')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_JAR))
         .handler(securityHandler)
@@ -238,7 +238,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, ARTIFACTS_NAME)
+    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, ARTIFACTS_NAME, '.?')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_XML))
         .handler(securityHandler)
@@ -252,7 +252,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, ARTIFACTS_NAME)
+    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, ARTIFACTS_NAME, '.?')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_XML_XZ))
         .handler(securityHandler)
@@ -266,7 +266,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, CONTENT_NAME)
+    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, CONTENT_NAME, '.?')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_JAR))
         .handler(securityHandler)
@@ -280,7 +280,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, CONTENT_NAME)
+    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, CONTENT_NAME, '.?')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_XML))
         .handler(securityHandler)
@@ -294,7 +294,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, CONTENT_NAME)
+    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, CONTENT_NAME, '.?')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_XML_XZ))
         .handler(securityHandler)

@@ -21,6 +21,7 @@ import javax.inject.Named;
 
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
+import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlRewriter;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
 import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.proxy.ProxyFacet;
@@ -53,11 +54,13 @@ public class P2ProxyFacetImpl
 {
   private final P2PathUtils p2PathUtils;
   private final P2DataAccess p2DataAccess;
+  private final ArtifactsXmlRewriter xmlRewriter;
 
   @Inject
-  public P2ProxyFacetImpl(final P2PathUtils p2PathUtils, final P2DataAccess p2DataAccess) {
+  public P2ProxyFacetImpl(final P2PathUtils p2PathUtils, final P2DataAccess p2DataAccess, final ArtifactsXmlRewriter xmlRewriter) {
     this.p2PathUtils = checkNotNull(p2PathUtils);
     this.p2DataAccess = checkNotNull(p2DataAccess);
+    this.xmlRewriter = checkNotNull(xmlRewriter);
   }
 
   // HACK: Workaround for known CGLIB issue, forces an Import-Package for org.sonatype.nexus.repository.config
@@ -79,11 +82,9 @@ public class P2ProxyFacetImpl
       case CONTENT_XML:
       case CONTENT_XML_XZ:
       case P2_INDEX:
-        log.debug(String.format("METADATA: %s", p2PathUtils.filename(matcherState)));
         return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.filename(matcherState)));
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
-        log.debug(String.format("COMPONENT: %s", p2PathUtils.filename(matcherState)));
         return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState)));
       default:
         throw new IllegalStateException();
@@ -102,16 +103,13 @@ public class P2ProxyFacetImpl
       case CONTENT_XML:
       case CONTENT_XML_XZ:
       case P2_INDEX:
-        log.debug("METADATA" + p2PathUtils.filename(matcherState));
         return putMetadata(p2PathUtils.path(p2PathUtils.path(matcherState),
             p2PathUtils.filename(matcherState)),
             content,
             assetKind);
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
-        log.debug("COMPONENT" + p2PathUtils.filename(matcherState));
-        return putComponent(p2PathUtils.path(p2PathUtils.path(matcherState),
-            p2PathUtils.filename(matcherState)),
+        return putComponent(p2PathUtils.path(matcherState),
             p2PathUtils.name(matcherState),
             content,
             assetKind);
@@ -136,6 +134,18 @@ public class P2ProxyFacetImpl
     Bucket bucket = tx.findBucket(getRepository());
 
     String assetPath = path;
+
+    if (assetKind.equals(AssetKind.ARTIFACT_XML)) {
+      xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml");
+    }
+
+    if (assetKind.equals(AssetKind.ARTIFACT_JAR)) {
+      xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "jar");
+    }
+
+    if (assetKind.equals(AssetKind.ARTIFACT_XML_XZ)) {
+      xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml.xz");
+    }
 
     Asset asset = p2DataAccess.findAsset(tx, bucket, assetPath);
     if (asset == null) {
