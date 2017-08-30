@@ -21,7 +21,7 @@ import javax.inject.Named;
 
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
-import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlRewriter;
+import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
 import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.proxy.ProxyFacet;
@@ -54,10 +54,10 @@ public class P2ProxyFacetImpl
 {
   private final P2PathUtils p2PathUtils;
   private final P2DataAccess p2DataAccess;
-  private final ArtifactsXmlRewriter xmlRewriter;
+  private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
 
   @Inject
-  public P2ProxyFacetImpl(final P2PathUtils p2PathUtils, final P2DataAccess p2DataAccess, final ArtifactsXmlRewriter xmlRewriter) {
+  public P2ProxyFacetImpl(final P2PathUtils p2PathUtils, final P2DataAccess p2DataAccess, final ArtifactsXmlAbsoluteUrlRemover xmlRewriter) {
     this.p2PathUtils = checkNotNull(p2PathUtils);
     this.p2DataAccess = checkNotNull(p2DataAccess);
     this.xmlRewriter = checkNotNull(xmlRewriter);
