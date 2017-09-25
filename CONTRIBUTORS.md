@@ -19,6 +19,8 @@ Sonatype internal people:
 * [@kellyrob99](https://github.com/kellyrob99/) (Kelly Robinson)
 * [@DarthHater](https://github.com/darthhater/) (Jeffry Hesse)
 * [@ctownshend](https://github.com/ctownshend/) (Cameron Townshend)
+* [@jlstephens89](https://github.com/jlstephens89/) (Joseph Stephens)
+* [@SirMaster](https://github.com/sirmaster/) (Moncef Ben-Soula)
 
 External contributors:
 
