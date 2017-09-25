@@ -13,6 +13,7 @@
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
 import java.io.IOException;
+import java.util.jar.JarInputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -22,6 +23,7 @@ import javax.inject.Named;
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
+import org.sonatype.nexus.repository.p2.internal.util.JarParser;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
 import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.proxy.ProxyFacet;
@@ -55,12 +57,18 @@ public class P2ProxyFacetImpl
   private final P2PathUtils p2PathUtils;
   private final P2DataAccess p2DataAccess;
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
+  private final JarParser jarParser;
 
   @Inject
-  public P2ProxyFacetImpl(final P2PathUtils p2PathUtils, final P2DataAccess p2DataAccess, final ArtifactsXmlAbsoluteUrlRemover xmlRewriter) {
+  public P2ProxyFacetImpl(final P2PathUtils p2PathUtils,
+                          final P2DataAccess p2DataAccess,
+                          final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
+                          final JarParser jarParser)
+  {
     this.p2PathUtils = checkNotNull(p2PathUtils);
     this.p2DataAccess = checkNotNull(p2DataAccess);
     this.xmlRewriter = checkNotNull(xmlRewriter);
+    this.jarParser = checkNotNull(jarParser);
   }
 
   // HACK: Workaround for known CGLIB issue, forces an Import-Package for org.sonatype.nexus.repository.config
@@ -190,13 +198,13 @@ public class P2ProxyFacetImpl
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
     String assetPath = p2PathUtils.path(path, filename);
+    String version = getVersion(componentContent);
 
-
-    Component component = p2DataAccess.findComponent(tx, getRepository(), filename, "version");
+    Component component = p2DataAccess.findComponent(tx, getRepository(), filename, version);
     if (component == null) {
       component = tx.createComponent(bucket, getRepository().getFormat())
           .name(filename)
-          .version("version");
+          .version(version);
     }
     tx.saveComponent(component);
 
@@ -248,5 +256,15 @@ public class P2ProxyFacetImpl
   @Override
   protected String getUrl(@Nonnull final Context context) {
     return context.getRequest().getPath().substring(1);
+  }
+
+  private String getVersion(final TempBlob tempBlob) {
+    try (JarInputStream jis = new JarInputStream(tempBlob.get())) {
+      return jarParser.getVersionFromJarFile(jis);
+    }
+    catch (Exception ex) {
+      log.warn(String.format("Unable to obtain version due to the following exception: %s", ex.getMessage()));
+      return "unknown";
+    }
   }
 }
