@@ -20,6 +20,7 @@ import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.lang.String.join;
 
 /**
  * Utility methods for working with P2 routes and paths.
@@ -55,6 +56,14 @@ public class P2PathUtils
     else {
       return path + "/" + filename;
     }
+  }
+
+  /**
+   * Builds a path to an archive for a particular path and name.
+   */
+  public String path(final String path, final String filename, final String extension) {
+    String file = join(".", filename, extension);
+    return isNullOrEmpty(path) ? file : join("/", path, file);
   }
 
   /**

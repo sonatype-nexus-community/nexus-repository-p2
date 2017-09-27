@@ -46,6 +46,7 @@ public class P2PathUtilsTest
 
   private final String fakePath = "fakepath";
   private final String fakeFileName = "eclipsepackage1-2-3.jar";
+  private final String fakeExtension = "pack.gz";
 
   @Before
   public void setUp() throws Exception {
@@ -82,6 +83,13 @@ public class P2PathUtilsTest
         .thenReturn(someMap);
     String filename = p2PathUtils.name(state);
     assertThat(filename, is(equalTo(fakeFileName)));
+  }
+
+  @Test
+  public void pathWithPathAndFilenameAndExtension() throws Exception {
+    String path = p2PathUtils.path(fakePath, fakeFileName, fakeExtension);
+    String expectedResult = fakePath + "/" + fakeFileName + "." + fakeExtension;
+    assertThat(path, is(equalTo(expectedResult)));
   }
 
   @Test

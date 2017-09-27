@@ -119,6 +119,7 @@ public class P2ProxyFacetImpl
       case COMPONENT_FEATURES:
         return putComponent(p2PathUtils.path(matcherState),
             p2PathUtils.name(matcherState),
+            p2PathUtils.extension(matcherState),
             content,
             assetKind);
       default:
@@ -181,23 +182,25 @@ public class P2ProxyFacetImpl
 
   private Content putComponent(final String path,
                                final String filename,
+                               final String extension,
                                final Content content,
                                final AssetKind assetKind) throws IOException {
     StorageFacet storageFacet = facet(StorageFacet.class);
     try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), P2DataAccess.HASH_ALGORITHMS)) {
-      return doPutComponent(path, filename, tempBlob, content, assetKind);
+      return doPutComponent(path, filename, extension, tempBlob, content, assetKind);
     }
   }
 
   @TransactionalStoreBlob
   protected Content doPutComponent(final String path,
                                    final String filename,
+                                   final String extension,
                                    final TempBlob componentContent,
                                    final Payload payload,
                                    final AssetKind assetKind) throws IOException {
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
-    String assetPath = p2PathUtils.path(path, filename);
+    String assetPath = p2PathUtils.path(path, filename, extension);
     String version = getVersion(componentContent);
 
     Component component = p2DataAccess.findComponent(tx, getRepository(), filename, version);
