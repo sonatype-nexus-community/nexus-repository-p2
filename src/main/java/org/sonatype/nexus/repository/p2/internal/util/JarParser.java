@@ -41,7 +41,7 @@ public class JarParser
 {
   private static final String XML_VERSION_PATH = "feature/@version";
   private static final String XML_FILE_NAME = "feature.xml";
-  private static final String UNKNOWN_VERSION = "unknown";
+  public static final String UNKNOWN_VERSION = "unknown";
   private final DocumentBuilderFactory factory;
   private final DocumentBuilder builder;
 
@@ -62,13 +62,25 @@ public class JarParser
           return getValueFromJarEntry(jis, XML_VERSION_PATH);
         }
       }
+      return getVersionFromManifest(jis);
     }
     catch (IOException ex) {
-      log.warn(String.format("Could not get version from file due to following exception: %s", ex.getMessage()));
+      log.warn("Could not get version from file due to following exception: {}", ex.getMessage());
     }
     return UNKNOWN_VERSION;
   }
 
+  private String getVersionFromManifest(final JarInputStream jis) throws Exception
+  {
+    try {
+      return jis.getManifest().getMainAttributes().getValue("Bundle-Version");
+    }
+    catch (Exception ex) {
+      return UNKNOWN_VERSION;
+    }
+  }
+
+  @Nullable
   private String getValueFromJarEntry(final JarInputStream jis,
                                       final String path) throws Exception
   {
@@ -90,7 +102,7 @@ public class JarParser
       return node.getNodeValue();
     }
     catch (XPathExpressionException e) {
-      log.warn(String.format("Could not extract value, failed with exception: %s", e.getMessage()));
+      log.warn("Could not extract value, failed with exception: {}", e.getMessage());
       return null;
     }
   }

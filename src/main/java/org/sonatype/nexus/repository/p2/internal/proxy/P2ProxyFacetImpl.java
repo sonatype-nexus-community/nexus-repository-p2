@@ -26,6 +26,7 @@ import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUr
 import org.sonatype.nexus.repository.p2.internal.util.JarParser;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
 import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
+import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
 import org.sonatype.nexus.repository.proxy.ProxyFacet;
 import org.sonatype.nexus.repository.proxy.ProxyFacetSupport;
 import org.sonatype.nexus.repository.storage.Asset;
@@ -44,6 +45,8 @@ import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 
@@ -58,17 +61,20 @@ public class P2ProxyFacetImpl
   private final P2DataAccess p2DataAccess;
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
   private final JarParser jarParser;
+  private final TempBlobConverter tempBlobConverter;
 
   @Inject
   public P2ProxyFacetImpl(final P2PathUtils p2PathUtils,
                           final P2DataAccess p2DataAccess,
                           final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
-                          final JarParser jarParser)
+                          final JarParser jarParser,
+                          final TempBlobConverter tempBlobConverter)
   {
     this.p2PathUtils = checkNotNull(p2PathUtils);
     this.p2DataAccess = checkNotNull(p2DataAccess);
     this.xmlRewriter = checkNotNull(xmlRewriter);
     this.jarParser = checkNotNull(jarParser);
+    this.tempBlobConverter = checkNotNull(tempBlobConverter);
   }
 
   // HACK: Workaround for known CGLIB issue, forces an Import-Package for org.sonatype.nexus.repository.config
@@ -200,8 +206,8 @@ public class P2ProxyFacetImpl
                                    final AssetKind assetKind) throws IOException {
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
-    String assetPath = p2PathUtils.path(path, filename, extension);
-    String version = getVersion(componentContent);
+    String assetPath = p2PathUtils.path(path, filename);
+    String version = getVersion(componentContent, extension);
 
     Component component = p2DataAccess.findComponent(tx, getRepository(), filename, version);
     if (component == null) {
@@ -261,13 +267,24 @@ public class P2ProxyFacetImpl
     return context.getRequest().getPath().substring(1);
   }
 
-  private String getVersion(final TempBlob tempBlob) {
-    try (JarInputStream jis = new JarInputStream(tempBlob.get())) {
+  @VisibleForTesting
+  protected String getVersion(final TempBlob tempBlob, final String extension) {
+    try (JarInputStream jis = getJar(tempBlob, extension)) {
       return jarParser.getVersionFromJarFile(jis);
     }
     catch (Exception ex) {
-      log.warn(String.format("Unable to obtain version due to the following exception: %s", ex.getMessage()));
-      return "unknown";
+      log.warn("Unable to get version from JarInputStream due to following exception: {}", ex.getMessage());
+      return JarParser.UNKNOWN_VERSION;
+    }
+  }
+
+  @VisibleForTesting
+  protected JarInputStream getJar(final TempBlob tempBlob, final String extension) throws IOException {
+    if (extension.equals("jar")) {
+      return new JarInputStream(tempBlob.get());
+    }
+    else {
+      return new JarInputStream(tempBlobConverter.getJarFromPackGz(tempBlob));
     }
   }
 }

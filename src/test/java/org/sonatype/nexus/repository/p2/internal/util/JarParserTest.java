@@ -18,6 +18,7 @@ import java.util.jar.JarInputStream;
 import org.sonatype.goodies.testsupport.TestSupport;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
+import org.databene.contiperf.PerfTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -37,6 +38,8 @@ public class JarParserTest
   private TempBlob tempBlob;
 
   private static final String JAR_NAME = "org.eclipse.core.runtime.feature_1.2.100.v20170912-1859.jar";
+
+  private static final String JAR_SOURCES_NAME = "org.eclipse.e4.tools.emf.editor3x.source_4.7.0.v20170712-1432.jar";
 
   private static final String NON_P2_JAR = "org.apache.karaf.http.core-3.0.0.rc1.jar.zip";
 
@@ -59,6 +62,14 @@ public class JarParserTest
     JarInputStream jis = new JarInputStream(tempBlob.get());
     String version = underTest.getVersionFromJarFile(jis);
     assertThat(version, is(equalTo("unknown")));
+  }
+
+  @Test
+  public void getVersionFromSourceJar() throws Exception {
+    when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_SOURCES_NAME));
+    JarInputStream jis = new JarInputStream(tempBlob.get());
+    String version = underTest.getVersionFromJarFile(jis);
+    assertThat(version, is(equalTo("4.7.0.v20170712-1432")));
   }
 
   @Test
