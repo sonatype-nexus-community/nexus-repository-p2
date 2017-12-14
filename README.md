@@ -36,7 +36,7 @@
 * [Java 8+](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
 * Network access to https://repository.sonatype.org/content/groups/sonatype-public-grid
 
-Also, there is a good amount of information available at [Bundle Development](https://books.sonatype.com/nexus-book/reference3/bundle-development.html#bundle-development-overview)
+Also, there is a good amount of information available at [Bundle Development](https://help.sonatype.com/display/NXRM3/Bundle+Development)
 
 ### Building
 
@@ -48,7 +48,14 @@ If everything checks out, the bundle for P2 should be available in the `target` 
 
 ## Using P2 With Nexus Repository Manager 3
 
-TBD
+[We have detailed instructions on how to get started here!](docs/P2_USER_DOCUMENTATION.md)
+
+NOTE: This is an early version of P2 Proxy and does not support the following as of yet:
+
+- [Composite Repositories](https://help.eclipse.org/neon/index.jsp?topic=%2Forg.eclipse.platform.doc.isv%2Fguide%2Fp2_composite_repositories.htm)
+- Old style (non-P2) update sites
+
+If you'd like it to support the aforementioned sites, please file an issue, or better yet, submit a PR :)
 
 ## Installing the plugin
 
@@ -62,7 +69,7 @@ good installation path if you are just testing or doing development on the plugi
 
 * Enable Nexus console: edit `<nexus_dir>/bin/nexus.vmoptions` and change `karaf.startLocalConsole`  to `true`.
 
-  More details here: http://books.sonatype.com/nexus-book/3.0/reference/bundle-development.html
+  More details here: [Bundle Development](https://help.sonatype.com/display/NXRM3/Bundle+Development+Overview)
 
 * Run Nexus' console:
   ```
@@ -118,7 +125,7 @@ to the open source community (read: you!)
 Remember:
 
 * Use this contribution at the risk tolerance that you have
-* Do NOT file Sonatype support tickets related to R support
+* Do NOT file Sonatype support tickets related to P2 support in regard to this plugin
 * DO file issues here on GitHub, so that the community can pitch in
 
 Phew, that was easier than I thought. Last but not least of all:
