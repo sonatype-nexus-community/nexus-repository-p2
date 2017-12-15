@@ -188,7 +188,7 @@ class P2ProxyRecipe
   static Matcher componentFileTypeMatcher() {
     return or(
         tokenMatcherForExtensionAndName('jar'),
-        tokenMatcherForExtensionAndName('pack.gz')
+        tokenMatcherForExtensionAndName('jar.pack.gz')
     )
   }
 

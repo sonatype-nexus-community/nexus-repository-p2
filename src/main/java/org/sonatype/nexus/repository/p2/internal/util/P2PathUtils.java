@@ -15,8 +15,10 @@ package org.sonatype.nexus.repository.p2.internal.util;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.view.Context;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
+import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher.State;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -29,6 +31,8 @@ import static java.lang.String.join;
 @Singleton
 public class P2PathUtils
 {
+  private final static String NAME_VERSION_SPLITTER = "_";
+
   /**
    * * Returns the path from a {@link TokenMatcher.State}.
    */
@@ -81,6 +85,24 @@ public class P2PathUtils
   }
 
   /**
+   * Returns the Component Name from the name as a default from a {@link TokenMatcher.State}.
+   *
+   * @see #name(State)
+   */
+  public String componentName(final TokenMatcher.State state) {
+    return name(state).split(NAME_VERSION_SPLITTER)[0];
+  }
+
+  /**
+   * Returns the Version from the name as a default from a {@link TokenMatcher.State}.
+   *
+   * @see #name(State)
+   */
+  public String componentVersion(final TokenMatcher.State state) {
+    return name(state).split(NAME_VERSION_SPLITTER)[1];
+  }
+
+  /**
    * Returns the extension from a {@link TokenMatcher.State}.
    */
   public String extension(final TokenMatcher.State state) {
@@ -92,5 +114,15 @@ public class P2PathUtils
    */
   public TokenMatcher.State matcherState(final Context context) {
     return context.getAttributes().require(TokenMatcher.State.class);
+  }
+
+  public P2Attributes toP2Attributes(final TokenMatcher.State state) {
+    return P2Attributes.builder()
+        .componentName(componentName(state))
+        .componentVersion(componentVersion(state))
+        .extension(extension(state))
+        .fileName(filename(state))
+        .path(path(path(state), filename(state)))
+        .build();
   }
 }

@@ -16,9 +16,9 @@ import java.io.IOException;
 import java.util.jar.JarInputStream;
 
 import org.sonatype.goodies.testsupport.TestSupport;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
-import org.databene.contiperf.PerfTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -52,31 +52,35 @@ public class JarParserTest
   public void getVersionFromJarInputStream() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
     JarInputStream jis = new JarInputStream(tempBlob.get());
-    String version = underTest.getVersionFromJarFile(jis);
-    assertThat(version, is(equalTo("1.2.100.v20170912-1859")));
-  }
 
-  @Test
-  public void getUnknownVersionFromJarInputStream() throws Exception {
-    when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(NON_P2_JAR));
-    JarInputStream jis = new JarInputStream(tempBlob.get());
-    String version = underTest.getVersionFromJarFile(jis);
-    assertThat(version, is(equalTo("unknown")));
+    assertThat(getAttributesFromJarFile(jis).getComponentVersion(), is(equalTo("1.2.100.v20170912-1859")));
   }
 
   @Test
   public void getVersionFromSourceJar() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_SOURCES_NAME));
     JarInputStream jis = new JarInputStream(tempBlob.get());
-    String version = underTest.getVersionFromJarFile(jis);
-    assertThat(version, is(equalTo("4.7.0.v20170712-1432")));
+
+    assertThat(getAttributesFromJarFile(jis).getComponentVersion(), is(equalTo("4.7.0.v20170712-1432")));
   }
 
   @Test
   public void getExceptionFromJarInputStream() throws Exception {
     JarInputStream jis = mock(JarInputStream.class);
     when(jis.getNextJarEntry()).thenThrow(new IOException());
-    String version = underTest.getVersionFromJarFile(jis);
-    assertThat(version, is(equalTo("unknown")));
+
+    assertThat(underTest.getAttributesFromJarFile(jis).isPresent(), is(false));
+  }
+
+  @Test
+  public void getNoneP2FileFromJarInputStream() throws Exception {
+    when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(NON_P2_JAR));
+    JarInputStream jis = new JarInputStream(tempBlob.get());
+
+    assertThat(underTest.getAttributesFromJarFile(jis).isPresent(), is(false));
+  }
+
+  private P2Attributes getAttributesFromJarFile(JarInputStream jis) throws Exception {
+    return underTest.getAttributesFromJarFile(jis).orElseThrow(() -> new AssertionError("No Attributes found to use"));
   }
 }

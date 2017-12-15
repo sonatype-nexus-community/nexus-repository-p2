@@ -13,6 +13,7 @@
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.jar.JarInputStream;
 
 import javax.annotation.Nonnull;
@@ -23,6 +24,7 @@ import javax.inject.Named;
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.p2.internal.util.JarParser;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
 import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
@@ -123,11 +125,7 @@ public class P2ProxyFacetImpl
             assetKind);
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
-        return putComponent(p2PathUtils.path(matcherState),
-            p2PathUtils.name(matcherState),
-            p2PathUtils.extension(matcherState),
-            content,
-            assetKind);
+        return putComponent(p2PathUtils.toP2Attributes(matcherState), content, assetKind);
       default:
         throw new IllegalStateException();
     }
@@ -186,41 +184,41 @@ public class P2ProxyFacetImpl
     return p2DataAccess.saveAsset(tx, asset, metadataContent, payload);
   }
 
-  private Content putComponent(final String path,
-                               final String filename,
-                               final String extension,
+  private Content putComponent(final P2Attributes p2Attributes,
                                final Content content,
                                final AssetKind assetKind) throws IOException {
     StorageFacet storageFacet = facet(StorageFacet.class);
     try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), P2DataAccess.HASH_ALGORITHMS)) {
-      return doPutComponent(path, filename, extension, tempBlob, content, assetKind);
+      return doPutComponent(p2Attributes, tempBlob, content, assetKind);
     }
   }
 
   @TransactionalStoreBlob
-  protected Content doPutComponent(final String path,
-                                   final String filename,
-                                   final String extension,
+  protected Content doPutComponent(P2Attributes p2Attributes,
                                    final TempBlob componentContent,
                                    final Payload payload,
                                    final AssetKind assetKind) throws IOException {
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
-    String assetPath = p2PathUtils.path(path, filename);
-    String version = getVersion(componentContent, extension);
 
-    Component component = p2DataAccess.findComponent(tx, getRepository(), filename, version);
+    p2Attributes = mergeAttributesFromTempBlob(componentContent, p2Attributes);
+
+    Component component = p2DataAccess.findComponent(tx,
+        getRepository(),
+        p2Attributes.getComponentName(),
+        p2Attributes.getComponentVersion());
+
     if (component == null) {
       component = tx.createComponent(bucket, getRepository().getFormat())
-          .name(filename)
-          .version(version);
+          .name(p2Attributes.getComponentName())
+          .version(p2Attributes.getComponentVersion());
     }
     tx.saveComponent(component);
 
-    Asset asset = p2DataAccess.findAsset(tx, bucket, assetPath);
+    Asset asset = p2DataAccess.findAsset(tx, bucket, p2Attributes.getPath());
     if (asset == null) {
       asset = tx.createAsset(bucket, component);
-      asset.name(assetPath);
+      asset.name(p2Attributes.getPath());
       asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
     }
     return p2DataAccess.saveAsset(tx, asset, componentContent, payload);
@@ -268,14 +266,18 @@ public class P2ProxyFacetImpl
   }
 
   @VisibleForTesting
-  protected String getVersion(final TempBlob tempBlob, final String extension) {
-    try (JarInputStream jis = getJar(tempBlob, extension)) {
-      return jarParser.getVersionFromJarFile(jis);
+  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes p2Attributes) {
+    try (JarInputStream jis = getJar(tempBlob, p2Attributes.getExtension())) {
+      return jarParser
+          .getAttributesFromJarFile(jis)
+          .map(jarP2Attributes -> P2Attributes.builder().merge(p2Attributes, jarP2Attributes).build())
+          .orElse(p2Attributes);
     }
     catch (Exception ex) {
       log.warn("Unable to get version from JarInputStream due to following exception: {}", ex.getMessage());
-      return JarParser.UNKNOWN_VERSION;
     }
+
+    return p2Attributes;
   }
 
   @VisibleForTesting
