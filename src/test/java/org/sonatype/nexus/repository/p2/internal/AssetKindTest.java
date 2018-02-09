@@ -36,7 +36,10 @@ public class AssetKindTest
     assertThat(ARTIFACT_XML.getCacheType(), is(equalTo(METADATA)));
     assertThat(ARTIFACT_XML_XZ.getCacheType(), is(equalTo(METADATA)));
     assertThat(CONTENT_XML_XZ.getCacheType(), is(equalTo(METADATA)));
+    assertThat(COMPOSITE_ARTIFACTS_JAR.getCacheType(), is(equalTo(METADATA)));
+    assertThat(COMPOSITE_CONTENT_JAR.getCacheType(), is(equalTo(METADATA)));
     assertThat(COMPONENT_PLUGINS.getCacheType(), is(equalTo(CONTENT)));
+    assertThat(COMPONENT_BINARY.getCacheType(), is(equalTo(CONTENT)));
     assertThat(COMPONENT_FEATURES.getCacheType(), is(equalTo(CONTENT)));
   }
 }

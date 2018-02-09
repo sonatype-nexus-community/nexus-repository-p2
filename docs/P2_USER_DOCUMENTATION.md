@@ -25,18 +25,19 @@ public P2 repositories without incurring repeated downloads of packages.
 
 ### Proxying P2 Repositories
 
-Functionality in this early version of the P2 Proxy has been limited to proxying just specific P2 proxy locations, and 
-not composite repositories. If you'd like to see this functionality, get involved and contribute with us :)
-
 You can set up an P2 proxy repository to access a remote repository location, for example to proxy the Eclipse Oxygen
-repository at [http://download.eclipse.org/eclipse/updates/4.8milestones/](http://download.eclipse.org/eclipse/updates/4.8milestones/)
+repository at [http://mirror.csclub.uwaterloo.ca/eclipse/eclipse/updates/4.7/](http://mirror.csclub.uwaterloo.ca/eclipse/eclipse/updates/4.7/)
+
+You'll want to ensure for Eclipse sites that you are not using the link from the Foundation. Nexus Repository 2 had code
+to handle checking each mirror (Eclipse provides this in a mirrors attribute), but this as of yet does not exist for Nexus Repository 3. The
+link provided in these docs is one of many from: [http://www.eclipse.org/downloads/download.php?format=xml&amp;file=/eclipse/updates/4.7/](http://www.eclipse.org/downloads/download.php?format=xml&amp;file=/eclipse/updates/4.7/)
 
 To proxy a P2 repository, you simply create a new 'p2 (proxy)' as documented in 
 [Repository Management](https://help.sonatype.com/display/NXRM3/Configuration#Configuration-RepositoryManagement) in
 details. Minimal configuration steps are:
 
 - Define 'Name'
-- Define URL for 'Remote storage' e.g. [http://download.eclipse.org/eclipse/updates/4.8milestones/S-4.8M1-201708022000/](http://download.eclipse.org/eclipse/updates/4.8milestones/S-4.8M1-201708022000/)
+- Define URL for 'Remote storage' e.g. [http://mirror.csclub.uwaterloo.ca/eclipse/eclipse/updates/4.7/](http://mirror.csclub.uwaterloo.ca/eclipse/eclipse/updates/4.7/)
 - Select a 'Blob store' for 'Storage'
 
 ### Configuring P2 in Eclipse

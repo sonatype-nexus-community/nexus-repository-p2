@@ -42,7 +42,7 @@ Also, there is a good amount of information available at [Bundle Development](ht
 
 To build the project and generate the bundle use Maven
 
-    mvn clean install
+    mvn clean package
 
 If everything checks out, the bundle for P2 should be available in the `target` folder
 
@@ -50,10 +50,12 @@ If everything checks out, the bundle for P2 should be available in the `target` 
 
 [We have detailed instructions on how to get started here!](docs/P2_USER_DOCUMENTATION.md)
 
-NOTE: This is an early version of P2 Proxy and does not support the following as of yet:
+NOTE: This is an early version of P2 Proxy and does not fully support the following as of yet:
 
-- [Composite Repositories](https://help.eclipse.org/neon/index.jsp?topic=%2Forg.eclipse.platform.doc.isv%2Fguide%2Fp2_composite_repositories.htm)
-- Old style (non-P2) update sites
+* [Composite Repositories](https://help.eclipse.org/neon/index.jsp?topic=%2Forg.eclipse.platform.doc.isv%2Fguide%2Fp2_composite_repositories.htm)
+  * This is implemented but likely will fail if the composite files reference absolute paths rather than relative paths
+* Old style (non-P2) update sites. The code that accomplished this can be found [here](https://github.com/sonatype/nexus-public/blob/nexus-2.x/plugins/p2/nexus-p2-repository-plugin/src/main/java/org/sonatype/nexus/plugins/p2/repository/proxy/P2ProxyRepositoryImpl.java)
+  * These are fairly old, and have not been added at all
 
 If you'd like it to support the aforementioned sites, please file an issue, or better yet, submit a PR :)
 

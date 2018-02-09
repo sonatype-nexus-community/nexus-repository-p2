@@ -12,11 +12,8 @@
  */
 package org.sonatype.nexus.repository.p2.internal.metadata;
 
-import java.util.Optional;
-
 import javax.annotation.Nullable;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Optional.ofNullable;
 
 /**

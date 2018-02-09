@@ -63,10 +63,18 @@ public class P2PathUtils
   }
 
   /**
-   * Builds a path to an archive for a particular path and name.
+   * Builds a path to an archive for a particular path, name and extension.
    */
   public String path(final String path, final String filename, final String extension) {
     String file = join(".", filename, extension);
+    return isNullOrEmpty(path) ? file : join("/", path, file);
+  }
+
+  /**
+   * Builds a path to a binary for a particular path, name and version.
+   */
+  public String binaryPath(final String path, final String name, final String version) {
+    String file = join("_", name, version);
     return isNullOrEmpty(path) ? file : join("/", path, file);
   }
 
@@ -83,6 +91,8 @@ public class P2PathUtils
   public String filename(final TokenMatcher.State state) {
     return name(state) + '.' + extension(state);
   }
+
+  public String version(final TokenMatcher.State state) { return match(state, "version"); }
 
   /**
    * Returns the Component Name from the name as a default from a {@link TokenMatcher.State}.
@@ -123,6 +133,14 @@ public class P2PathUtils
         .extension(extension(state))
         .fileName(filename(state))
         .path(path(path(state), filename(state)))
+        .build();
+  }
+
+  public P2Attributes toP2AttributesBinary(final TokenMatcher.State state) {
+    return P2Attributes.builder()
+        .componentName(name(state))
+        .componentVersion(version(state))
+        .path(binaryPath(path(state), name(state), version(state)))
         .build();
   }
 }

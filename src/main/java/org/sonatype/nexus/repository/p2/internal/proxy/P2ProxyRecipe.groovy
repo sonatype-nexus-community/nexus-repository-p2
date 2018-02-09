@@ -74,6 +74,8 @@ class P2ProxyRecipe
 
   private static final CONTENT_NAME = "content"
   private static final ARTIFACTS_NAME = "artifacts"
+  private static final COMPOSITE_ARTIFACTS = "compositeArtifacts"
+  private static final COMPOSITE_CONTENT = "compositeContent"
   private static final XML_EXTENSION = ".*[xX][mM][lL]"
   private static final XML_XZ_EXTENSION = "${XML_EXTENSION}\\.[xX][zZ]"
   private static final JAR_EXTENSION = ".*[jJ][aA][rR]"
@@ -171,8 +173,17 @@ class P2ProxyRecipe
     new Builder().matcher(
         and(
             new ActionMatcher(GET, HEAD),
-            new RegexMatcher('\\/plugins\\/.*'),
+            new RegexMatcher('.*plugins\\/.*'),
             componentFileTypeMatcher()
+        ))
+  }
+
+  static Builder binaryMatcher() {
+    new Builder().matcher(
+        and(
+            new ActionMatcher(GET, HEAD),
+            new RegexMatcher('.*binary\\/.*'),
+            binaryFileTypeMatcher()
         ))
   }
 
@@ -180,7 +191,7 @@ class P2ProxyRecipe
     new Builder().matcher(
         and(
             new ActionMatcher(GET, HEAD),
-            new RegexMatcher('\\/features\\/.*'),
+            new RegexMatcher('.*features\\/.*'),
             componentFileTypeMatcher()
         ))
   }
@@ -192,6 +203,10 @@ class P2ProxyRecipe
     )
   }
 
+  static Matcher binaryFileTypeMatcher() {
+    return tokenMatcherForBinary()
+  }
+
   static Builder matchRequestWithExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
     new Builder().matcher(
         and(
@@ -201,7 +216,11 @@ class P2ProxyRecipe
   }
 
   static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
-    new TokenMatcher("{path:${path}}/{name:${name}}.{extension:${extension}}")
+    new TokenMatcher("{path:.*}/{name:${name}}.{extension:${extension}}")
+  }
+
+  static TokenMatcher tokenMatcherForBinary() {
+    new TokenMatcher("{path:.*}/{name:.*}_{version:.*}")
   }
 
   /**
@@ -224,7 +243,63 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, ARTIFACTS_NAME, '.?')
+    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, COMPOSITE_ARTIFACTS, '.?')
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(COMPOSITE_ARTIFACTS_JAR))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, COMPOSITE_ARTIFACTS, '.?')
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(COMPOSITE_ARTIFACTS_XML))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, COMPOSITE_CONTENT, '.?')
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(COMPOSITE_CONTENT_JAR))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, COMPOSITE_CONTENT, '.?')
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(COMPOSITE_CONTENT_XML))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, ARTIFACTS_NAME, '.*')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_JAR))
         .handler(securityHandler)
@@ -238,7 +313,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, ARTIFACTS_NAME, '.?')
+    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, ARTIFACTS_NAME, '.*')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_XML))
         .handler(securityHandler)
@@ -252,7 +327,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, ARTIFACTS_NAME, '.?')
+    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, ARTIFACTS_NAME, '.*')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_XML_XZ))
         .handler(securityHandler)
@@ -266,7 +341,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, CONTENT_NAME, '.?')
+    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, CONTENT_NAME, '.*')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_JAR))
         .handler(securityHandler)
@@ -280,7 +355,7 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, CONTENT_NAME, '.?')
+    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, CONTENT_NAME, '.*')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_XML))
         .handler(securityHandler)
@@ -294,9 +369,23 @@ class P2ProxyRecipe
         .handler(proxyHandler)
         .create())
 
-    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, CONTENT_NAME, '.?')
+    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, CONTENT_NAME, '.*')
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_XML_XZ))
+        .handler(securityHandler)
+        .handler(exceptionHandler)
+        .handler(handlerContributor)
+        .handler(negativeCacheHandler)
+        .handler(conditionalRequestHandler)
+        .handler(partialFetchHandler)
+        .handler(contentHeadersHandler)
+        .handler(unitOfWorkHandler)
+        .handler(proxyHandler)
+        .create())
+
+    builder.route(binaryMatcher()
+        .handler(timingHandler)
+        .handler(assetKindHandler.rcurry(COMPONENT_BINARY))
         .handler(securityHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)

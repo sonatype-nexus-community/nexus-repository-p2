@@ -13,7 +13,6 @@
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.jar.JarInputStream;
 
 import javax.annotation.Nonnull;
@@ -50,6 +49,8 @@ import org.sonatype.nexus.transaction.UnitOfWork;
 import com.google.common.annotations.VisibleForTesting;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
+import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 
 /**
@@ -97,11 +98,17 @@ public class P2ProxyFacetImpl
       case CONTENT_JAR:
       case CONTENT_XML:
       case CONTENT_XML_XZ:
+      case COMPOSITE_ARTIFACTS_JAR:
+      case COMPOSITE_CONTENT_JAR:
+      case COMPOSITE_ARTIFACTS_XML:
+      case COMPOSITE_CONTENT_XML:
       case P2_INDEX:
         return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.filename(matcherState)));
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
         return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState)));
+      case COMPONENT_BINARY:
+        return getAsset(p2PathUtils.binaryPath(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState), p2PathUtils.version(matcherState)));
       default:
         throw new IllegalStateException();
     }
@@ -118,6 +125,10 @@ public class P2ProxyFacetImpl
       case CONTENT_JAR:
       case CONTENT_XML:
       case CONTENT_XML_XZ:
+      case COMPOSITE_ARTIFACTS_JAR:
+      case COMPOSITE_CONTENT_JAR:
+      case COMPOSITE_ARTIFACTS_XML:
+      case COMPOSITE_CONTENT_XML:
       case P2_INDEX:
         return putMetadata(p2PathUtils.path(p2PathUtils.path(matcherState),
             p2PathUtils.filename(matcherState)),
@@ -126,6 +137,8 @@ public class P2ProxyFacetImpl
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
         return putComponent(p2PathUtils.toP2Attributes(matcherState), content, assetKind);
+      case COMPONENT_BINARY:
+        return putBinary(p2PathUtils.toP2AttributesBinary(matcherState), content);
       default:
         throw new IllegalStateException();
     }
@@ -133,7 +146,7 @@ public class P2ProxyFacetImpl
 
   private Content putMetadata(final String path, final Content content, final AssetKind assetKind) throws IOException {
     StorageFacet storageFacet = facet(StorageFacet.class);
-    try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), P2DataAccess.HASH_ALGORITHMS)) {
+    try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), HASH_ALGORITHMS)) {
       return removeMirrorUrlFromArtifactsAndSaveMetadataAsAsset(path, tempBlob, content, assetKind);
     }
   }
@@ -184,24 +197,47 @@ public class P2ProxyFacetImpl
     return p2DataAccess.saveAsset(tx, asset, metadataContent, payload);
   }
 
+  private Content putBinary(final P2Attributes p2attributes,
+                               final Content content) throws IOException {
+    StorageFacet storageFacet = facet(StorageFacet.class);
+    try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), HASH_ALGORITHMS)) {
+      return doPutBinary(p2attributes, tempBlob, content);
+    }
+  }
+
+  private Content doPutBinary(final P2Attributes p2Attributes,
+                               final TempBlob componentContent,
+                               final Payload payload) throws IOException {
+    return doCreateOrSaveComponent(p2Attributes, componentContent, payload, COMPONENT_BINARY);
+  }
+
   private Content putComponent(final P2Attributes p2Attributes,
                                final Content content,
                                final AssetKind assetKind) throws IOException {
     StorageFacet storageFacet = facet(StorageFacet.class);
-    try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), P2DataAccess.HASH_ALGORITHMS)) {
+    try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), HASH_ALGORITHMS)) {
       return doPutComponent(p2Attributes, tempBlob, content, assetKind);
     }
   }
 
-  @TransactionalStoreBlob
-  protected Content doPutComponent(P2Attributes p2Attributes,
+
+  private Content doPutComponent(P2Attributes p2Attributes,
                                    final TempBlob componentContent,
                                    final Payload payload,
                                    final AssetKind assetKind) throws IOException {
+    p2Attributes = mergeAttributesFromTempBlob(componentContent, p2Attributes);
+
+    return doCreateOrSaveComponent(p2Attributes, componentContent, payload, assetKind);
+  }
+
+  @TransactionalStoreBlob
+  protected Content doCreateOrSaveComponent(final P2Attributes p2Attributes,
+                                          final TempBlob componentContent,
+                                          final Payload payload,
+                                          final AssetKind assetKind) throws IOException
+  {
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
-
-    p2Attributes = mergeAttributesFromTempBlob(componentContent, p2Attributes);
 
     Component component = p2DataAccess.findComponent(tx,
         getRepository(),

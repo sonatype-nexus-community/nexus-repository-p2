@@ -31,6 +31,11 @@ public enum AssetKind
   CONTENT_JAR(CacheControllerHolder.METADATA),
   CONTENT_XML(CacheControllerHolder.METADATA),
   CONTENT_XML_XZ(CacheControllerHolder.METADATA),
+  COMPOSITE_ARTIFACTS_JAR(CacheControllerHolder.METADATA),
+  COMPOSITE_CONTENT_JAR(CacheControllerHolder.METADATA),
+  COMPOSITE_ARTIFACTS_XML(CacheControllerHolder.METADATA),
+  COMPOSITE_CONTENT_XML(CacheControllerHolder.METADATA),
+  COMPONENT_BINARY(CacheControllerHolder.CONTENT),
   COMPONENT_PLUGINS(CacheControllerHolder.CONTENT),
   COMPONENT_FEATURES(CacheControllerHolder.CONTENT);
 
