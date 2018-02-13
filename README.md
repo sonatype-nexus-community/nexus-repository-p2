@@ -46,6 +46,18 @@ To build the project and generate the bundle use Maven
 
 If everything checks out, the bundle for P2 should be available in the `target` folder
 
+#### Build with Docker
+
+`docker build -t nexus-repository-p2:1.0.0 .`
+
+#### Run as a Docker container
+
+`docker run -d -p 8081:8081 --name nexus nexus-repository-p2:1.0.0` 
+
+For further information like how to persist volumes check out [the GitHub repo for our official image](https://github.com/sonatype/docker-nexus3).
+
+The application will now be available from your browser at http://localhost:8081
+
 ## Using P2 With Nexus Repository Manager 3
 
 [We have detailed instructions on how to get started here!](docs/P2_USER_DOCUMENTATION.md)
