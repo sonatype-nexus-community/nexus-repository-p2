@@ -24,4 +24,6 @@ Sonatype internal people:
 
 External contributors:
 
+* [@mgh87](https://github.com/mgh87/) (Martin Huter)
+
 ![Possibly You!](http://i.imgur.com/A3eScYul.jpg)

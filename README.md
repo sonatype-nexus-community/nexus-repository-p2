@@ -48,7 +48,9 @@ If everything checks out, the bundle for P2 should be available in the `target` 
 
 #### Build with Docker
 
-`docker build -t nexus-repository-p2:1.0.0 .`
+ The dockerfile needs the created jar in the target folder and is using it. This can be accomplished by building the artifact first or doing it within the execution of the docker build:
+
+    mvn clean package dockerfile:build
 
 #### Run as a Docker container
 
