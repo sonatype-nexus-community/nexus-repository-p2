@@ -94,6 +94,10 @@ public class ArtifactsXmlAbsoluteUrlRemover
             XMLEventWriter writer = outputFactory.createXMLEventWriter(xmlOut);
 
             streamXmlToWriterAndRemoveAbsoluteUrls(reader, writer);
+			
+            reader.close();
+            writer.flush();
+            writer.close();
           }
           return convertFileToTempBlob(tempFile, repository);
         }
