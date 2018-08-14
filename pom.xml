@@ -28,6 +28,10 @@
   <inceptionYear>2017</inceptionYear>
   <packaging>bundle</packaging>
 
+  <properties>
+    <docker.image.prefix>sonatype</docker.image.prefix>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -97,6 +101,20 @@
         <version>2.20</version>
       </plugin>
 
+      <plugin>
+        <groupId>com.spotify</groupId>
+        <artifactId>dockerfile-maven-plugin</artifactId>
+        <version>1.4.3</version>
+          <configuration>
+            <repository>${docker.image.prefix}/${project.artifactId}</repository>
+            <tag>${project.version}</tag>
+            <buildArgs>
+              <TARGET>target</TARGET>
+              <JAR_FILE>${project.build.finalName}.jar</JAR_FILE>
+              <P2_VERSION>${project.version}</P2_VERSION>
+            </buildArgs>
+          </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>

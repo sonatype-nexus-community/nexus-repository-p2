@@ -1,21 +1,23 @@
+# nexus version the plugin is build against
 ARG NEXUS_VERSION=3.8.0
 
-FROM maven:3-jdk-8-alpine AS build
-ARG NEXUS_VERSION=3.8.0
-ARG NEXUS_BUILD=02
+FROM sonatype/nexus3:${NEXUS_VERSION}
 
-COPY . /nexus-repository-p2/
-RUN cd /nexus-repository-p2/; sed -i "s/3.8.0-02/${NEXUS_VERSION}-${NEXUS_BUILD}/g" pom.xml; \
-    mvn clean package;
+# dockerfile-maven-plugin ARG
+ARG P2_VERSION
+ARG TARGET
+ARG JAR_FILE
 
-FROM sonatype/nexus3:$NEXUS_VERSION
-ARG NEXUS_VERSION=3.8.0
-ARG NEXUS_BUILD=02
-ARG P2_VERSION=1.0.0
+# Addin the bundle.jar nexus plugins folder
 ARG TARGET_DIR=/opt/sonatype/nexus/system/org/sonatype/nexus/plugins/nexus-repository-p2/${P2_VERSION}/
+ADD ${TARGET}/${JAR_FILE} ${TARGET_DIR}/${JAR_FILE}
+
+RUN echo ${P2_VERSION}
+
 USER root
-RUN mkdir -p ${TARGET_DIR}; \
-    sed -i 's@nexus-repository-npm</feature>@nexus-repository-npm</feature>\n        <feature prerequisite="false" dependency="false">nexus-repository-p2</feature>@g' /opt/sonatype/nexus/system/com/sonatype/nexus/assemblies/nexus-oss-feature/${NEXUS_VERSION}-${NEXUS_BUILD}/nexus-oss-feature-${NEXUS_VERSION}-${NEXUS_BUILD}-features.xml; \
-    sed -i 's@<feature name="nexus-repository-npm"@<feature name="nexus-repository-p2" description="org.sonatype.nexus.plugins:nexus-repository-p2" version="1.0.0">\n        <details>org.sonatype.nexus.plugins:nexus-repository-p2</details>\n        <bundle>mvn:org.sonatype.nexus.plugins/nexus-repository-p2/1.0.0</bundle>\n    </feature>\n    <feature name="nexus-repository-npm"@g' /opt/sonatype/nexus/system/com/sonatype/nexus/assemblies/nexus-oss-feature/${NEXUS_VERSION}-${NEXUS_BUILD}/nexus-oss-feature-${NEXUS_VERSION}-${NEXUS_BUILD}-features.xml;
-COPY --from=build /nexus-repository-p2/target/nexus-repository-p2-${P2_VERSION}.jar ${TARGET_DIR}
+RUN export NEXUS_PATH=/opt/sonatype/nexus/system/com/sonatype/nexus/assemblies/nexus-oss-feature/ \ 
+    && export NEXUS_FEATURES_FILE=`find $NEXUS_PATH | grep features.xml` \
+    && sed -i 's@nexus-repository-npm</feature>@nexus-repository-npm</feature>\n        <feature prerequisite="false" dependency="false">nexus-repository-p2</feature>@g' $NEXUS_FEATURES_FILE \
+    && sed -i 's@<feature name="nexus-repository-npm"@<feature name="nexus-repository-p2" description="org.sonatype.nexus.plugins:nexus-repository-p2" version="'"$P2_VERSION"'">\n        <details>org.sonatype.nexus.plugins:nexus-repository-p2</details>\n        <bundle>mvn:org.sonatype.nexus.plugins/nexus-repository-p2/'"$P2_VERSION"'</bundle>\n    </feature>\n    <feature name="nexus-repository-npm"@g' $NEXUS_FEATURES_FILE \
+    && unset NEXUS_PATH NEXUS_FEATURES_FILE P2_VERSION
 USER nexus
