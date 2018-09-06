@@ -24,4 +24,7 @@ Sonatype internal people:
 
 External contributors:
 
+* [@afischer211](https://github.com/afischer211/) (Alexander Fischer)
+* [@ruspl-afed](https://github.com/ruspl-afed/) (Alexander Fedorov)
+
 ![Possibly You!](http://i.imgur.com/A3eScYul.jpg)
