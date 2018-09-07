@@ -92,6 +92,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
             XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
             XMLEventReader reader = null;
             XMLEventWriter writer = null;
+            //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
             try {
               reader = inputFactory.createXMLEventReader(xmlIn);
               writer = outputFactory.createXMLEventWriter(xmlOut);
