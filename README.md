@@ -21,6 +21,8 @@
    * [Requirements](#requirements)
    * [Building](#building)
 * [Using P2 with Nexus Repository Manger 3](#using-p2-with-nexus-repository-manager-3)
+* [Compatibility with Nexus Repository Manager 3 Versions](#compatibility-with-nexus-repository-manager-3-versions)
+* [Features Implemented In This Plugin](#features-implemented-in-this-plugin)
 * [Installing the plugin](#installing-the-plugin)
    * [Temporary Install](#temporary-install)
    * [(more) Permanent Install](#more-permanent-install)
@@ -48,11 +50,11 @@ If everything checks out, the bundle for P2 should be available in the `target` 
 
 #### Build with Docker
 
-`docker build -t nexus-repository-p2:1.0.0 .`
+`docker build -t nexus-repository-p2:0.0.2 .`
 
 #### Run as a Docker container
 
-`docker run -d -p 8081:8081 --name nexus nexus-repository-p2:1.0.0` 
+`docker run -d -p 8081:8081 --name nexus nexus-repository-p2:0.0.2` 
 
 For further information like how to persist volumes check out [the GitHub repo for our official image](https://github.com/sonatype/docker-nexus3).
 
@@ -61,6 +63,29 @@ The application will now be available from your browser at http://localhost:8081
 ## Using P2 With Nexus Repository Manager 3
 
 [We have detailed instructions on how to get started here!](docs/P2_USER_DOCUMENTATION.md)
+
+## Compatibility with Nexus Repository Manager 3 Versions
+
+The table below outlines what version of Nexus Repository the plugin was built against
+
+| Plugin Version | Nexus Repository Version |
+|----------------|--------------------------|
+| v0.0.2         | 3.8.0-02                 |
+
+If a new version of Nexus Repository is released and the plugin needs changes, a new release will be made, and this
+table will be updated to indicate which version of Nexus Repository it will function against. This is done on a time 
+available basis, as this is community supported. If you see a new version of Nexus Repository, go ahead and update the
+plugin and send us a PR after testing it out!
+
+All released versions can be found [here](https://github.com/sonatype-nexus-community/nexus-repository-p2/releases).
+
+## Features Implemented In This Plugin 
+
+| Feature | Implemented          |
+|---------|----------------------|
+| Proxy   | :heavy_check_mark: * |
+| Hosted  |                      |
+| Group   |                      |
 
 NOTE: This is an early version of P2 Proxy and does not fully support the following as of yet:
 
@@ -90,7 +115,7 @@ good installation path if you are just testing or doing development on the plugi
   # sudo su - nexus
   $ cd <nexus_dir>/bin
   $ ./nexus run
-  > bundle:install file:///tmp/nexus-repository-p2-1.0.0.jar
+  > bundle:install file:///tmp/nexus-repository-p2-0.0.2.jar
   > bundle:list
   ```
   (look for org.sonatype.nexus.plugins:nexus-repository-p2 ID, should be the last one)
@@ -102,7 +127,7 @@ good installation path if you are just testing or doing development on the plugi
 
 For more permanent installs of the nexus-repository-p2 plugin, follow these instructions:
 
-* Copy the bundle (nexus-repository-p2-1.0.0.jar) into <nexus_dir>/deploy
+* Copy the bundle (nexus-repository-p2-0.0.2.jar) into <nexus_dir>/deploy
 
 This will cause the plugin to be loaded with each restart of Nexus Repository. As well, this folder is monitored
 by Nexus Repository and the plugin should load within 60 seconds of being copied there if Nexus Repository
@@ -112,7 +137,7 @@ is running. You will still need to start the bundle using the karaf commands men
 
 If you are trying to use the P2 plugin permanently, it likely makes more sense to do the following:
 
-* Copy the bundle into `<nexus_dir>/system/org/sonatype/nexus/plugins/nexus-repository-p2/1.0.0/nexus-repository-p2-1.0.0.jar`
+* Copy the bundle into `<nexus_dir>/system/org/sonatype/nexus/plugins/nexus-repository-p2/0.0.2/nexus-repository-p2-0.0.2.jar`
 * Make the following additions marked with + to `<nexus_dir>/system/org/sonatype/nexus/assemblies/nexus-core-feature/3.x.y/nexus-core-feature-3.x.y-features.xml`
 
    ```
@@ -123,9 +148,9 @@ If you are trying to use the P2 plugin permanently, it likely makes more sense t
    ```
    And
    ```
-   + <feature name="nexus-repository-p2" description="org.sonatype.nexus.plugins:nexus-repository-p2" version="1.0.0">
+   + <feature name="nexus-repository-p2" description="org.sonatype.nexus.plugins:nexus-repository-p2" version="0.0.2">
    +     <details>org.sonatype.nexus.plugins:nexus-repository-p2</details>
-   +     <bundle>mvn:org.sonatype.nexus.plugins/nexus-repository-p2/1.0.0</bundle>
+   +     <bundle>mvn:org.sonatype.nexus.plugins/nexus-repository-p2/0.0.2</bundle>
    + </feature>
     </features>
    ```
