@@ -90,10 +90,22 @@ public class ArtifactsXmlAbsoluteUrlRemover
           try (OutputStream xmlOut = xmlOutputStream(extension, tempFile)) {
             XMLInputFactory inputFactory = XMLInputFactory.newFactory();
             XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
-            XMLEventReader reader = inputFactory.createXMLEventReader(xmlIn);
-            XMLEventWriter writer = outputFactory.createXMLEventWriter(xmlOut);
-
-            streamXmlToWriterAndRemoveAbsoluteUrls(reader, writer);
+            XMLEventReader reader = null;
+            XMLEventWriter writer = null;
+            //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
+            try {
+              reader = inputFactory.createXMLEventReader(xmlIn);
+              writer = outputFactory.createXMLEventWriter(xmlOut);
+              streamXmlToWriterAndRemoveAbsoluteUrls(reader, writer);
+              writer.flush();
+            } finally {
+              if (reader != null) {
+                reader.close();
+              }
+              if (writer != null) {
+                writer.close();
+              }
+            }
           }
           return convertFileToTempBlob(tempFile, repository);
         }
