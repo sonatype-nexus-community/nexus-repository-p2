@@ -50,6 +50,9 @@ class P2GroupRecipe
   GroupHandler standardGroupHandler
 
   @Inject
+  P2GroupArtifactsMergingHandler artifactsMergingHandler
+
+  @Inject
   P2GroupRecipe(@Named(GroupType.NAME) final Type type, @Named(P2Format.NAME) final Format format) {
     super(type, format)
   }
@@ -117,7 +120,7 @@ class P2GroupRecipe
         .handler(securityHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
-        .handler(standardGroupHandler)
+        .handler(artifactsMergingHandler)
         .create())
 
     builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, ARTIFACTS_NAME, '.*')
@@ -126,7 +129,7 @@ class P2GroupRecipe
         .handler(securityHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
-        .handler(standardGroupHandler)
+        .handler(artifactsMergingHandler)
         .create())
 
     builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, ARTIFACTS_NAME, '.*')
@@ -135,7 +138,7 @@ class P2GroupRecipe
         .handler(securityHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
-        .handler(standardGroupHandler)
+        .handler(artifactsMergingHandler)
         .create())
 
     builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, CONTENT_NAME, '.*')
