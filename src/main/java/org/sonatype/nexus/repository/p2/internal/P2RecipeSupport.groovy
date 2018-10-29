@@ -52,14 +52,14 @@ import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.or
 abstract class P2RecipeSupport
     extends RecipeSupport
 {
-  private static final CONTENT_NAME = "content"
-  private static final ARTIFACTS_NAME = "artifacts"
-  private static final COMPOSITE_ARTIFACTS = "compositeArtifacts"
-  private static final COMPOSITE_CONTENT = "compositeContent"
-  private static final XML_EXTENSION = ".*[xX][mM][lL]"
-  private static final XML_XZ_EXTENSION = "${XML_EXTENSION}\\.[xX][zZ]"
-  private static final JAR_EXTENSION = ".*[jJ][aA][rR]"
-  private static final INDEX_EXTENSION = ".*[iI][nN][dD][eE][xX]"
+  static final CONTENT_NAME = "content"
+  static final ARTIFACTS_NAME = "artifacts"
+  static final COMPOSITE_ARTIFACTS = "compositeArtifacts"
+  static final COMPOSITE_CONTENT = "compositeContent"
+  static final XML_EXTENSION = ".*[xX][mM][lL]"
+  static final XML_XZ_EXTENSION = "${XML_EXTENSION}\\.[xX][zZ]"
+  static final JAR_EXTENSION = ".*[jJ][aA][rR]"
+  static final INDEX_EXTENSION = ".*[iI][nN][dD][eE][xX]"
 
   @Inject
   Provider<P2SecurityFacet> securityFacet
