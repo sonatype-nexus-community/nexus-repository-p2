@@ -37,19 +37,19 @@ public class P2ProxyIT
 {
   private static final String FORMAT_NAME = "p2";
 
-  private static final String MIME_TYPE = "application/x-gzip";
+  private static final String MIME_TYPE = "application/java-archive";
 
-  private static final String COMPONENT_NAME = "Test-Dependencies";
+  private static final String COMPONENT_NAME = "org.eclipse.cvs.source";
 
-  private static final String VERSION_NUMBER = "0.24";
+  private static final String VERSION_NUMBER = "_1.4.404.v20180330-0640";
 
-  private static final String EXTENSION = ".tar.gz";
+  private static final String EXTENSION = ".jar";
 
-  private static final String PACKAGE_NAME = COMPONENT_NAME + "-" + VERSION_NUMBER + EXTENSION;
+  private static final String PACKAGE_NAME = COMPONENT_NAME + VERSION_NUMBER + EXTENSION;
 
   private static final String INVALID_PACKAGE_NAME = COMPONENT_NAME + "-0.24.zip";
 
-  private static final String BASE_PATH = "authors/id/E/EH/EHUELS/";
+  private static final String BASE_PATH = "R-4.7.3a-201803300640/features/";
 
   private static final String BAD_PATH = "/this/path/is/not/valid";
 
@@ -74,7 +74,7 @@ public class P2ProxyIT
   @Before
   public void setup() throws Exception {
     server = Server.withPort(0)
-        .serve("/" + VALID_PACKAGE_URL)
+        .serve(VALID_PACKAGE_URL)
         .withBehaviours(Behaviours.file(testData.resolveFile(PACKAGE_NAME)))
         .start();
 
@@ -88,16 +88,16 @@ public class P2ProxyIT
   }
 
   @Test
-  public void retrieveTarGzFromProxyWhenRemoteOnline() throws Exception {
+  public void retrieveJarFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(VALID_PACKAGE_URL)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, VALID_PACKAGE_URL);
-    assertThat(asset.name(), is(equalTo(VALID_PACKAGE_URL)));
+    final Asset asset = findAsset(proxyRepo, "/" + VALID_PACKAGE_URL);
+    assertThat(asset.name(), is(equalTo("/" + VALID_PACKAGE_URL)));
     assertThat(asset.contentType(), is(equalTo(MIME_TYPE)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
 
     final Component component = findComponent(proxyRepo, COMPONENT_NAME);
-    assertThat(component.version(), is(equalTo(VERSION_NUMBER))); // TODO: remove string and replace with variable
+    assertThat(component.version(), is(equalTo(VERSION_NUMBER)));
     assertThat(component.group(), is(equalTo(null)));
   }
 
