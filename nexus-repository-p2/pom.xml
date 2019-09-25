@@ -41,6 +41,7 @@
     <dependency>
       <groupId>org.tukaani</groupId>
       <artifactId>xz</artifactId>
+      <version>1.8</version>
     </dependency>
   </dependencies>
   <build>
@@ -49,7 +50,7 @@
         <groupId>org.sonatype.nexus.buildsupport</groupId>
         <artifactId>extjs-maven-plugin</artifactId>
         <configuration>
-          <namespace>NX.p2ui</namespace>
+          <namespace>NX.p2</namespace>
         </configuration>
       </plugin>
       <plugin>
