@@ -41,11 +41,11 @@ public class P2ProxyIT
 
   private static final String COMPONENT_NAME = "org.eclipse.cvs.source";
 
-  private static final String VERSION_NUMBER = "_1.4.404.v20180330-0640";
+  private static final String VERSION_NUMBER = "1.4.404.v20180330-0640";
 
   private static final String EXTENSION = ".jar";
 
-  private static final String PACKAGE_NAME = COMPONENT_NAME + VERSION_NUMBER + EXTENSION;
+  private static final String PACKAGE_NAME = COMPONENT_NAME + "_" + VERSION_NUMBER + EXTENSION;
 
   private static final String INVALID_PACKAGE_NAME = COMPONENT_NAME + "-0.24.zip";
 
@@ -74,7 +74,7 @@ public class P2ProxyIT
   @Before
   public void setup() throws Exception {
     server = Server.withPort(0)
-        .serve(VALID_PACKAGE_URL)
+        .serve("/" + VALID_PACKAGE_URL)
         .withBehaviours(Behaviours.file(testData.resolveFile(PACKAGE_NAME)))
         .start();
 
@@ -91,8 +91,8 @@ public class P2ProxyIT
   public void retrieveJarFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(VALID_PACKAGE_URL)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, "/" + VALID_PACKAGE_URL);
-    assertThat(asset.name(), is(equalTo("/" + VALID_PACKAGE_URL)));
+    final Asset asset = findAsset(proxyRepo, VALID_PACKAGE_URL);
+    assertThat(asset.name(), is(equalTo(VALID_PACKAGE_URL)));
     assertThat(asset.contentType(), is(equalTo(MIME_TYPE)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
 
