@@ -12,7 +12,6 @@
  */
 package org.sonatype.nexus.repository.p2.internal;
 
-import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 
@@ -37,7 +36,6 @@ import org.ops4j.pax.exam.Option;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.text.IsEqualIgnoringWhiteSpace.equalToIgnoringWhiteSpace;
 import static org.sonatype.nexus.testsuite.testsupport.FormatClientSupport.status;
 
 
