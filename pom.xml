@@ -11,29 +11,36 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+
   <parent>
     <groupId>org.sonatype.nexus.plugins</groupId>
     <artifactId>nexus-plugins</artifactId>
     <version>3.19.0-SNAPSHOT</version>
   </parent>
+
   <artifactId>p2-parent</artifactId>
   <version>0.0.2</version>
   <packaging>pom</packaging>
   <name>${project.groupId}:${project.artifactId}-parent</name>
+
   <inceptionYear>2017</inceptionYear>
+
   <modules>
     <module>nexus-repository-p2</module>
     <module>nexus-repository-p2-it</module>
   </modules>
+
   <distributionManagement>
     <snapshotRepository>
       <id>ossrh</id>
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </snapshotRepository>
   </distributionManagement>
+
   <properties>
     <nxrm-version>3.19.0-SNAPSHOT</nxrm-version>
   </properties>
+
   <repositories>
     <!-- ensure we can find the parent pom when starting from an empty local .m2 repository -->
     <repository>
@@ -41,6 +48,34 @@
       <url>https://repository.sonatype.org/content/repositories/snapshots</url>
     </repository>
   </repositories>
+
+  <build>
+    <plugins>
+      <!--
+          Ensure use of Java 8, as required by NXRM
+          -->
+      <plugin>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>1.4.1</version>
+        <executions>
+          <execution>
+            <id>enforce-java</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[1.8,1.9)</version>
+                </requireJavaVersion>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
   <profiles>
     <profile>
       <id>deploy</id>
@@ -74,28 +109,7 @@
               </gpgArguments>
             </configuration>
           </plugin>
-          <!--
-          Ensure use of Java 8, as required by NXRM
-          -->
-          <plugin>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <version>1.4.1</version>
-            <executions>
-              <execution>
-                <id>enforce-java</id>
-                <goals>
-                  <goal>enforce</goal>
-                </goals>
-                <configuration>
-                  <rules>
-                    <requireJavaVersion>
-                      <version>[1.8,1.9)</version>
-                    </requireJavaVersion>
-                  </rules>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
+
           <plugin>
             <groupId>org.sonatype.plugins</groupId>
             <artifactId>nexus-staging-maven-plugin</artifactId>
