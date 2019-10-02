@@ -79,6 +79,20 @@ public class P2ProxyIT
 
   private static final String PACKAGE_BASE_PATH = "R-4.7.3a-201803300640/features/";
 
+  private static final String CONTENT_BASE_PATH = "R-4.7-201706120950/";
+
+  private static final String CONTENT_JAR = "content.jar";
+
+  private static final String CONTENT_XML = "content.xml";
+
+  private static final String CONTENT_XML_XZ = "content.xml.xz";
+
+  private static final String CONTENT_JAR_PATH = CONTENT_BASE_PATH + CONTENT_JAR;
+
+  private static final String CONTENT_XML_XZ_PATH = CONTENT_BASE_PATH + CONTENT_XML_XZ;
+
+  private static final String CONTENT_XML_PATH = CONTENT_BASE_PATH + CONTENT_XML;
+
   private static final String BAD_PATH = "/this/path/is/not/valid";
 
   private static final String VALID_PACKAGE_URL = PACKAGE_BASE_PATH + PACKAGE_NAME;
@@ -86,6 +100,12 @@ public class P2ProxyIT
   private static final String P2_INDEX = "p2.index";
 
   private static final String COMPOSITE_ARTIFACTS_JAR = "compositeArtifacts.jar";
+
+  private static final String COMPOSITE_ARTIFACTS_XML = "compositeArtifacts.xml";
+
+  private static final String COMPOSITE_CONTENT_JAR = "compositeContent.jar";
+
+  private static final String COMPOSITE_CONTENT_XML = "compositeContent.xml";
 
   private static final String INVALID_PACKAGE_URL = PACKAGE_BASE_PATH + INVALID_PACKAGE_NAME;
 
@@ -120,6 +140,18 @@ public class P2ProxyIT
         .withBehaviours(Behaviours.file(testData.resolveFile(P2_INDEX)))
         .serve("/" + COMPOSITE_ARTIFACTS_JAR)
         .withBehaviours(Behaviours.file(testData.resolveFile(COMPOSITE_ARTIFACTS_JAR)))
+        .serve("/" + COMPOSITE_ARTIFACTS_XML)
+        .withBehaviours(Behaviours.file(testData.resolveFile(COMPOSITE_ARTIFACTS_XML)))
+        .serve("/" + COMPOSITE_CONTENT_JAR)
+        .withBehaviours(Behaviours.file(testData.resolveFile(COMPOSITE_CONTENT_JAR)))
+        .serve("/" + COMPOSITE_CONTENT_XML)
+        .withBehaviours(Behaviours.file(testData.resolveFile(COMPOSITE_CONTENT_XML)))
+        .serve("/" + CONTENT_XML_PATH)
+        .withBehaviours(Behaviours.file(testData.resolveFile(CONTENT_XML)))
+        .serve("/" + CONTENT_JAR_PATH)
+        .withBehaviours(Behaviours.file(testData.resolveFile(CONTENT_JAR)))
+        .serve("/" + CONTENT_XML_XZ_PATH)
+        .withBehaviours(Behaviours.file(testData.resolveFile(CONTENT_XML_XZ)))
         .start();
 
     proxyRepo = repos.createP2Proxy("p2-test-proxy", server.getUrl().toExternalForm());
@@ -162,6 +194,60 @@ public class P2ProxyIT
 
     final Asset asset = findAsset(proxyRepo, COMPOSITE_ARTIFACTS_JAR);
     assertThat(asset.name(), is(equalTo(COMPOSITE_ARTIFACTS_JAR)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
+  public void retrieveCompositeArtifactsXmlFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(COMPOSITE_ARTIFACTS_XML)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, COMPOSITE_ARTIFACTS_XML);
+    assertThat(asset.name(), is(equalTo(COMPOSITE_ARTIFACTS_XML)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
+  public void retrieveCompositeContentJarFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(COMPOSITE_CONTENT_JAR)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, COMPOSITE_CONTENT_JAR);
+    assertThat(asset.name(), is(equalTo(COMPOSITE_CONTENT_JAR)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
+  public void retrieveCompositeContentXmlFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(COMPOSITE_CONTENT_XML)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, COMPOSITE_CONTENT_XML);
+    assertThat(asset.name(), is(equalTo(COMPOSITE_CONTENT_XML)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
+  public void retrieveContentXmlFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(CONTENT_XML_PATH)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, "/" + CONTENT_XML_PATH);
+    assertThat(asset.name(), is(equalTo("/" + CONTENT_XML_PATH)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
+  public void retrieveContentXmlXzFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(CONTENT_XML_XZ_PATH)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, "/" + CONTENT_XML_XZ_PATH);
+    assertThat(asset.name(), is(equalTo("/" + CONTENT_XML_XZ_PATH)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
+  public void retrieveContentJarFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(CONTENT_JAR_PATH)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, "/" +  CONTENT_JAR_PATH);
+    assertThat(asset.name(), is(equalTo( "/" + CONTENT_JAR_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
