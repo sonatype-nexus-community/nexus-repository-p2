@@ -116,6 +116,8 @@ public class P2ProxyIT
         .withBehaviours(Behaviours.file(testData.resolveFile(ARTIFACT_XML_XZ)))
         .serve("/" + P2_INDEX)
         .withBehaviours(Behaviours.file(testData.resolveFile(P2_INDEX)))
+        .serve("/folder/" + P2_INDEX)
+        .withBehaviours(Behaviours.file(testData.resolveFile(P2_INDEX)))
         .serve("/" + COMPOSITE_ARTIFACTS_JAR)
         .withBehaviours(Behaviours.file(testData.resolveFile(COMPOSITE_ARTIFACTS_JAR)))
         .start();
@@ -133,8 +135,8 @@ public class P2ProxyIT
   public void retrieveJarFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(VALID_PACKAGE_URL)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, VALID_PACKAGE_URL);
-    assertThat(asset.name(), is(equalTo( VALID_PACKAGE_URL)));
+    final Asset asset = findAsset(proxyRepo, "/" + VALID_PACKAGE_URL);
+    assertThat(asset.name(), is(equalTo("/" + VALID_PACKAGE_URL)));
     assertThat(asset.contentType(), is(equalTo(MIME_TYPE)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
 
@@ -150,6 +152,8 @@ public class P2ProxyIT
     final Asset asset = findAsset(proxyRepo, P2_INDEX);
     assertThat(asset.name(), is(equalTo(P2_INDEX)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    // TODO: We discovered these files do exist, but right now it's not working, we need to fix this!
+    // assertThat(status(proxyClient.get("folder/" + P2_INDEX)), is(HttpStatus.OK));
   }
 
   @Test
