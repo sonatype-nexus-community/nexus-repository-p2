@@ -29,8 +29,7 @@ trait P2RepoRecipes
     extends ConfigurationRecipes
 {
   @Nonnull
-  Repository createP2Proxy(final String name,
-                             final String remoteUrl)
+  Repository createP2Proxy(final String name, final String remoteUrl)
   {
     createRepository(createProxy(name, 'p2-proxy', remoteUrl))
   }

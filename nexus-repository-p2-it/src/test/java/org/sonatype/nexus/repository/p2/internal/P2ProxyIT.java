@@ -38,7 +38,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.sonatype.nexus.testsuite.testsupport.FormatClientSupport.status;
 
-
 public class P2ProxyIT
     extends P2ITSupport
 {
@@ -147,7 +146,6 @@ public class P2ProxyIT
       String expected = IOUtils.toString(targetStream).replaceAll("\\s+","");
 
       assertThat(result, equalTo(expected));
-
     }
   }
 
