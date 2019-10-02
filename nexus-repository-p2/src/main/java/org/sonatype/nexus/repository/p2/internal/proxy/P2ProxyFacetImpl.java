@@ -98,12 +98,13 @@ public class P2ProxyFacetImpl
       case CONTENT_JAR:
       case CONTENT_XML:
       case CONTENT_XML_XZ:
+        return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.filename(matcherState)));
       case COMPOSITE_ARTIFACTS_JAR:
       case COMPOSITE_CONTENT_JAR:
       case COMPOSITE_ARTIFACTS_XML:
       case COMPOSITE_CONTENT_XML:
       case P2_INDEX:
-        return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.filename(matcherState)));
+        return getAsset(p2PathUtils.filename(matcherState));
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
         return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState)));
@@ -125,13 +126,16 @@ public class P2ProxyFacetImpl
       case CONTENT_JAR:
       case CONTENT_XML:
       case CONTENT_XML_XZ:
+        return putMetadata(p2PathUtils.path(p2PathUtils.path(matcherState),
+            p2PathUtils.filename(matcherState)),
+            content,
+            assetKind);
       case COMPOSITE_ARTIFACTS_JAR:
       case COMPOSITE_CONTENT_JAR:
       case COMPOSITE_ARTIFACTS_XML:
       case COMPOSITE_CONTENT_XML:
       case P2_INDEX:
-        return putMetadata(p2PathUtils.path(p2PathUtils.path(matcherState),
-            p2PathUtils.filename(matcherState)),
+        return putMetadata(p2PathUtils.filename(matcherState),
             content,
             assetKind);
       case COMPONENT_PLUGINS:

@@ -83,6 +83,10 @@ public class P2ProxyIT
 
   private static final String VALID_PACKAGE_URL = PACKAGE_BASE_PATH + PACKAGE_NAME;
 
+  private static final String P2_INDEX = "p2.index";
+
+  private static final String COMPOSITE_ARTIFACTS_JAR = "compositeArtifacts.jar";
+
   private static final String INVALID_PACKAGE_URL = PACKAGE_BASE_PATH + INVALID_PACKAGE_NAME;
 
   private P2Client proxyClient;
@@ -110,6 +114,10 @@ public class P2ProxyIT
         .withBehaviours(Behaviours.file(testData.resolveFile(ARTIFACT_XML)))
         .serve("/" + ARTIFACT_XML_XZ_TEST_PATH)
         .withBehaviours(Behaviours.file(testData.resolveFile(ARTIFACT_XML_XZ)))
+        .serve("/" + P2_INDEX)
+        .withBehaviours(Behaviours.file(testData.resolveFile(P2_INDEX)))
+        .serve("/" + COMPOSITE_ARTIFACTS_JAR)
+        .withBehaviours(Behaviours.file(testData.resolveFile(COMPOSITE_ARTIFACTS_JAR)))
         .start();
 
     proxyRepo = repos.createP2Proxy("p2-test-proxy", server.getUrl().toExternalForm());
@@ -133,6 +141,24 @@ public class P2ProxyIT
     final Component component = findComponent(proxyRepo, COMPONENT_NAME);
     assertThat(component.version(), is(equalTo(VERSION_NUMBER)));
     assertThat(component.group(), is(equalTo(null)));
+  }
+
+  @Test
+  public void retrieveP2IndexFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(P2_INDEX)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, P2_INDEX);
+    assertThat(asset.name(), is(equalTo(P2_INDEX)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
+  public void retrieveCompositeArtifactsJarFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(COMPOSITE_ARTIFACTS_JAR)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, COMPOSITE_ARTIFACTS_JAR);
+    assertThat(asset.name(), is(equalTo(COMPOSITE_ARTIFACTS_JAR)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
   @Test
