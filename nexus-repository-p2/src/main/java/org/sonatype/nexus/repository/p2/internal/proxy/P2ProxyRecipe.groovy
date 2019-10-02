@@ -42,7 +42,6 @@ import org.sonatype.nexus.repository.purge.PurgeUnusedFacet
 import org.sonatype.nexus.repository.view.ConfigurableViewFacet
 import org.sonatype.nexus.repository.view.Context
 import org.sonatype.nexus.repository.view.Matcher
-import org.sonatype.nexus.repository.view.Route.Builder
 import org.sonatype.nexus.repository.view.Route
 import org.sonatype.nexus.repository.view.Router
 import org.sonatype.nexus.repository.view.ViewFacet
@@ -60,7 +59,6 @@ import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher
 import static org.sonatype.nexus.repository.http.HttpMethods.GET
 import static org.sonatype.nexus.repository.http.HttpMethods.HEAD
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.*
-import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.and
 import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.or
 
 /**
@@ -165,74 +163,25 @@ class P2ProxyRecipe
     repository.attach(attributesFacet.get())
   }
 
-  static Builder pluginsMatcher(final AssetKind assetKind) {
-    new Builder().matcher(
-        and(
-            new ActionMatcher(GET, HEAD),
-            new RegexMatcher('.*plugins\\/.*'),
-            componentFileTypeMatcher(),
-            new Matcher() {
-              @Override
-              boolean matches(final Context context) {
-                context.attributes.set(AssetKind.class, assetKind)
-                return true
-              }
-            }
-        ))
-  }
-
-  static Builder binaryMatcher(final AssetKind assetKind) {
-    new Builder().matcher(
-        and(
-            new ActionMatcher(GET, HEAD),
-            new RegexMatcher('.*binary\\/.*'),
-            binaryFileTypeMatcher(),
-            new Matcher() {
-              @Override
-              boolean matches(final Context context) {
-                context.attributes.set(AssetKind.class, assetKind)
-                return true
-              }
-            }
-        ))
-  }
-
-  static Builder featuresMatcher(final AssetKind assetKind) {
-    new Builder().matcher(
-        and(
-            new ActionMatcher(GET, HEAD),
-            new RegexMatcher('.*features\\/.*'),
-            componentFileTypeMatcher(),
-            new Matcher() {
-              @Override
-              boolean matches(final Context context) {
-                context.attributes.set(AssetKind.class, assetKind)
-                return true
-              }
-            }
-        ))
-  }
-
-  static Matcher componentFileTypeMatcher() {
-    return or(
-        tokenMatcherForExtensionAndName('jar'),
-        tokenMatcherForExtensionAndName('jar.pack.gz')
+  static Matcher pluginBinaryAndFeaturesMatcher(final String pattern,
+                                                final AssetKind assetKind,
+                                                final Matcher matcher,
+                                                final String... actions) {
+    LogicMatchers.and(
+        new ActionMatcher(actions),
+        new RegexMatcher(pattern),
+        matcher,
+        new Matcher() {
+          @Override
+          boolean matches(final Context context) {
+            context.attributes.set(AssetKind.class, assetKind)
+            return true
+          }
+        }
     )
   }
 
-  static Matcher binaryFileTypeMatcher() {
-    return tokenMatcherForBinary()
-  }
-
-  static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
-    new TokenMatcher("{path:${path}}/{name:${name}}.{extension:${extension}}")
-  }
-
-  static TokenMatcher tokenMatcherForBinary() {
-    new TokenMatcher("{path:.*}/{name:.*}_{version:.*}")
-  }
-
-  static Matcher buildMatcher(final String path, final String name, final String extension, final AssetKind assetKind) {
+  static Matcher buildSimpleMatcher(final String path, final String name, final String extension, final AssetKind assetKind) {
     buildTokenMatcherForPatternAndAssetKind("{path:${path}}/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
   }
 
@@ -252,26 +201,45 @@ class P2ProxyRecipe
     )
   }
 
+  static Matcher componentFileTypeMatcher() {
+    return or(
+        tokenMatcherForExtensionAndName('jar'),
+        tokenMatcherForExtensionAndName('jar.pack.gz')
+    )
+  }
+
+  static Matcher binaryFileTypeMatcher() {
+    return tokenMatcherForBinary()
+  }
+
+  static TokenMatcher tokenMatcherForBinary() {
+    new TokenMatcher("{path:.*}/{name:.*}_{version:.*}")
+  }
+
+  static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
+    new TokenMatcher("{path:${path}}/{name:${name}}.{extension:${extension}}")
+  }
+
   /**
    * Configure {@link ViewFacet}.
    */
   private ViewFacet configure(final ConfigurableViewFacet facet) {
     Router.Builder builder = new Router.Builder()
 
-    [buildMatcher('.?', 'p2', 'index', P2_INDEX),
-     buildMatcher('.?', COMPOSITE_ARTIFACTS, JAR_EXTENSION, COMPOSITE_ARTIFACTS_JAR),
-     buildMatcher('.?', COMPOSITE_ARTIFACTS, XML_EXTENSION, COMPOSITE_ARTIFACTS_XML),
-     buildMatcher('.?', COMPOSITE_CONTENT, JAR_EXTENSION, COMPOSITE_CONTENT_JAR),
-     buildMatcher('.?', COMPOSITE_CONTENT, XML_EXTENSION, COMPOSITE_CONTENT_XML),
-     buildMatcher('.*', ARTIFACTS_NAME, JAR_EXTENSION, ARTIFACT_JAR),
-     buildMatcher('.*', ARTIFACTS_NAME, XML_EXTENSION, ARTIFACT_XML),
-     buildMatcher('.*', ARTIFACTS_NAME, XML_XZ_EXTENSION, ARTIFACT_XML_XZ),
-     buildMatcher('.*', CONTENT_NAME, JAR_EXTENSION, CONTENT_JAR),
-     buildMatcher('.*', CONTENT_NAME, XML_EXTENSION, CONTENT_XML),
-     buildMatcher('.*', CONTENT_NAME, XML_XZ_EXTENSION, CONTENT_XML_XZ),
-     binaryMatcher(COMPONENT_BINARY),
-     featuresMatcher(COMPONENT_FEATURES),
-     pluginsMatcher(COMPONENT_PLUGINS)].each { matcher ->
+    [buildSimpleMatcher('.?', 'p2', 'index', P2_INDEX),
+     buildSimpleMatcher('.?', COMPOSITE_ARTIFACTS, JAR_EXTENSION, COMPOSITE_ARTIFACTS_JAR),
+     buildSimpleMatcher('.?', COMPOSITE_ARTIFACTS, XML_EXTENSION, COMPOSITE_ARTIFACTS_XML),
+     buildSimpleMatcher('.?', COMPOSITE_CONTENT, JAR_EXTENSION, COMPOSITE_CONTENT_JAR),
+     buildSimpleMatcher('.?', COMPOSITE_CONTENT, XML_EXTENSION, COMPOSITE_CONTENT_XML),
+     buildSimpleMatcher('.*', ARTIFACTS_NAME, JAR_EXTENSION, ARTIFACT_JAR),
+     buildSimpleMatcher('.*', ARTIFACTS_NAME, XML_EXTENSION, ARTIFACT_XML),
+     buildSimpleMatcher('.*', ARTIFACTS_NAME, XML_XZ_EXTENSION, ARTIFACT_XML_XZ),
+     buildSimpleMatcher('.*', CONTENT_NAME, JAR_EXTENSION, CONTENT_JAR),
+     buildSimpleMatcher('.*', CONTENT_NAME, XML_EXTENSION, CONTENT_XML),
+     buildSimpleMatcher('.*', CONTENT_NAME, XML_XZ_EXTENSION, CONTENT_XML_XZ),
+     pluginBinaryAndFeaturesMatcher('.*features\\/.*', COMPONENT_FEATURES, componentFileTypeMatcher(), GET, HEAD),
+     pluginBinaryAndFeaturesMatcher('.*binary\\/.*', COMPONENT_BINARY, binaryFileTypeMatcher(), GET, HEAD),
+     pluginBinaryAndFeaturesMatcher('.*plugins\\/.*', COMPONENT_PLUGINS, componentFileTypeMatcher(), GET, HEAD)].each { matcher ->
       builder.route(new Route.Builder().matcher(matcher)
           .handler(timingHandler)
           .handler(securityHandler)
