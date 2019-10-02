@@ -107,6 +107,24 @@ public class P2ProxyIT
 
   private static final String COMPOSITE_CONTENT_XML = "compositeContent.xml";
 
+  private static final String BINARY = "org.eclipse.equinox.executable_root.cocoa.macosx.x86_64_3.7.0.v20170531-1133";
+
+  private static final String BINARY_BASE_PATH = "R-4.7-201706120950/binary/";
+
+  private static final String BINARY_TEST_PATH = BINARY_BASE_PATH + BINARY;
+
+  private static final String PLUGIN = "com.google.code.atinject.tck_1.1.0.v20160901-1938.jar";
+
+  private static final String PLUGIN_BASE_PATH = "R-4.7-201706120950/plugins/";
+
+  private static final String PLUGIN_TEST_PATH = PLUGIN_BASE_PATH + PLUGIN;
+
+  private static final String FEATURE = "org.eclipse.core.runtime.feature_1.2.0.v20170518-1049.jar";
+
+  private static final String FEATURE_BASE_PATH = "R-4.7-201706120950/features/";
+
+  private static final String FEATURE_TEST_PATH = FEATURE_BASE_PATH + FEATURE;
+
   private static final String INVALID_PACKAGE_URL = PACKAGE_BASE_PATH + INVALID_PACKAGE_NAME;
 
   private P2Client proxyClient;
@@ -152,6 +170,12 @@ public class P2ProxyIT
         .withBehaviours(Behaviours.file(testData.resolveFile(CONTENT_JAR)))
         .serve("/" + CONTENT_XML_XZ_PATH)
         .withBehaviours(Behaviours.file(testData.resolveFile(CONTENT_XML_XZ)))
+        .serve("/" + BINARY_TEST_PATH)
+        .withBehaviours(Behaviours.file(testData.resolveFile(BINARY)))
+        .serve("/" + PLUGIN_TEST_PATH)
+        .withBehaviours(Behaviours.file(testData.resolveFile(PLUGIN)))
+        .serve("/" + FEATURE_TEST_PATH)
+        .withBehaviours(Behaviours.file(testData.resolveFile(FEATURE)))
         .start();
 
     proxyRepo = repos.createP2Proxy("p2-test-proxy", server.getUrl().toExternalForm());
@@ -250,6 +274,35 @@ public class P2ProxyIT
     assertThat(asset.name(), is(equalTo( "/" + CONTENT_JAR_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
+
+
+  @Test
+  public void retrieveBinaryFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(BINARY_TEST_PATH)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, "/" +  BINARY_TEST_PATH);
+    assertThat(asset.name(), is(equalTo( "/" + BINARY_TEST_PATH)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
+  public void retrievePluginFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(PLUGIN_TEST_PATH)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, "/" +  PLUGIN_TEST_PATH);
+    assertThat(asset.name(), is(equalTo( "/" + PLUGIN_TEST_PATH)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
+  public void retrieveFeatureFromProxyWhenRemoteOnline() throws Exception {
+    assertThat(status(proxyClient.get(FEATURE_TEST_PATH)), is(HttpStatus.OK));
+
+    final Asset asset = findAsset(proxyRepo, "/" +  FEATURE_TEST_PATH);
+    assertThat(asset.name(), is(equalTo( "/" + FEATURE_TEST_PATH)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
 
   @Test
   public void retrieveZipFromProxyShouldNotWork() throws Exception {
