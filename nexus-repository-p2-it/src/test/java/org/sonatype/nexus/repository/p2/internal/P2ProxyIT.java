@@ -61,11 +61,17 @@ public class P2ProxyIT
 
   private static final String PACKAGE_NAME = COMPONENT_NAME + "_" + VERSION_NUMBER + EXTENSION_JAR;
 
+  private static final String ARTIFACTS_BASE_PATH = "R-4.7-201706120950/";
+
   private static final String ARTIFACT_JAR = ARTIFACT_NAME + EXTENSION_JAR;
 
   private static final String ARTIFACT_XML = ARTIFACT_NAME + EXTENSION_XML;
 
+  private static final String ARTIFACT_XML_TEST_PATH = ARTIFACTS_BASE_PATH + ARTIFACT_XML;
+
   private static final String ARTIFACT_XML_XZ = ARTIFACT_NAME + EXTENSION_XML_XZ;
+
+  private static final String ARTIFACT_XML_XZ_TEST_PATH = ARTIFACTS_BASE_PATH + ARTIFACT_XML_XZ;
 
   private static final String ARTIFACT_WITHOUT_MIRROR_XML = ARTIFACT_WITHOUT_MIRROR_NAME + EXTENSION_XML;
 
@@ -100,9 +106,9 @@ public class P2ProxyIT
         .withBehaviours(Behaviours.file(testData.resolveFile(PACKAGE_NAME)))
         .serve("/" + ARTIFACT_JAR)
         .withBehaviours(Behaviours.file(testData.resolveFile(ARTIFACT_JAR)))
-        .serve("/" + ARTIFACT_XML)
+        .serve("/" + ARTIFACT_XML_TEST_PATH)
         .withBehaviours(Behaviours.file(testData.resolveFile(ARTIFACT_XML)))
-        .serve("/" + ARTIFACT_XML_XZ)
+        .serve("/" + ARTIFACT_XML_XZ_TEST_PATH)
         .withBehaviours(Behaviours.file(testData.resolveFile(ARTIFACT_XML_XZ)))
         .start();
 
@@ -119,8 +125,8 @@ public class P2ProxyIT
   public void retrieveJarFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(VALID_PACKAGE_URL)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, "/" + VALID_PACKAGE_URL);
-    assertThat(asset.name(), is(equalTo("/" + VALID_PACKAGE_URL)));
+    final Asset asset = findAsset(proxyRepo, VALID_PACKAGE_URL);
+    assertThat(asset.name(), is(equalTo( VALID_PACKAGE_URL)));
     assertThat(asset.contentType(), is(equalTo(MIME_TYPE)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
 
@@ -136,9 +142,9 @@ public class P2ProxyIT
 
   @Test
   public void removeMirrorURLFromXML() throws Exception {
-    assertThat(status(proxyClient.get(ARTIFACT_XML)), is(HttpStatus.OK));
+    assertThat(status(proxyClient.get(ARTIFACT_XML_TEST_PATH)), is(HttpStatus.OK));
 
-    try (CloseableHttpResponse response = proxyClient.get(ARTIFACT_XML)) {
+    try (CloseableHttpResponse response = proxyClient.get(ARTIFACT_XML_TEST_PATH)) {
       HttpEntity entity = response.getEntity();
       String result = IOUtils.toString(entity.getContent()).replaceAll("\\s+","");
 
