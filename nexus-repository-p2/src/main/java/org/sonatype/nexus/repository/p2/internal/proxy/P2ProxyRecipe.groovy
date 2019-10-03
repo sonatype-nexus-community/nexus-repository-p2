@@ -216,7 +216,7 @@ class P2ProxyRecipe
   }
 
   static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
-    new TokenMatcher("{path:.*}/{name:${name}}.{extension:${extension}}")
+    new TokenMatcher("{path:${path}}/{name:${name}}.{extension:${extension}}")
   }
 
   static TokenMatcher tokenMatcherForBinary() {
