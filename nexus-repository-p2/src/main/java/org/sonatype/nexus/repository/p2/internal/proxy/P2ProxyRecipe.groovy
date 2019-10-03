@@ -181,8 +181,31 @@ class P2ProxyRecipe
     )
   }
 
+  static Matcher componentFileTypeMatcher() {
+    return or(
+        tokenMatcherForExtensionAndName('jar'),
+        tokenMatcherForExtensionAndName('jar.pack.gz')
+    )
+  }
+
+  static Matcher binaryFileTypeMatcher() {
+    return tokenMatcherForBinary()
+  }
+
+  static TokenMatcher tokenMatcherForBinary() {
+    new TokenMatcher("/{path:.*}/{name:.*}_{version:.*}")
+  }
+
+  static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
+    new TokenMatcher("/{path:${path}}/{name:${name}}.{extension:${extension}}")
+  }
+
   static Matcher buildSimpleMatcher(final String path, final String name, final String extension, final AssetKind assetKind) {
-    buildTokenMatcherForPatternAndAssetKind("{path:${path}}/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
+    buildTokenMatcherForPatternAndAssetKind("/{path:${path}}/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
+  }
+
+  static Matcher buildSimpleMatcherAtRoot(final String name, final String extension, final AssetKind assetKind) {
+    buildTokenMatcherForPatternAndAssetKind("/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
   }
 
   static Matcher buildTokenMatcherForPatternAndAssetKind(final String pattern,
@@ -201,36 +224,18 @@ class P2ProxyRecipe
     )
   }
 
-  static Matcher componentFileTypeMatcher() {
-    return or(
-        tokenMatcherForExtensionAndName('jar'),
-        tokenMatcherForExtensionAndName('jar.pack.gz')
-    )
-  }
-
-  static Matcher binaryFileTypeMatcher() {
-    return tokenMatcherForBinary()
-  }
-
-  static TokenMatcher tokenMatcherForBinary() {
-    new TokenMatcher("{path:.*}/{name:.*}_{version:.*}")
-  }
-
-  static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
-    new TokenMatcher("{path:${path}}/{name:${name}}.{extension:${extension}}")
-  }
-
   /**
    * Configure {@link ViewFacet}.
    */
   private ViewFacet configure(final ConfigurableViewFacet facet) {
     Router.Builder builder = new Router.Builder()
 
-    [buildSimpleMatcher('.?', 'p2', 'index', P2_INDEX),
-     buildSimpleMatcher('.?', COMPOSITE_ARTIFACTS, JAR_EXTENSION, COMPOSITE_ARTIFACTS_JAR),
-     buildSimpleMatcher('.?', COMPOSITE_ARTIFACTS, XML_EXTENSION, COMPOSITE_ARTIFACTS_XML),
-     buildSimpleMatcher('.?', COMPOSITE_CONTENT, JAR_EXTENSION, COMPOSITE_CONTENT_JAR),
-     buildSimpleMatcher('.?', COMPOSITE_CONTENT, XML_EXTENSION, COMPOSITE_CONTENT_XML),
+    [buildSimpleMatcher('.*', 'p2', 'index', P2_INDEX),
+     buildSimpleMatcherAtRoot('p2', 'index', P2_INDEX),
+     buildSimpleMatcherAtRoot(COMPOSITE_ARTIFACTS, JAR_EXTENSION, COMPOSITE_ARTIFACTS_JAR),
+     buildSimpleMatcherAtRoot(COMPOSITE_ARTIFACTS, XML_EXTENSION, COMPOSITE_ARTIFACTS_XML),
+     buildSimpleMatcherAtRoot(COMPOSITE_CONTENT, JAR_EXTENSION, COMPOSITE_CONTENT_JAR),
+     buildSimpleMatcherAtRoot(COMPOSITE_CONTENT, XML_EXTENSION, COMPOSITE_CONTENT_XML),
      buildSimpleMatcher('.*', ARTIFACTS_NAME, JAR_EXTENSION, ARTIFACT_JAR),
      buildSimpleMatcher('.*', ARTIFACTS_NAME, XML_EXTENSION, ARTIFACT_XML),
      buildSimpleMatcher('.*', ARTIFACTS_NAME, XML_XZ_EXTENSION, ARTIFACT_XML_XZ),

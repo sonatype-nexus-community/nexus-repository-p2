@@ -191,8 +191,8 @@ public class P2ProxyIT
   public void retrieveJarFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(VALID_PACKAGE_URL)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, "/" + VALID_PACKAGE_URL);
-    assertThat(asset.name(), is(equalTo("/" + VALID_PACKAGE_URL)));
+    final Asset asset = findAsset(proxyRepo, VALID_PACKAGE_URL);
+    assertThat(asset.name(), is(equalTo(VALID_PACKAGE_URL)));
     assertThat(asset.contentType(), is(equalTo(MIME_TYPE)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
 
@@ -208,8 +208,8 @@ public class P2ProxyIT
     final Asset asset = findAsset(proxyRepo, P2_INDEX);
     assertThat(asset.name(), is(equalTo(P2_INDEX)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
-    // TODO: We discovered these files do exist, but right now it's not working, we need to fix this!
-    // assertThat(status(proxyClient.get("folder/" + P2_INDEX)), is(HttpStatus.OK));
+
+    assertThat(status(proxyClient.get("folder/" + P2_INDEX)), is(HttpStatus.OK));
   }
 
   @Test
@@ -252,8 +252,8 @@ public class P2ProxyIT
   public void retrieveContentXmlFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(CONTENT_XML_PATH)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, "/" + CONTENT_XML_PATH);
-    assertThat(asset.name(), is(equalTo("/" + CONTENT_XML_PATH)));
+    final Asset asset = findAsset(proxyRepo, CONTENT_XML_PATH);
+    assertThat(asset.name(), is(equalTo(CONTENT_XML_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
@@ -261,8 +261,8 @@ public class P2ProxyIT
   public void retrieveContentXmlXzFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(CONTENT_XML_XZ_PATH)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, "/" + CONTENT_XML_XZ_PATH);
-    assertThat(asset.name(), is(equalTo("/" + CONTENT_XML_XZ_PATH)));
+    final Asset asset = findAsset(proxyRepo, CONTENT_XML_XZ_PATH);
+    assertThat(asset.name(), is(equalTo(CONTENT_XML_XZ_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
@@ -270,8 +270,8 @@ public class P2ProxyIT
   public void retrieveContentJarFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(CONTENT_JAR_PATH)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, "/" +  CONTENT_JAR_PATH);
-    assertThat(asset.name(), is(equalTo( "/" + CONTENT_JAR_PATH)));
+    final Asset asset = findAsset(proxyRepo, CONTENT_JAR_PATH);
+    assertThat(asset.name(), is(equalTo( CONTENT_JAR_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
@@ -280,8 +280,8 @@ public class P2ProxyIT
   public void retrieveBinaryFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(BINARY_TEST_PATH)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, "/" +  BINARY_TEST_PATH);
-    assertThat(asset.name(), is(equalTo( "/" + BINARY_TEST_PATH)));
+    final Asset asset = findAsset(proxyRepo, BINARY_TEST_PATH);
+    assertThat(asset.name(), is(equalTo( BINARY_TEST_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
@@ -289,8 +289,8 @@ public class P2ProxyIT
   public void retrievePluginFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(PLUGIN_TEST_PATH)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, "/" +  PLUGIN_TEST_PATH);
-    assertThat(asset.name(), is(equalTo( "/" + PLUGIN_TEST_PATH)));
+    final Asset asset = findAsset(proxyRepo, PLUGIN_TEST_PATH);
+    assertThat(asset.name(), is(equalTo( PLUGIN_TEST_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
@@ -298,8 +298,8 @@ public class P2ProxyIT
   public void retrieveFeatureFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(FEATURE_TEST_PATH)), is(HttpStatus.OK));
 
-    final Asset asset = findAsset(proxyRepo, "/" +  FEATURE_TEST_PATH);
-    assertThat(asset.name(), is(equalTo( "/" + FEATURE_TEST_PATH)));
+    final Asset asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
+    assertThat(asset.name(), is(equalTo( FEATURE_TEST_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
