@@ -193,19 +193,19 @@ class P2ProxyRecipe
   }
 
   static TokenMatcher tokenMatcherForBinary() {
-    new TokenMatcher("/{path:.*}/{name:.*}_{version:.*}")
+    new TokenMatcher("{path:.*}/{name:.*}_{version:.*}")
   }
 
   static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
-    new TokenMatcher("/{path:${path}}/{name:${name}}.{extension:${extension}}")
+    new TokenMatcher("{path:${path}}/{name:${name}}.{extension:${extension}}")
   }
 
   static Matcher buildSimpleMatcher(final String path, final String name, final String extension, final AssetKind assetKind) {
-    buildTokenMatcherForPatternAndAssetKind("/{path:${path}}/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
+    buildTokenMatcherForPatternAndAssetKind("{path:${path}}/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
   }
 
   static Matcher buildSimpleMatcherAtRoot(final String name, final String extension, final AssetKind assetKind) {
-    buildTokenMatcherForPatternAndAssetKind("/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
+    buildTokenMatcherForPatternAndAssetKind("{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
   }
 
   static Matcher buildTokenMatcherForPatternAndAssetKind(final String pattern,
