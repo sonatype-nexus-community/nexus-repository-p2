@@ -27,9 +27,9 @@ import static org.sonatype.nexus.repository.search.DefaultComponentMetadataProdu
 import static org.sonatype.nexus.repository.search.DefaultComponentMetadataProducer.REGEX_KEY;
 
 /**
- * Defines which cleanup policy fields to display for Conda.
+ * Defines which cleanup policy fields to display for P2.
  *
- * @since 3.next
+ * @since 0.next
  */
 @Named(P2Format.NAME)
 @Singleton
