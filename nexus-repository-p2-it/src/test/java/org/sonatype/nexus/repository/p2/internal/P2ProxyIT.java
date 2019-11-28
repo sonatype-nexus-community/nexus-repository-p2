@@ -41,54 +41,6 @@ import static org.sonatype.nexus.testsuite.testsupport.FormatClientSupport.statu
 public class P2ProxyIT
     extends P2ITSupport
 {
-  private static final String FORMAT_NAME = "p2";
-
-  private static final String MIME_TYPE = "application/java-archive";
-
-  private static final String COMPONENT_NAME = "org.eclipse.cvs.source";
-
-  private static final String ARTIFACT_NAME = "artifacts";
-
-  private static final String ARTIFACT_WITHOUT_MIRROR_NAME = "artifacts-mirror-removed";
-
-  private static final String VERSION_NUMBER = "1.4.404.v20180330-0640";
-
-  private static final String EXTENSION_JAR = ".jar";
-
-  private static final String EXTENSION_XML = ".xml";
-
-  private static final String EXTENSION_XML_XZ = ".xml.xz";
-
-  private static final String PACKAGE_NAME = COMPONENT_NAME + "_" + VERSION_NUMBER + EXTENSION_JAR;
-
-  private static final String ARTIFACTS_BASE_PATH = "R-4.7-201706120950/";
-
-  private static final String ARTIFACT_JAR = ARTIFACT_NAME + EXTENSION_JAR;
-
-  private static final String ARTIFACT_XML = ARTIFACT_NAME + EXTENSION_XML;
-
-  private static final String ARTIFACT_XML_TEST_PATH = ARTIFACTS_BASE_PATH + ARTIFACT_XML;
-
-  private static final String ARTIFACT_XML_XZ = ARTIFACT_NAME + EXTENSION_XML_XZ;
-
-  private static final String ARTIFACT_XML_XZ_TEST_PATH = ARTIFACTS_BASE_PATH + ARTIFACT_XML_XZ;
-
-  private static final String ARTIFACT_WITHOUT_MIRROR_XML = ARTIFACT_WITHOUT_MIRROR_NAME + EXTENSION_XML;
-
-  private static final String INVALID_PACKAGE_NAME = COMPONENT_NAME + "-0.24.zip";
-
-  private static final String PACKAGE_BASE_PATH = "R-4.7.3a-201803300640/features/";
-
-  private static final String BAD_PATH = "/this/path/is/not/valid";
-
-  private static final String VALID_PACKAGE_URL = PACKAGE_BASE_PATH + PACKAGE_NAME;
-
-  private static final String P2_INDEX = "p2.index";
-
-  private static final String COMPOSITE_ARTIFACTS_JAR = "compositeArtifacts.jar";
-
-  private static final String INVALID_PACKAGE_URL = PACKAGE_BASE_PATH + INVALID_PACKAGE_NAME;
-
   private P2Client proxyClient;
 
   private Repository proxyRepo;
