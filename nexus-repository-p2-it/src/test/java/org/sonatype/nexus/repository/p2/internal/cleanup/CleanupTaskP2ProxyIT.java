@@ -103,13 +103,16 @@ public class CleanupTaskP2ProxyIT
   @Category(Unstable.class)
   @Test
   public void cleanupByRegex() throws Exception {
-    assertCleanupByRegex(proxyRepo, 1, ".*cvs.*\\.jar",
+    assertCleanupByRegex(proxyRepo, 1, ".*help.*\\.jar",
         () -> deployArtifacts(VALID_PACKAGE_URL), 1L);
   }
 
   private int deployArtifacts(final String... names) {
     try {
       for (String name : names) {
+        if (name.equals(VALID_PACKAGE_URL)) {
+          throw new NullPointerException();
+        }
         assertThat(status(proxyClient.get(name)),
             is(OK));
       }
