@@ -10,20 +10,29 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-Ext.define('NX.p2.app.PluginConfig', {
-  '@aggregate_priority': 100,
-
+Ext.define('NX.p2.controller.SearchP2', {
+  extend: 'NX.app.Controller',
   requires: [
-    'NX.p2.app.PluginStrings',
-    'NX.p2.util.P2RepositoryUrls'
+    'NX.I18n'
   ],
 
-  controllers:[
-    {
-      id: 'NX.p2.controller.SearchP2',
-      active: function () {
-        return NX.app.Application.bundleActive('org.sonatype.nexus.plugins.nexus-repository-p2');
-      }
-    }
-  ]
+  /**
+   * @override
+   */
+  init: function() {
+    var me = this,
+        search = me.getController('NX.coreui.controller.Search');
+
+    search.registerFilter({
+      id: 'p2',
+      name: 'p2',
+      text: NX.I18n.get('SearchP2_Text'),
+      description: NX.I18n.get('SearchP2_Description'),
+      readOnly: true,
+      criterias: [
+        {id: 'format', value: 'p2', hidden: true},
+        {id: 'name.raw'}
+      ]
+    }, me);
+  }
 });
