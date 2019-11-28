@@ -48,8 +48,6 @@ public class P2ITSupport
 
   public static final String PACKAGE_NAME = COMPONENT_NAME + "_" + VERSION_NUMBER + EXTENSION_JAR;
 
-  public static final String ARTIFACTS_BASE_PATH = "R-4.7-201706120950/";
-
   public static final String PACKAGE_BASE_PATH = "R-4.7.3a-201803300640/features/";
 
   public static final String HELP_COMPONENT_NAME = "org.eclipse.help.source";
@@ -59,6 +57,8 @@ public class P2ITSupport
   public static final String HELP_PACKAGE_NAME = HELP_COMPONENT_NAME + "_" + HELP_VERSION + EXTENSION_JAR;
 
   public static final String VALID_HELP_PACKAGE_URL = PACKAGE_BASE_PATH + HELP_PACKAGE_NAME;
+
+  public static final String ARTIFACTS_BASE_PATH = "R-4.7-201706120950/";
 
   public static final String ARTIFACT_JAR = ARTIFACT_NAME + EXTENSION_JAR;
 
