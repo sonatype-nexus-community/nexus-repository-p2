@@ -13,6 +13,7 @@
 package org.sonatype.nexus.repository.p2.internal.util;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.sonatype.goodies.testsupport.TestSupport;
@@ -74,6 +75,23 @@ public class P2PathUtilsTest
     String path = p2PathUtils.path("", fakeFileName);
     String expectedResult = fakeFileName;
     assertThat(path, is(equalTo(expectedResult)));
+  }
+
+  @Test
+  public void pathTestMaybePath() throws Exception {
+    final Map<String, String> someMap = new HashMap<>();
+    someMap.put("name", fakeFileName);
+    someMap.put("extension", fakeExtension);
+    when(state.getTokens())
+        .thenReturn(someMap);
+    String path = p2PathUtils.maybePath(state);
+
+    assertThat(path, is(equalTo(fakeFileName + "." + fakeExtension)));
+
+    someMap.put("path", fakePath);
+    path = p2PathUtils.maybePath(state);
+
+    assertThat(path, is(equalTo(fakePath + "/" + fakeFileName + "." + fakeExtension)));
   }
 
   @Test

@@ -40,6 +40,16 @@ public class P2PathUtils
     return match(state, "path");
   }
 
+
+  public String maybePath(final TokenMatcher.State state) {
+    checkNotNull(state);
+    String path = state.getTokens().get("path");
+    if (isNullOrEmpty(path)) {
+      return String.format("%s.%s", match(state, "name"), match(state, "extension"));
+    }
+    return String.format("%s/%s.%s", path, match(state, "name"), match(state, "extension"));
+  }
+
   /**
    * Utility method encapsulating getting a particular token by name from a matcher, including preconditions.
    */
