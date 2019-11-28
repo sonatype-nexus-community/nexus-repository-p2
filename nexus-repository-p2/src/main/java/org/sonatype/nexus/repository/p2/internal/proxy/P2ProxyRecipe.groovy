@@ -32,6 +32,7 @@ import org.sonatype.nexus.repository.p2.internal.AssetKind
 import org.sonatype.nexus.repository.p2.internal.P2Format
 import org.sonatype.nexus.repository.p2.internal.security.P2SecurityFacet
 import org.sonatype.nexus.repository.proxy.ProxyHandler
+import org.sonatype.nexus.repository.routing.RoutingRuleHandler
 import org.sonatype.nexus.repository.search.SearchFacet
 import org.sonatype.nexus.repository.security.SecurityHandler
 import org.sonatype.nexus.repository.storage.DefaultComponentMaintenanceImpl
@@ -145,6 +146,9 @@ class P2ProxyRecipe
   ProxyHandler proxyHandler
 
   @Inject
+  RoutingRuleHandler routingRuleHandler
+
+  @Inject
   P2ProxyRecipe(@Named(ProxyType.NAME) final Type type,
                 @Named(P2Format.NAME) final Format format) {
     super(type, format)
@@ -233,6 +237,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(P2_INDEX))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -247,6 +252,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPOSITE_ARTIFACTS_JAR))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -261,6 +267,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPOSITE_ARTIFACTS_XML))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -275,6 +282,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPOSITE_CONTENT_JAR))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -289,6 +297,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPOSITE_CONTENT_XML))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -303,6 +312,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_JAR))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -317,6 +327,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_XML))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -331,6 +342,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_XML_XZ))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -345,6 +357,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_JAR))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -359,6 +372,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_XML))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -373,6 +387,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_XML_XZ))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -387,6 +402,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPONENT_BINARY))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -401,6 +417,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPONENT_FEATURES))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -415,6 +432,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPONENT_PLUGINS))
         .handler(securityHandler)
+        .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
