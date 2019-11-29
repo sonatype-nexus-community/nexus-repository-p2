@@ -98,7 +98,6 @@ public class P2ProxyFacetImpl
       case CONTENT_JAR:
       case CONTENT_XML:
       case CONTENT_XML_XZ:
-        return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.filename(matcherState)));
       case P2_INDEX:
       case COMPOSITE_ARTIFACTS_JAR:
       case COMPOSITE_CONTENT_JAR:
@@ -126,10 +125,6 @@ public class P2ProxyFacetImpl
       case CONTENT_JAR:
       case CONTENT_XML:
       case CONTENT_XML_XZ:
-        return putMetadata(p2PathUtils.path(p2PathUtils.path(matcherState),
-            p2PathUtils.filename(matcherState)),
-            content,
-            assetKind);
       case P2_INDEX:
       case COMPOSITE_ARTIFACTS_JAR:
       case COMPOSITE_CONTENT_JAR:
