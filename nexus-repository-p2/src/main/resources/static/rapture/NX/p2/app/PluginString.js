@@ -25,8 +25,6 @@ Ext.define('NX.p2.app.PluginStrings', {
   ],
 
   keys: {
-    SearchP2_Group: 'R Repositories',
-    SearchP2_License_FieldLabel: 'License',
     SearchP2_Text: 'P2',
     SearchP2_Description: 'Search for components in P2 repositories',
   }
