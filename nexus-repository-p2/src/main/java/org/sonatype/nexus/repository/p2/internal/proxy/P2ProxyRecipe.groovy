@@ -240,6 +240,9 @@ class P2ProxyRecipe
      buildSimpleMatcherAtRoot(CONTENT_NAME, JAR_EXTENSION, CONTENT_JAR),
      buildSimpleMatcherAtRoot(CONTENT_NAME, XML_EXTENSION, CONTENT_XML),
      buildSimpleMatcherAtRoot(CONTENT_NAME, XML_XZ_EXTENSION, CONTENT_XML_XZ),
+     buildSimpleMatcherAtRoot(ARTIFACTS_NAME, JAR_EXTENSION, ARTIFACT_JAR),
+     buildSimpleMatcherAtRoot(ARTIFACTS_NAME, XML_EXTENSION, ARTIFACT_XML),
+     buildSimpleMatcherAtRoot(ARTIFACTS_NAME, XML_XZ_EXTENSION, ARTIFACT_XML_XZ),
 
      buildSimpleMatcher('.*', ARTIFACTS_NAME, JAR_EXTENSION, ARTIFACT_JAR),
      buildSimpleMatcher('.*', ARTIFACTS_NAME, XML_EXTENSION, ARTIFACT_XML),
