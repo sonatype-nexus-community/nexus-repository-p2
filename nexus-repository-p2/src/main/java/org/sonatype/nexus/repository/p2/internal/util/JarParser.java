@@ -12,12 +12,12 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 
 import javax.annotation.Nullable;
 import javax.inject.Named;
@@ -33,9 +33,6 @@ import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import static java.util.Objects.isNull;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static javax.xml.xpath.XPathConstants.NODE;
 
@@ -49,6 +46,7 @@ public class JarParser
   private static final String XML_VERSION_PATH = "feature/@version";
   private static final String XML_NAME_PATH = "feature/@id";
   private static final String XML_FILE_NAME = "feature.xml";
+  private static final String MANIFEST_FILE_NAME = "META-INF/MANIFEST.MF";
   public static final String UNKNOWN_VERSION = "unknown";
   private final DocumentBuilderFactory factory;
   private final DocumentBuilder builder;
@@ -63,52 +61,42 @@ public class JarParser
 
   public Optional<P2Attributes> getAttributesFromJarFile(final JarInputStream jis) throws Exception
   {
-    // First try Features XML
-    P2Attributes p2Attributes = getAttributesFromFeatureXML(jis);
+    P2Attributes p2Attributes = null;
+    JarEntry jarEntry;
+    while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
 
-    if(isNull(p2Attributes)) {
-      // Second try Manifest
-      p2Attributes = getAttributesFromManifest(jis);
+      // try Features XML
+      if (jarEntry.getName().equals(XML_FILE_NAME)) {
+        p2Attributes = getAttributesFromFeatureXML(jis);
+      }
+      // try Manifest
+      else if (jarEntry.getName().equals(MANIFEST_FILE_NAME)) {
+        p2Attributes = getAttributesFromManifest(jis);
+      }
     }
 
     return ofNullable(p2Attributes);
   }
 
-  private P2Attributes getAttributesFromFeatureXML(final JarInputStream jis) throws Exception {
-    try {
-      JarEntry jarEntry;
-      while ((jarEntry = jis.getNextJarEntry()) != null) {
-        if (jarEntry.getName().equals(XML_FILE_NAME)) {
-          return getValueFromJarEntry(jis);
-        }
-      }
-    }
-    catch (IOException ex) {
-      log.warn("Could not get version from file due to following exception: {}", ex.getMessage());
-    }
-
-    return null;
-  }
-
   private P2Attributes getAttributesFromManifest(final JarInputStream jis) throws Exception
   {
-    try {
-      return P2Attributes.builder()
-          .componentVersion(jis
-              .getManifest()
-              .getMainAttributes()
+    Attributes mainManifestAttributes = new Manifest(jis).getMainAttributes();
+    String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
+
+    return P2Attributes.builder()
+        .componentName(name)
+        .componentVersion(mainManifestAttributes
               .getValue("Bundle-Version"))
           .build();
-    }
-    catch (Exception ex) {
-      log.warn("Could not get version from Manifest due to following exception: {}", ex.getMessage());
-    }
+  }
 
-    return null;
+  private String normalizeName(final String name) {
+    //handle org.tigris.subversion.clientadapter.svnkit;singleton:=true
+    return name.substring(0, name.indexOf(";"));
   }
 
   @Nullable
-  private P2Attributes getValueFromJarEntry(final JarInputStream jis) throws Exception
+  private P2Attributes getAttributesFromFeatureXML(final JarInputStream jis) throws Exception
   {
     Document document = toDocument(jis);
 

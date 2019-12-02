@@ -39,6 +39,8 @@ public class JarParserTest
 
   private static final String JAR_NAME = "org.eclipse.core.runtime.feature_1.2.100.v20170912-1859.jar";
 
+  private static final String JAR_NAME_WITH_MANIFEST = "org.tigris.subversion.clientadapter.svnkit_1.7.5.jar";
+
   private static final String JAR_SOURCES_NAME = "org.eclipse.e4.tools.emf.editor3x.source_4.7.0.v20170712-1432.jar";
 
   private static final String NON_P2_JAR = "org.apache.karaf.http.core-3.0.0.rc1.jar.zip";
@@ -53,7 +55,17 @@ public class JarParserTest
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
     JarInputStream jis = new JarInputStream(tempBlob.get());
 
-    assertThat(getAttributesFromJarFile(jis).getComponentVersion(), is(equalTo("1.2.100.v20170912-1859")));
+    P2Attributes attributesFromJarFile = getAttributesFromJarFile(jis);
+    assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo("1.2.100.v20170912-1859")));
+  }
+
+  @Test
+  public void getVersionFromManifestJarInputStream() throws Exception {
+    when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME_WITH_MANIFEST));
+    JarInputStream jis = new JarInputStream(tempBlob.get());
+
+    P2Attributes attributesFromJarFile = getAttributesFromJarFile(jis);
+    assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo("1.7.5")));
   }
 
   @Test
