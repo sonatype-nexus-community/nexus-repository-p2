@@ -33,7 +33,6 @@ import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import static java.util.Optional.ofNullable;
 import static javax.xml.xpath.XPathConstants.NODE;
 
 /**
@@ -44,11 +43,15 @@ public class JarParser
     extends ComponentSupport
 {
   private static final String XML_VERSION_PATH = "feature/@version";
+
   private static final String XML_NAME_PATH = "feature/@id";
+
   private static final String XML_FILE_NAME = "feature.xml";
-  private static final String MANIFEST_FILE_NAME = "META-INF/MANIFEST.MF";
-  public static final String UNKNOWN_VERSION = "unknown";
+
+  private static final String MANIFEST_FILE_PREFIX = "META-INF/";
+
   private final DocumentBuilderFactory factory;
+
   private final DocumentBuilder builder;
 
   public JarParser() throws Exception {
@@ -59,51 +62,55 @@ public class JarParser
     this.builder = factory.newDocumentBuilder();
   }
 
-  public Optional<P2Attributes> getAttributesFromJarFile(final JarInputStream jis) throws Exception
+  public Optional<P2Attributes> getAttributesFromManifest(final JarInputStream jis) throws Exception
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
     while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
+      if (jarEntry.getName().startsWith(MANIFEST_FILE_PREFIX)) {
 
-      // try Features XML
-      if (jarEntry.getName().equals(XML_FILE_NAME)) {
-        p2Attributes = getAttributesFromFeatureXML(jis);
-      }
-      // try Manifest
-      else if (jarEntry.getName().equals(MANIFEST_FILE_NAME)) {
-        p2Attributes = getAttributesFromManifest(jis);
+        Manifest manifest = jis.getManifest();
+        if (manifest == null) {
+          manifest = new Manifest(jis);
+        }
+        Attributes mainManifestAttributes = manifest.getMainAttributes();
+        String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
+
+        p2Attributes = P2Attributes.builder()
+            .componentName(name)
+            .componentVersion(mainManifestAttributes
+                .getValue("Bundle-Version"))
+            .build();
       }
     }
 
-    return ofNullable(p2Attributes);
-  }
-
-  private P2Attributes getAttributesFromManifest(final JarInputStream jis) throws Exception
-  {
-    Attributes mainManifestAttributes = new Manifest(jis).getMainAttributes();
-    String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
-
-    return P2Attributes.builder()
-        .componentName(name)
-        .componentVersion(mainManifestAttributes
-              .getValue("Bundle-Version"))
-          .build();
+    return Optional.ofNullable(p2Attributes);
   }
 
   private String normalizeName(final String name) {
+    String resultName = name;
     //handle org.tigris.subversion.clientadapter.svnkit;singleton:=true
-    return name.substring(0, name.indexOf(";"));
+    if (name.contains(";")) {
+      resultName = name.substring(0, name.indexOf(";"));
+    }
+    return resultName;
   }
 
-  @Nullable
-  private P2Attributes getAttributesFromFeatureXML(final JarInputStream jis) throws Exception
+  public Optional<P2Attributes> getAttributesFromFeatureXML(final JarInputStream jis) throws Exception
   {
-    Document document = toDocument(jis);
+    P2Attributes p2Attributes = null;
+    JarEntry jarEntry;
+    while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
+      if (jarEntry.getName().equals(XML_FILE_NAME)) {
+        Document document = toDocument(jis);
 
-    return P2Attributes.builder()
-        .componentName(extractValueFromDocument(XML_NAME_PATH, document))
-        .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
-        .build();
+        p2Attributes = P2Attributes.builder()
+            .componentName(extractValueFromDocument(XML_NAME_PATH, document))
+            .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
+            .build();
+      }
+    }
+    return Optional.ofNullable(p2Attributes);
   }
 
   private Document toDocument(final InputStream is) throws Exception
@@ -112,8 +119,9 @@ public class JarParser
   }
 
   @Nullable
-  private String extractValueFromDocument(final String path,
-                                          final Document from)
+  private String extractValueFromDocument(
+      final String path,
+      final Document from)
   {
     try {
       XPath xPath = XPathFactory.newInstance().newXPath();

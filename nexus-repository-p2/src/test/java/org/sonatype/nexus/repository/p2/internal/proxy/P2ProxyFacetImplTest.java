@@ -12,6 +12,7 @@
  */
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
+import java.util.Optional;
 import java.util.jar.JarInputStream;
 
 import org.sonatype.goodies.testsupport.TestSupport;
@@ -70,7 +71,7 @@ public class P2ProxyFacetImplTest
   @Test
   public void getVersion() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    when(jarParser.getAttributesFromJarFile(any()))
+    when(jarParser.getAttributesFromFeatureXML(any()))
         .thenReturn(of(buildWithVersionAndExtension()));
 
     P2Attributes p2Attributes = underTest
@@ -81,7 +82,7 @@ public class P2ProxyFacetImplTest
 
   @Test
   public void getUnknownVersion() throws Exception {
-    when(jarParser.getAttributesFromJarFile(any())).thenThrow(new Exception());
+    when(jarParser.getAttributesFromFeatureXML(any())).thenReturn(Optional.empty());
 
     P2Attributes p2Attributes = buildWithVersionAndExtension();
     assertThat(underTest.mergeAttributesFromTempBlob(tempBlob, p2Attributes), is(equalTo(p2Attributes)));

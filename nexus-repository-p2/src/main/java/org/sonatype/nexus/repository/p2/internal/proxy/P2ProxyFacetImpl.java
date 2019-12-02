@@ -13,6 +13,7 @@
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.jar.JarInputStream;
 
 import javax.annotation.Nonnull;
@@ -301,18 +302,31 @@ public class P2ProxyFacetImpl
   }
 
   @VisibleForTesting
-  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes p2Attributes) {
-    try (JarInputStream jis = getJar(tempBlob, p2Attributes.getExtension())) {
-      return jarParser
-          .getAttributesFromJarFile(jis)
-          .map(jarP2Attributes -> P2Attributes.builder().merge(p2Attributes, jarP2Attributes).build())
-          .orElse(p2Attributes);
+  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes sourceP2Attributes) {
+    checkNotNull(sourceP2Attributes.getExtension());
+
+    Optional<P2Attributes> p2Attributes = Optional.empty();
+    // first try Features XML
+    try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
+      p2Attributes = jarParser.getAttributesFromFeatureXML(jis);
     }
     catch (Exception ex) {
-      log.warn("Unable to get version from JarInputStream due to following exception: {}", ex.getMessage());
+      log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
     }
 
-    return p2Attributes;
+    // second try Manifest
+    try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
+      if (!p2Attributes.isPresent()) {
+        p2Attributes = jarParser.getAttributesFromManifest(jis);
+      }
+    }
+    catch (Exception ex) {
+      log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());
+    }
+
+    return p2Attributes
+          .map(jarP2Attributes -> P2Attributes.builder().merge(sourceP2Attributes, jarP2Attributes).build())
+          .orElse(sourceP2Attributes);
   }
 
   @VisibleForTesting
