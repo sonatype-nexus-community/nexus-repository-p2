@@ -30,6 +30,7 @@ import javax.xml.xpath.XPathFactory;
 import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 
+import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -44,7 +45,11 @@ public class JarParser
 {
   private static final String XML_VERSION_PATH = "feature/@version";
 
-  private static final String XML_NAME_PATH = "feature/@id";
+  private static final String XML_PLUGIN_NAME_PATH = "feature/@plugin";
+
+  private static final String XML_GROUP_NAME_PATH = "feature/@id";
+
+  private static final String XML_NAME_PATH = "feature/@label";
 
   private static final String XML_FILE_NAME = "feature.xml";
 
@@ -77,7 +82,9 @@ public class JarParser
         String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
 
         p2Attributes = P2Attributes.builder()
-            .componentName(name)
+            .groupName(name)
+            .componentName(mainManifestAttributes
+                .getValue("Bundle-Name"))
             .componentVersion(mainManifestAttributes
                 .getValue("Bundle-Version"))
             .build();
@@ -104,7 +111,12 @@ public class JarParser
       if (jarEntry.getName().equals(XML_FILE_NAME)) {
         Document document = toDocument(jis);
 
+        String groupName = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
+        if (groupName == null) {
+          groupName = extractValueFromDocument(XML_GROUP_NAME_PATH, document);
+        }
         p2Attributes = P2Attributes.builder()
+            .groupName(groupName)
             .componentName(extractValueFromDocument(XML_NAME_PATH, document))
             .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
             .build();
@@ -126,11 +138,13 @@ public class JarParser
     try {
       XPath xPath = XPathFactory.newInstance().newXPath();
       Node node = (Node) xPath.evaluate(path, from, NODE);
-      return node.getNodeValue();
+      if (node != null) {
+        return node.getNodeValue();
+      }
     }
     catch (XPathExpressionException e) {
       log.warn("Could not extract value, failed with exception: {}", e.getMessage());
-      return null;
     }
+    return null;
   }
 }

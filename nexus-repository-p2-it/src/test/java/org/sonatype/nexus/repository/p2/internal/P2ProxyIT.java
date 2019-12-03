@@ -45,7 +45,9 @@ public class P2ProxyIT
 
   private static final String MIME_TYPE = "application/java-archive";
 
-  private static final String COMPONENT_NAME = "org.eclipse.cvs.source";
+  private static final String COMPONENT_NAME = "%featureName";
+
+  private static final String COMPONENT_GROUP_NAME = "org.eclipse.cvs.source";
 
   private static final String ARTIFACT_NAME = "artifacts";
 
@@ -59,7 +61,7 @@ public class P2ProxyIT
 
   private static final String EXTENSION_XML_XZ = ".xml.xz";
 
-  private static final String PACKAGE_NAME = COMPONENT_NAME + "_" + VERSION_NUMBER + EXTENSION_JAR;
+  private static final String PACKAGE_NAME = COMPONENT_GROUP_NAME + "_" + VERSION_NUMBER + EXTENSION_JAR;
 
   private static final String ARTIFACTS_BASE_PATH = "R-4.7-201706120950/";
 
@@ -75,7 +77,7 @@ public class P2ProxyIT
 
   private static final String ARTIFACT_WITHOUT_MIRROR_XML = ARTIFACT_WITHOUT_MIRROR_NAME + EXTENSION_XML;
 
-  private static final String INVALID_PACKAGE_NAME = COMPONENT_NAME + "-0.24.zip";
+  private static final String INVALID_PACKAGE_NAME = COMPONENT_GROUP_NAME + "-0.24.zip";
 
   private static final String PACKAGE_BASE_PATH = "R-4.7.3a-201803300640/features/";
 
@@ -198,7 +200,7 @@ public class P2ProxyIT
 
     final Component component = findComponent(proxyRepo, COMPONENT_NAME);
     assertThat(component.version(), is(equalTo(VERSION_NUMBER)));
-    assertThat(component.group(), is(equalTo(null)));
+    assertThat(component.group(), is(equalTo("org.eclipse.cvs.source")));
   }
 
   @Test

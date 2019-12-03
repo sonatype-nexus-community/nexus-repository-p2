@@ -31,6 +31,8 @@ import static java.lang.String.join;
 @Singleton
 public class P2PathUtils
 {
+  public final static String SLASH = "/";
+
   private final static String NAME_VERSION_SPLITTER = "_";
 
   /**
@@ -148,6 +150,7 @@ public class P2PathUtils
 
   public P2Attributes toP2AttributesBinary(final TokenMatcher.State state) {
     return P2Attributes.builder()
+        .groupName(name(state))
         .componentName(name(state))
         .componentVersion(version(state))
         .path(binaryPath(path(state), name(state), version(state)))

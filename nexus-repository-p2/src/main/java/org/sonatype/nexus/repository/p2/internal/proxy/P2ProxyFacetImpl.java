@@ -45,6 +45,7 @@ import org.sonatype.nexus.repository.view.Context;
 import org.sonatype.nexus.repository.p2.internal.AssetKind;
 import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
+import org.sonatype.nexus.transaction.Transactional;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -220,7 +221,6 @@ public class P2ProxyFacetImpl
     }
   }
 
-
   private Content doPutComponent(P2Attributes p2Attributes,
                                    final TempBlob componentContent,
                                    final Payload payload,
@@ -239,14 +239,15 @@ public class P2ProxyFacetImpl
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
 
-    Component component = p2DataAccess.findComponent(tx,
+    Component component = p2DataAccess.findComponentByGroupName(tx,
         getRepository(),
-        p2Attributes.getComponentName(),
+        p2Attributes.getGroupName(),
         p2Attributes.getComponentVersion());
 
     if (component == null) {
       component = tx.createComponent(bucket, getRepository().getFormat())
           .name(p2Attributes.getComponentName())
+          .group(p2Attributes.getGroupName())
           .version(p2Attributes.getComponentVersion());
     }
     tx.saveComponent(component);
