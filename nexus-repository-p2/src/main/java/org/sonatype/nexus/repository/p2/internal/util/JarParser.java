@@ -114,7 +114,7 @@ public class JarParser
     JarEntry jarEntry;
     try {
       while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
-        if (jarEntry.getName().equals(XML_FILE_NAME)) {
+        if (XML_FILE_NAME.equals(jarEntry.getName())) {
           Document document = toDocument(jis);
 
           String groupName = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
