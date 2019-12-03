@@ -317,13 +317,13 @@ public class P2ProxyFacetImpl
     }
 
     // second try Manifest
-    try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-      if (!p2Attributes.isPresent()) {
+    if (!p2Attributes.isPresent()) {
+      try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
         p2Attributes = jarParser.getAttributesFromManifest(jis);
       }
-    }
-    catch (IOException | NullPointerException ex) {
-      log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());
+      catch (IOException | NullPointerException ex) {
+        log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());
+      }
     }
 
     return p2Attributes
