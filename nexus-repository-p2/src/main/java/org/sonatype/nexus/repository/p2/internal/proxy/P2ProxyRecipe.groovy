@@ -32,6 +32,7 @@ import org.sonatype.nexus.repository.p2.internal.AssetKind
 import org.sonatype.nexus.repository.p2.internal.P2Format
 import org.sonatype.nexus.repository.p2.internal.security.P2SecurityFacet
 import org.sonatype.nexus.repository.proxy.ProxyHandler
+import org.sonatype.nexus.repository.purge.PurgeUnusedFacet
 import org.sonatype.nexus.repository.routing.RoutingRuleHandler
 import org.sonatype.nexus.repository.search.SearchFacet
 import org.sonatype.nexus.repository.security.SecurityHandler
@@ -39,7 +40,6 @@ import org.sonatype.nexus.repository.storage.DefaultComponentMaintenanceImpl
 import org.sonatype.nexus.repository.storage.StorageFacet
 import org.sonatype.nexus.repository.storage.UnitOfWorkHandler
 import org.sonatype.nexus.repository.types.ProxyType
-import org.sonatype.nexus.repository.purge.PurgeUnusedFacet
 import org.sonatype.nexus.repository.view.ConfigurableViewFacet
 import org.sonatype.nexus.repository.view.Context
 import org.sonatype.nexus.repository.view.Matcher
@@ -50,16 +50,30 @@ import org.sonatype.nexus.repository.view.handlers.BrowseUnsupportedHandler
 import org.sonatype.nexus.repository.view.handlers.ConditionalRequestHandler
 import org.sonatype.nexus.repository.view.handlers.ContentHeadersHandler
 import org.sonatype.nexus.repository.view.handlers.ExceptionHandler
+import org.sonatype.nexus.repository.view.handlers.FormatHighAvailabilitySupportHandler
 import org.sonatype.nexus.repository.view.handlers.HandlerContributor
+import org.sonatype.nexus.repository.view.handlers.HighAvailabilitySupportChecker
 import org.sonatype.nexus.repository.view.handlers.TimingHandler
 import org.sonatype.nexus.repository.view.matchers.ActionMatcher
 import org.sonatype.nexus.repository.view.matchers.RegexMatcher
-import org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher
 
 import static org.sonatype.nexus.repository.http.HttpMethods.GET
 import static org.sonatype.nexus.repository.http.HttpMethods.HEAD
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.*
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML_XZ
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_FEATURES
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_PLUGINS
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML_XZ
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.P2_INDEX
 import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.and
 import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.or
 
@@ -74,12 +88,19 @@ class P2ProxyRecipe
   public static final String NAME = 'p2-proxy'
 
   private static final CONTENT_NAME = "content"
+
   private static final ARTIFACTS_NAME = "artifacts"
+
   private static final COMPOSITE_ARTIFACTS = "compositeArtifacts"
+
   private static final COMPOSITE_CONTENT = "compositeContent"
+
   private static final XML_EXTENSION = ".*[xX][mM][lL]"
+
   private static final XML_XZ_EXTENSION = "${XML_EXTENSION}\\.[xX][zZ]"
+
   private static final JAR_EXTENSION = ".*[jJ][aA][rR]"
+
   private static final INDEX_EXTENSION = ".*[iI][nN][dD][eE][xX]"
 
   @Inject
@@ -149,8 +170,15 @@ class P2ProxyRecipe
   RoutingRuleHandler routingRuleHandler
 
   @Inject
+  FormatHighAvailabilitySupportHandler highAvailabilitySupportHandler;
+
+  @Inject
+  HighAvailabilitySupportChecker highAvailabilitySupportChecker
+
+  @Inject
   P2ProxyRecipe(@Named(ProxyType.NAME) final Type type,
-                @Named(P2Format.NAME) final Format format) {
+                @Named(P2Format.NAME) final Format format)
+  {
     super(type, format)
   }
 
@@ -211,7 +239,10 @@ class P2ProxyRecipe
     return tokenMatcherForBinary()
   }
 
-  static Builder matchRequestWithExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
+  static Builder matchRequestWithExtensionAndName(final String extension,
+                                                  final String name = '.+',
+                                                  final String path = '.+')
+  {
     new Builder().matcher(
         and(
             new ActionMatcher(GET, HEAD),
@@ -219,7 +250,10 @@ class P2ProxyRecipe
         ))
   }
 
-  static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
+  static TokenMatcher tokenMatcherForExtensionAndName(final String extension,
+                                                      final String name = '.+',
+                                                      final String path = '.+')
+  {
     new TokenMatcher("{path:${path}}/{name:${name}}.{extension:${extension}}")
   }
 
@@ -237,6 +271,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(P2_INDEX))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -251,6 +286,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPOSITE_ARTIFACTS_JAR))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -265,6 +301,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPOSITE_ARTIFACTS_XML))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -279,6 +316,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPOSITE_CONTENT_JAR))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -293,6 +331,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPOSITE_CONTENT_XML))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -307,6 +346,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_JAR))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -321,6 +361,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_XML))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -335,6 +376,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(ARTIFACT_XML_XZ))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -349,6 +391,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_JAR))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -363,6 +406,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_XML))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -377,6 +421,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(CONTENT_XML_XZ))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
         .handler(negativeCacheHandler)
@@ -391,6 +436,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPONENT_BINARY))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
@@ -406,6 +452,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPONENT_FEATURES))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
@@ -421,6 +468,7 @@ class P2ProxyRecipe
         .handler(timingHandler)
         .handler(assetKindHandler.rcurry(COMPONENT_PLUGINS))
         .handler(securityHandler)
+        .handler(highAvailabilitySupportHandler)
         .handler(routingRuleHandler)
         .handler(exceptionHandler)
         .handler(handlerContributor)
@@ -437,5 +485,10 @@ class P2ProxyRecipe
     facet.configure(builder.create())
 
     return facet
+  }
+
+  @Override
+  boolean isFeatureEnabled() {
+    return highAvailabilitySupportChecker.isSupported(getFormat().getValue());
   }
 }
