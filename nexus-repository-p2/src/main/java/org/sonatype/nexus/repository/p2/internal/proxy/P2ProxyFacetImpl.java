@@ -23,6 +23,7 @@ import javax.inject.Named;
 
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
+import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.p2.internal.util.JarParser;
@@ -304,7 +305,7 @@ public class P2ProxyFacetImpl
   }
 
   @VisibleForTesting
-  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes sourceP2Attributes) {
+  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes sourceP2Attributes) throws IOException {
     checkNotNull(sourceP2Attributes.getExtension());
 
     Optional<P2Attributes> p2Attributes = Optional.empty();
@@ -312,7 +313,7 @@ public class P2ProxyFacetImpl
     try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
       p2Attributes = jarParser.getAttributesFromFeatureXML(jis);
     }
-    catch (IOException | SAXException | NullPointerException ex) {
+    catch (InvalidMetadataException ex) {
       log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
     }
 
@@ -321,7 +322,7 @@ public class P2ProxyFacetImpl
       try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
         p2Attributes = jarParser.getAttributesFromManifest(jis);
       }
-      catch (IOException | NullPointerException ex) {
+      catch (InvalidMetadataException ex) {
         log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());
       }
     }

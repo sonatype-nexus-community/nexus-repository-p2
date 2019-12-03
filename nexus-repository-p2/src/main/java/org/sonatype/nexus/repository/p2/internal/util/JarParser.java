@@ -29,6 +29,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.sonatype.goodies.common.ComponentSupport;
+import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 
 import org.w3c.dom.Document;
@@ -68,28 +69,33 @@ public class JarParser
     this.builder = factory.newDocumentBuilder();
   }
 
-  public Optional<P2Attributes> getAttributesFromManifest(final JarInputStream jis) throws IOException
+  public Optional<P2Attributes> getAttributesFromManifest(final JarInputStream jis) throws InvalidMetadataException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
-    while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
-      if (jarEntry.getName().startsWith(MANIFEST_FILE_PREFIX)) {
+    try {
+      while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
+        if (jarEntry.getName().startsWith(MANIFEST_FILE_PREFIX)) {
 
-        Manifest manifest = jis.getManifest();
-        if (manifest == null) {
-          manifest = new Manifest(jis);
+          Manifest manifest = jis.getManifest();
+          if (manifest == null) {
+            manifest = new Manifest(jis);
+          }
+          Attributes mainManifestAttributes = manifest.getMainAttributes();
+          String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
+
+          p2Attributes = P2Attributes.builder()
+              .groupName(name)
+              .componentName(mainManifestAttributes
+                  .getValue("Bundle-Name"))
+              .componentVersion(mainManifestAttributes
+                  .getValue("Bundle-Version"))
+              .build();
         }
-        Attributes mainManifestAttributes = manifest.getMainAttributes();
-        String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
-
-        p2Attributes = P2Attributes.builder()
-            .groupName(name)
-            .componentName(mainManifestAttributes
-                .getValue("Bundle-Name"))
-            .componentVersion(mainManifestAttributes
-                .getValue("Bundle-Version"))
-            .build();
       }
+    }
+    catch (IOException | NullPointerException ex) {
+      throw new InvalidMetadataException();
     }
 
     return Optional.ofNullable(p2Attributes);
@@ -98,30 +104,33 @@ public class JarParser
   private String normalizeName(final String name) {
     String resultName = name;
     //handle org.tigris.subversion.clientadapter.svnkit;singleton:=true
-    if (name.contains(";")) {
-      resultName = name.substring(0, name.indexOf(";"));
-    }
+    resultName = name.split(";")[0];
     return resultName;
   }
 
-  public Optional<P2Attributes> getAttributesFromFeatureXML(final JarInputStream jis) throws IOException, SAXException
+  public Optional<P2Attributes> getAttributesFromFeatureXML(final JarInputStream jis) throws InvalidMetadataException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
-    while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
-      if (jarEntry.getName().equals(XML_FILE_NAME)) {
-        Document document = toDocument(jis);
+    try {
+      while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
+        if (jarEntry.getName().equals(XML_FILE_NAME)) {
+          Document document = toDocument(jis);
 
-        String groupName = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
-        if (groupName == null) {
-          groupName = extractValueFromDocument(XML_GROUP_NAME_PATH, document);
+          String groupName = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
+          if (groupName == null) {
+            groupName = extractValueFromDocument(XML_GROUP_NAME_PATH, document);
+          }
+          p2Attributes = P2Attributes.builder()
+              .groupName(groupName)
+              .componentName(extractValueFromDocument(XML_NAME_PATH, document))
+              .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
+              .build();
         }
-        p2Attributes = P2Attributes.builder()
-            .groupName(groupName)
-            .componentName(extractValueFromDocument(XML_NAME_PATH, document))
-            .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
-            .build();
       }
+    }
+    catch (IOException | NullPointerException | SAXException ex) {
+      throw new InvalidMetadataException();
     }
     return Optional.ofNullable(p2Attributes);
   }

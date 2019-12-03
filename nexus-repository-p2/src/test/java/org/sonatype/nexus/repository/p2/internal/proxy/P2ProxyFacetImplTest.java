@@ -12,6 +12,7 @@
  */
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.jar.JarInputStream;
 
@@ -33,6 +34,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.when;
 
@@ -80,12 +82,13 @@ public class P2ProxyFacetImplTest
     assertThat(p2Attributes.getComponentVersion(), is(equalTo(FAKE_VERSION)));
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void getUnknownVersion() throws Exception {
     when(jarParser.getAttributesFromFeatureXML(any())).thenReturn(Optional.empty());
+    when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
     P2Attributes p2Attributes = buildWithVersionAndExtension();
-    assertThat(underTest.mergeAttributesFromTempBlob(tempBlob, p2Attributes), is(equalTo(p2Attributes)));
+    underTest.mergeAttributesFromTempBlob(tempBlob, p2Attributes);
   }
 
   @Test
@@ -97,6 +100,8 @@ public class P2ProxyFacetImplTest
   @Test
   public void getJarWithPackGz() throws Exception {
     when(tempBlobConverter.getJarFromPackGz(tempBlob)).thenReturn(getClass().getResourceAsStream(JAR_NAME));
+    when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
+
     assertThat(underTest.getJar(tempBlob, "pack.gz"), is(instanceOf(JarInputStream.class)));
   }
 

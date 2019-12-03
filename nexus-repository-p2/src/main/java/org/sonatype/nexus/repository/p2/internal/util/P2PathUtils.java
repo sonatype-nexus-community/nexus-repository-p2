@@ -31,7 +31,7 @@ import static java.lang.String.join;
 @Singleton
 public class P2PathUtils
 {
-  public final static String SLASH = "/";
+  public final static String DIVIDER = "/";
 
   private final static String NAME_VERSION_SPLITTER = "_";
 

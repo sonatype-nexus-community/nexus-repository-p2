@@ -25,26 +25,24 @@ import org.sonatype.nexus.repository.browse.BrowsePaths;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
 
-import com.google.common.base.Splitter;
 import org.apache.commons.lang3.StringUtils;
 
-import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.SLASH;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
 
 /**
- * @since 3.17
+ * @since 0.next
  */
 @Singleton
 @Named(P2Format.NAME)
 public class P2BrowseNodeGenerator
-    implements
-    BrowseNodeGenerator
+    implements BrowseNodeGenerator
 {
   @Override
   public List<BrowsePaths> computeAssetPaths(final Asset asset, @Nullable final Component component) {
     if (component != null) {
       List<BrowsePaths> paths = computeComponentPaths(asset, component);
       String assetName =
-          asset.name().contains(SLASH) ? asset.name().substring(asset.name().lastIndexOf(SLASH) + 1) : asset.name();
+          asset.name().contains(DIVIDER) ? asset.name().substring(asset.name().lastIndexOf(DIVIDER) + 1) : asset.name();
       BrowsePaths.appendPath(paths, assetName);
       return paths;
     }
@@ -55,7 +53,8 @@ public class P2BrowseNodeGenerator
   @Override
   public List<BrowsePaths> computeComponentPaths(final Asset asset, final Component component) {
     String pathPrefix =
-        asset.name().contains(SLASH) ? asset.name().substring(0, asset.name().lastIndexOf(SLASH)) : StringUtils.EMPTY;
+        asset.name().contains(DIVIDER) ? asset.name()
+            .substring(0, asset.name().lastIndexOf(DIVIDER)) : StringUtils.EMPTY;
     List<String> pathParts = new ArrayList<>();
     pathParts.add(component.name());
     pathParts.add(component.version());
