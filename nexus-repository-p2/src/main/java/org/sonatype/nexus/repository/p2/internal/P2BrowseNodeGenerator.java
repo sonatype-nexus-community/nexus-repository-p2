@@ -54,13 +54,13 @@ public class P2BrowseNodeGenerator
 
   @Override
   public List<BrowsePaths> computeComponentPaths(final Asset asset, final Component component) {
-    String pathAppendix =
+    String pathPrefix =
         asset.name().contains(SLASH) ? asset.name().substring(0, asset.name().lastIndexOf(SLASH)) : StringUtils.EMPTY;
     List<String> pathParts = new ArrayList<>();
     pathParts.add(component.name());
     pathParts.add(component.version());
-    if (!pathAppendix.isEmpty()) {
-      pathParts.add(pathAppendix);
+    if (!pathPrefix.isEmpty()) {
+      pathParts.add(pathPrefix);
     }
     return BrowsePaths.fromPaths(pathParts, true);
   }

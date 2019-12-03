@@ -12,6 +12,7 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
 import java.util.jar.Attributes;
@@ -30,9 +31,9 @@ import javax.xml.xpath.XPathFactory;
 import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 
-import org.apache.commons.lang3.StringUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
 import static javax.xml.xpath.XPathConstants.NODE;
 
@@ -67,7 +68,7 @@ public class JarParser
     this.builder = factory.newDocumentBuilder();
   }
 
-  public Optional<P2Attributes> getAttributesFromManifest(final JarInputStream jis) throws Exception
+  public Optional<P2Attributes> getAttributesFromManifest(final JarInputStream jis) throws IOException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
@@ -103,7 +104,7 @@ public class JarParser
     return resultName;
   }
 
-  public Optional<P2Attributes> getAttributesFromFeatureXML(final JarInputStream jis) throws Exception
+  public Optional<P2Attributes> getAttributesFromFeatureXML(final JarInputStream jis) throws IOException, SAXException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
@@ -125,7 +126,7 @@ public class JarParser
     return Optional.ofNullable(p2Attributes);
   }
 
-  private Document toDocument(final InputStream is) throws Exception
+  private Document toDocument(final InputStream is) throws IOException, SAXException
   {
     return builder.parse(is);
   }

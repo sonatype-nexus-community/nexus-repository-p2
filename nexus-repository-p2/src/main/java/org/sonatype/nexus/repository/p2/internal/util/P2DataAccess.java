@@ -12,8 +12,12 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+
+import javax.annotation.Nullable;
+import javax.inject.Named;
 
 import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.common.collect.AttributesMap;
@@ -30,18 +34,13 @@ import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.payloads.BlobPayload;
 
-import javax.annotation.Nullable;
-import javax.inject.Named;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 
 import static java.util.Collections.singletonList;
 import static org.sonatype.nexus.common.hash.HashAlgorithm.SHA1;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_GROUP;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
-import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_NAME;
 
 /**
  * Shared code between P2 facets.
@@ -58,30 +57,6 @@ public class P2DataAccess
    */
   @Nullable
   public Component findComponent(final StorageTx tx,
-                                 final Repository repository,
-                                 final String name,
-                                 final String version)
-  {
-    Iterable<Component> components = tx.findComponents(
-        Query.builder()
-            .where(P_NAME).eq(name)
-            .and(P_VERSION).eq(version)
-            .build(),
-        singletonList(repository)
-    );
-    if (components.iterator().hasNext()) {
-      return components.iterator().next();
-    }
-    return null;
-  }
-
-  /**
-   * Find a component by its name and tag (version)
-   *
-   * @return found component of null if not found
-   */
-  @Nullable
-  public Component findComponentByGroupName(final StorageTx tx,
                                  final Repository repository,
                                  final String groupName,
                                  final String version)

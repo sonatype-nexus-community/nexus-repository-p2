@@ -12,6 +12,7 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
+import java.io.IOException;
 import java.util.jar.JarInputStream;
 
 import org.sonatype.goodies.testsupport.TestSupport;
@@ -21,6 +22,7 @@ import org.sonatype.nexus.repository.storage.TempBlob;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.xml.sax.SAXException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -85,14 +87,15 @@ public class JarParserTest
   }
 
   @Test
-  public void getNoneP2FileFromJarInputStream() throws Exception {
+  public void getNoneP2FileFromJarInputStream() throws IOException, SAXException {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(NON_P2_JAR));
     JarInputStream jis = new JarInputStream(tempBlob.get());
 
     assertThat(underTest.getAttributesFromFeatureXML(jis).isPresent(), is(false));
   }
 
-  private P2Attributes getAttributesFromJarFile(JarInputStream jis) throws Exception {
+  private P2Attributes getAttributesFromJarFile(JarInputStream jis) throws IOException
+  {
     return underTest.getAttributesFromManifest(jis).orElseThrow(() -> new AssertionError("No Attributes found to use"));
   }
 }

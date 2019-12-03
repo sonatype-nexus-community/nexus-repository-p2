@@ -49,6 +49,7 @@ import org.sonatype.nexus.transaction.Transactional;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.xml.sax.SAXException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
@@ -239,7 +240,7 @@ public class P2ProxyFacetImpl
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
 
-    Component component = p2DataAccess.findComponentByGroupName(tx,
+    Component component = p2DataAccess.findComponent(tx,
         getRepository(),
         p2Attributes.getGroupName(),
         p2Attributes.getComponentVersion());
@@ -311,7 +312,7 @@ public class P2ProxyFacetImpl
     try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
       p2Attributes = jarParser.getAttributesFromFeatureXML(jis);
     }
-    catch (Exception ex) {
+    catch (IOException | SAXException | NullPointerException ex) {
       log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
     }
 
@@ -321,7 +322,7 @@ public class P2ProxyFacetImpl
         p2Attributes = jarParser.getAttributesFromManifest(jis);
       }
     }
-    catch (Exception ex) {
+    catch (IOException | NullPointerException ex) {
       log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());
     }
 

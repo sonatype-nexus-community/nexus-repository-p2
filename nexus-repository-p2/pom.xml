@@ -43,6 +43,12 @@
       <artifactId>xz</artifactId>
       <version>1.8</version>
     </dependency>
+    <dependency>
+      <groupId>org.sonatype.nexus</groupId>
+      <artifactId>nexus-repository</artifactId>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
   <build>
     <plugins>
