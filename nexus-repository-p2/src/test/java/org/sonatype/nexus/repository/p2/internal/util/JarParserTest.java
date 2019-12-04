@@ -85,7 +85,7 @@ public class JarParserTest
   }
 
   @Test
-  public void getExceptionFromJarInputStream() throws Exception {
+  public void getEmptyAttributesFromJarInputStream() throws Exception {
     JarInputStream jis = mock(JarInputStream.class);
     when(jis.getNextJarEntry()).thenReturn(null);
 
