@@ -39,8 +39,8 @@ import com.google.common.collect.ImmutableList;
 
 import static java.util.Collections.singletonList;
 import static org.sonatype.nexus.common.hash.HashAlgorithm.SHA1;
-import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_GROUP;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
+import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_NAME;
 
 /**
  * Shared code between P2 facets.
@@ -58,12 +58,12 @@ public class P2DataAccess
   @Nullable
   public Component findComponent(final StorageTx tx,
                                  final Repository repository,
-                                 final String groupName,
+                                 final String name,
                                  final String version)
   {
     Iterable<Component> components = tx.findComponents(
         Query.builder()
-            .where(P_GROUP).eq(groupName)
+            .where(P_NAME).eq(name)
             .and(P_VERSION).eq(version)
             .build(),
         singletonList(repository)

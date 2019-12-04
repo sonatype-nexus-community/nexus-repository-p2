@@ -46,11 +46,9 @@ import org.sonatype.nexus.repository.view.Context;
 import org.sonatype.nexus.repository.p2.internal.AssetKind;
 import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
-import org.sonatype.nexus.transaction.Transactional;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.xml.sax.SAXException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
@@ -64,6 +62,8 @@ import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_K
 public class P2ProxyFacetImpl
     extends ProxyFacetSupport
 {
+  private static final String PLUGIN_NAME = "plugin_name";
+
   private final P2PathUtils p2PathUtils;
   private final P2DataAccess p2DataAccess;
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
@@ -243,14 +243,15 @@ public class P2ProxyFacetImpl
 
     Component component = p2DataAccess.findComponent(tx,
         getRepository(),
-        p2Attributes.getGroupName(),
+        p2Attributes.getComponentName(),
         p2Attributes.getComponentVersion());
 
     if (component == null) {
       component = tx.createComponent(bucket, getRepository().getFormat())
           .name(p2Attributes.getComponentName())
-          .group(p2Attributes.getGroupName())
           .version(p2Attributes.getComponentVersion());
+      //add human readable plugin name as in Eclipse
+      component.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
     }
     tx.saveComponent(component);
 

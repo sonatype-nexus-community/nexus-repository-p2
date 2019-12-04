@@ -150,7 +150,7 @@ public class P2PathUtils
 
   public P2Attributes toP2AttributesBinary(final TokenMatcher.State state) {
     return P2Attributes.builder()
-        .groupName(name(state))
+        .pluginName(name(state))
         .componentName(name(state))
         .componentVersion(version(state))
         .path(binaryPath(path(state), name(state), version(state)))

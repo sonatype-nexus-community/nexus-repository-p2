@@ -49,7 +49,7 @@ public class JarParser
 
   private static final String XML_PLUGIN_NAME_PATH = "feature/@plugin";
 
-  private static final String XML_GROUP_NAME_PATH = "feature/@id";
+  private static final String XML_PLUGIN_ID_PATH = "feature/@id";
 
   private static final String XML_NAME_PATH = "feature/@label";
 
@@ -85,8 +85,8 @@ public class JarParser
           String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
 
           p2Attributes = P2Attributes.builder()
-              .groupName(name)
-              .componentName(mainManifestAttributes
+              .componentName(name)
+              .pluginName(mainManifestAttributes
                   .getValue("Bundle-Name"))
               .componentVersion(mainManifestAttributes
                   .getValue("Bundle-Version"))
@@ -117,13 +117,13 @@ public class JarParser
         if (XML_FILE_NAME.equals(jarEntry.getName())) {
           Document document = toDocument(jis);
 
-          String groupName = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
-          if (groupName == null) {
-            groupName = extractValueFromDocument(XML_GROUP_NAME_PATH, document);
+          String componentName = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
+          if (componentName == null) {
+            componentName = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
           }
           p2Attributes = P2Attributes.builder()
-              .groupName(groupName)
-              .componentName(extractValueFromDocument(XML_NAME_PATH, document))
+              .componentName(componentName)
+              .pluginName(extractValueFromDocument(XML_NAME_PATH, document))
               .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
               .build();
         }

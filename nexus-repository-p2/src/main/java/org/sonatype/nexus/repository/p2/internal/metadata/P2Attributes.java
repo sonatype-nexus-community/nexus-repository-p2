@@ -21,7 +21,7 @@ import static java.util.Optional.ofNullable;
  */
 public class P2Attributes
 {
-  private String groupName;
+  private String pluginName;
 
   private String componentName;
 
@@ -34,7 +34,7 @@ public class P2Attributes
   private String extension;
 
   private P2Attributes(final Builder builder) {
-    this.groupName = builder.groupName;
+    this.pluginName = builder.pluginName;
     this.componentName = builder.componentName;
     this.componentVersion = builder.componentVersion;
     this.path = builder.path;
@@ -48,7 +48,7 @@ public class P2Attributes
 
   public static class Builder
   {
-    private String groupName;
+    private String pluginName;
 
     private String componentName;
 
@@ -63,8 +63,8 @@ public class P2Attributes
     private Builder() {
     }
 
-    public Builder groupName(final String groupName) {
-      this.groupName = groupName;
+    public Builder pluginName(final String groupName) {
+      this.pluginName = groupName;
       return this;
     }
 
@@ -100,7 +100,7 @@ public class P2Attributes
     public Builder merge(final P2Attributes one, P2Attributes two) {
       componentVersion(ofNullable(two.getComponentVersion()).orElse(one.getComponentVersion()));
       componentName(ofNullable(two.getComponentName()).orElse(one.getComponentName()));
-      groupName(ofNullable(two.getGroupName()).orElse(one.getGroupName()));
+      pluginName(ofNullable(two.getPluginName()).orElse(one.getPluginName()));
       path(ofNullable(two.getPath()).orElse(one.getPath()));
       fileName(ofNullable(two.getFileName()).orElse(one.getFileName()));
       extension(ofNullable(two.getExtension()).orElse(one.getExtension()));
@@ -109,8 +109,8 @@ public class P2Attributes
   }
 
   @Nullable
-  public String getGroupName() {
-    return groupName;
+  public String getPluginName() {
+    return pluginName;
   }
 
   @Nullable

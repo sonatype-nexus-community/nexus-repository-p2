@@ -1,5 +1,6 @@
 package org.sonatype.nexus.repository.p2.internal;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -14,9 +15,7 @@ import org.junit.Test;
 public class P2BrowseNodeGeneratorTest
     extends BrowseTestSupport
 {
-  private static final String COMPONENT_NAME = "SVNKit Client Adapter (Not required)";
-
-  private static final String COMPONENT_GROUP_NAME = "org.tigris.subversion.clientadapter.svnkit";
+  private static final List<String> COMPONENT_NAME = Arrays.asList("org", "tigris", "subversion", "clientadapter", "svnkit");
 
   private static final String COMPONENT_VERSION = "1.7.5";
 
@@ -28,10 +27,12 @@ public class P2BrowseNodeGeneratorTest
 
   @Test
   public void computeComponentPath() {
-    Component component = createComponent(COMPONENT_NAME, COMPONENT_GROUP_NAME, COMPONENT_VERSION);
+    Component component = createComponent(String.join(".", COMPONENT_NAME), null, COMPONENT_VERSION);
     Asset asset = createAsset(ASSET_NAME_PREFIX + P2PathUtils.DIVIDER + ASSET_NAME);
 
     List<BrowsePaths> paths = generator.computeAssetPaths(asset, component);
-    assertPaths(Arrays.asList(COMPONENT_NAME, COMPONENT_VERSION, ASSET_NAME_PREFIX, ASSET_NAME), paths, false);
+    List<String> expectedResult = new ArrayList<>(COMPONENT_NAME);
+    expectedResult.addAll(Arrays.asList(COMPONENT_VERSION, ASSET_NAME_PREFIX, ASSET_NAME));
+    assertPaths(expectedResult, paths, false);
   }
 }
