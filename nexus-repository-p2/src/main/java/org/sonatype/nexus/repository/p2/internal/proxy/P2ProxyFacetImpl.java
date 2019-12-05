@@ -13,6 +13,7 @@
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.jar.JarInputStream;
 
 import javax.annotation.Nonnull;
@@ -22,6 +23,7 @@ import javax.inject.Named;
 
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
+import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.p2.internal.util.JarParser;
@@ -55,11 +57,15 @@ import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_K
 
 /**
  * P2 {@link ProxyFacet} implementation.
+ *
+ * @since 0.next
  */
 @Named
 public class P2ProxyFacetImpl
     extends ProxyFacetSupport
 {
+  private static final String PLUGIN_NAME = "plugin_name";
+
   private final P2PathUtils p2PathUtils;
   private final P2DataAccess p2DataAccess;
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
@@ -103,7 +109,7 @@ public class P2ProxyFacetImpl
       case COMPOSITE_CONTENT_JAR:
       case COMPOSITE_ARTIFACTS_XML:
       case COMPOSITE_CONTENT_XML:
-        return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.filename(matcherState)));
+        return getAsset(p2PathUtils.maybePath(matcherState));
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
         return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState)));
@@ -130,8 +136,7 @@ public class P2ProxyFacetImpl
       case COMPOSITE_CONTENT_JAR:
       case COMPOSITE_ARTIFACTS_XML:
       case COMPOSITE_CONTENT_XML:
-        return putMetadata(p2PathUtils.path(p2PathUtils.path(matcherState),
-            p2PathUtils.filename(matcherState)),
+        return putMetadata(p2PathUtils.maybePath(matcherState),
             content,
             assetKind);
       case COMPONENT_PLUGINS:
@@ -220,7 +225,6 @@ public class P2ProxyFacetImpl
     }
   }
 
-
   private Content doPutComponent(P2Attributes p2Attributes,
                                    final TempBlob componentContent,
                                    final Payload payload,
@@ -248,6 +252,8 @@ public class P2ProxyFacetImpl
       component = tx.createComponent(bucket, getRepository().getFormat())
           .name(p2Attributes.getComponentName())
           .version(p2Attributes.getComponentVersion());
+      //add human readable plugin name as in Eclipse
+      component.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
     }
     tx.saveComponent(component);
 
@@ -302,18 +308,31 @@ public class P2ProxyFacetImpl
   }
 
   @VisibleForTesting
-  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes p2Attributes) {
-    try (JarInputStream jis = getJar(tempBlob, p2Attributes.getExtension())) {
-      return jarParser
-          .getAttributesFromJarFile(jis)
-          .map(jarP2Attributes -> P2Attributes.builder().merge(p2Attributes, jarP2Attributes).build())
-          .orElse(p2Attributes);
+  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes sourceP2Attributes) throws IOException {
+    checkNotNull(sourceP2Attributes.getExtension());
+
+    Optional<P2Attributes> p2Attributes = Optional.empty();
+    // first try Features XML
+    try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
+      p2Attributes = jarParser.getAttributesFromFeatureXML(jis);
     }
-    catch (Exception ex) {
-      log.warn("Unable to get version from JarInputStream due to following exception: {}", ex.getMessage());
+    catch (InvalidMetadataException ex) {
+      log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
     }
 
-    return p2Attributes;
+    // second try Manifest
+    if (!p2Attributes.isPresent()) {
+      try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
+        p2Attributes = jarParser.getAttributesFromManifest(jis);
+      }
+      catch (InvalidMetadataException ex) {
+        log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());
+      }
+    }
+
+    return p2Attributes
+          .map(jarP2Attributes -> P2Attributes.builder().merge(sourceP2Attributes, jarP2Attributes).build())
+          .orElse(sourceP2Attributes);
   }
 
   @VisibleForTesting
