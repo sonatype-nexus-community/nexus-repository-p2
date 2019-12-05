@@ -26,11 +26,16 @@ import static java.lang.String.join;
 
 /**
  * Utility methods for working with P2 routes and paths.
+ *
+ * @since 0.next
+ *
  */
 @Named
 @Singleton
 public class P2PathUtils
 {
+  public final static String DIVIDER = "/";
+
   private final static String NAME_VERSION_SPLITTER = "_";
 
   /**
@@ -38,6 +43,16 @@ public class P2PathUtils
    */
   public String path(final TokenMatcher.State state) {
     return match(state, "path");
+  }
+
+
+  public String maybePath(final TokenMatcher.State state) {
+    checkNotNull(state);
+    String path = state.getTokens().get("path");
+    if (isNullOrEmpty(path)) {
+      return String.format("%s.%s", match(state, "name"), match(state, "extension"));
+    }
+    return String.format("%s/%s.%s", path, match(state, "name"), match(state, "extension"));
   }
 
   /**
@@ -138,6 +153,7 @@ public class P2PathUtils
 
   public P2Attributes toP2AttributesBinary(final TokenMatcher.State state) {
     return P2Attributes.builder()
+        .pluginName(name(state))
         .componentName(name(state))
         .componentVersion(version(state))
         .path(binaryPath(path(state), name(state), version(state)))

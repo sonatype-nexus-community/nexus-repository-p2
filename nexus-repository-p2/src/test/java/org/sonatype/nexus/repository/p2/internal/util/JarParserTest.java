@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.jar.JarInputStream;
 
 import org.sonatype.goodies.testsupport.TestSupport;
+import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -39,9 +40,17 @@ public class JarParserTest
 
   private static final String JAR_NAME = "org.eclipse.core.runtime.feature_1.2.100.v20170912-1859.jar";
 
+  private static final String JAR_NAME_WITH_MANIFEST = "org.tigris.subversion.clientadapter.svnkit_1.7.5.jar";
+
   private static final String JAR_SOURCES_NAME = "org.eclipse.e4.tools.emf.editor3x.source_4.7.0.v20170712-1432.jar";
 
   private static final String NON_P2_JAR = "org.apache.karaf.http.core-3.0.0.rc1.jar.zip";
+
+  private static final String JAR_XML_COMPONENT_VERSION = "1.2.100.v20170912-1859";
+
+  private static final String JAR_MANIFEST_COMPONENT_VERSION = "1.7.5";
+
+  private static final String JAR_SOURCES_COMPONENT_VERSION = "4.7.0.v20170712-1432";
 
   @Before
   public void setUp() throws Exception {
@@ -53,7 +62,17 @@ public class JarParserTest
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
     JarInputStream jis = new JarInputStream(tempBlob.get());
 
-    assertThat(getAttributesFromJarFile(jis).getComponentVersion(), is(equalTo("1.2.100.v20170912-1859")));
+    P2Attributes attributesFromJarFile = underTest.getAttributesFromFeatureXML(jis).get();
+    assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_XML_COMPONENT_VERSION)));
+  }
+
+  @Test
+  public void getVersionFromManifestJarInputStream() throws Exception {
+    when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME_WITH_MANIFEST));
+    JarInputStream jis = new JarInputStream(tempBlob.get());
+
+    P2Attributes attributesFromJarFile = getAttributesFromJarFile(jis);
+    assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_MANIFEST_COMPONENT_VERSION)));
   }
 
   @Test
@@ -61,26 +80,28 @@ public class JarParserTest
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_SOURCES_NAME));
     JarInputStream jis = new JarInputStream(tempBlob.get());
 
-    assertThat(getAttributesFromJarFile(jis).getComponentVersion(), is(equalTo("4.7.0.v20170712-1432")));
+    P2Attributes attributesFromJarFile = getAttributesFromJarFile(jis);
+    assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_SOURCES_COMPONENT_VERSION)));
   }
 
   @Test
-  public void getExceptionFromJarInputStream() throws Exception {
+  public void getEmptyAttributesFromJarInputStream() throws Exception {
     JarInputStream jis = mock(JarInputStream.class);
-    when(jis.getNextJarEntry()).thenThrow(new IOException());
+    when(jis.getNextJarEntry()).thenReturn(null);
 
-    assertThat(underTest.getAttributesFromJarFile(jis).isPresent(), is(false));
+    assertThat(underTest.getAttributesFromFeatureXML(jis).isPresent(), is(false));
   }
 
   @Test
-  public void getNoneP2FileFromJarInputStream() throws Exception {
+  public void getNoneP2FileFromJarInputStream() throws IOException, InvalidMetadataException {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(NON_P2_JAR));
     JarInputStream jis = new JarInputStream(tempBlob.get());
 
-    assertThat(underTest.getAttributesFromJarFile(jis).isPresent(), is(false));
+    assertThat(underTest.getAttributesFromFeatureXML(jis).isPresent(), is(false));
   }
 
-  private P2Attributes getAttributesFromJarFile(JarInputStream jis) throws Exception {
-    return underTest.getAttributesFromJarFile(jis).orElseThrow(() -> new AssertionError("No Attributes found to use"));
+  private P2Attributes getAttributesFromJarFile(JarInputStream jis) throws InvalidMetadataException
+  {
+    return underTest.getAttributesFromManifest(jis).orElseThrow(() -> new AssertionError("No Attributes found to use"));
   }
 }
