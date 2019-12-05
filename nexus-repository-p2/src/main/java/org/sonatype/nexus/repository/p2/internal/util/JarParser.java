@@ -14,10 +14,11 @@ package org.sonatype.nexus.repository.p2.internal.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 
 import javax.annotation.Nullable;
 import javax.inject.Named;
@@ -28,29 +29,38 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.sonatype.goodies.common.ComponentSupport;
+import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
-import static java.util.Objects.isNull;
-import static java.util.Optional.empty;
-import static java.util.Optional.of;
-import static java.util.Optional.ofNullable;
 import static javax.xml.xpath.XPathConstants.NODE;
 
 /**
  * Utility methods for working with Jar (Jar Binks, worst character) files
+ *
+ * @since 0.next
  */
 @Named
 public class JarParser
     extends ComponentSupport
 {
   private static final String XML_VERSION_PATH = "feature/@version";
-  private static final String XML_NAME_PATH = "feature/@id";
+
+  private static final String XML_PLUGIN_NAME_PATH = "feature/@plugin";
+
+  private static final String XML_PLUGIN_ID_PATH = "feature/@id";
+
+  private static final String XML_NAME_PATH = "feature/@label";
+
   private static final String XML_FILE_NAME = "feature.xml";
-  public static final String UNKNOWN_VERSION = "unknown";
+
+  private static final String MANIFEST_FILE_PREFIX = "META-INF/";
+
   private final DocumentBuilderFactory factory;
+
   private final DocumentBuilder builder;
 
   public JarParser() throws Exception {
@@ -61,80 +71,94 @@ public class JarParser
     this.builder = factory.newDocumentBuilder();
   }
 
-  public Optional<P2Attributes> getAttributesFromJarFile(final JarInputStream jis) throws Exception
+  public Optional<P2Attributes> getAttributesFromManifest(final JarInputStream jis) throws InvalidMetadataException
   {
-    // First try Features XML
-    P2Attributes p2Attributes = getAttributesFromFeatureXML(jis);
-
-    if(isNull(p2Attributes)) {
-      // Second try Manifest
-      p2Attributes = getAttributesFromManifest(jis);
-    }
-
-    return ofNullable(p2Attributes);
-  }
-
-  private P2Attributes getAttributesFromFeatureXML(final JarInputStream jis) throws Exception {
+    P2Attributes p2Attributes = null;
+    JarEntry jarEntry;
     try {
-      JarEntry jarEntry;
-      while ((jarEntry = jis.getNextJarEntry()) != null) {
-        if (jarEntry.getName().equals(XML_FILE_NAME)) {
-          return getValueFromJarEntry(jis);
+      while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
+        if (jarEntry.getName().startsWith(MANIFEST_FILE_PREFIX)) {
+
+          Manifest manifest = jis.getManifest();
+          if (manifest == null) {
+            manifest = new Manifest(jis);
+          }
+          Attributes mainManifestAttributes = manifest.getMainAttributes();
+          String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
+
+          p2Attributes = P2Attributes.builder()
+              .componentName(name)
+              .pluginName(mainManifestAttributes
+                  .getValue("Bundle-Name"))
+              .componentVersion(mainManifestAttributes
+                  .getValue("Bundle-Version"))
+              .build();
         }
       }
     }
     catch (IOException ex) {
-      log.warn("Could not get version from file due to following exception: {}", ex.getMessage());
+      throw new InvalidMetadataException();
     }
 
-    return null;
+    return Optional.ofNullable(p2Attributes);
   }
 
-  private P2Attributes getAttributesFromManifest(final JarInputStream jis) throws Exception
+  private String normalizeName(final String name) {
+    String resultName = name;
+    //handle org.tigris.subversion.clientadapter.svnkit;singleton:=true
+    if (name != null) {
+      resultName = name.split(";")[0];
+    }
+    return resultName;
+  }
+
+  public Optional<P2Attributes> getAttributesFromFeatureXML(final JarInputStream jis) throws InvalidMetadataException
   {
+    P2Attributes p2Attributes = null;
+    JarEntry jarEntry;
     try {
-      return P2Attributes.builder()
-          .componentVersion(jis
-              .getManifest()
-              .getMainAttributes()
-              .getValue("Bundle-Version"))
-          .build();
-    }
-    catch (Exception ex) {
-      log.warn("Could not get version from Manifest due to following exception: {}", ex.getMessage());
-    }
+      while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
+        if (XML_FILE_NAME.equals(jarEntry.getName())) {
+          Document document = toDocument(jis);
 
-    return null;
+          String componentName = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
+          if (componentName == null) {
+            componentName = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
+          }
+          p2Attributes = P2Attributes.builder()
+              .componentName(componentName)
+              .pluginName(extractValueFromDocument(XML_NAME_PATH, document))
+              .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
+              .build();
+        }
+      }
+    }
+    catch (IOException | SAXException ex) {
+      throw new InvalidMetadataException();
+    }
+    return Optional.ofNullable(p2Attributes);
   }
 
-  @Nullable
-  private P2Attributes getValueFromJarEntry(final JarInputStream jis) throws Exception
-  {
-    Document document = toDocument(jis);
-
-    return P2Attributes.builder()
-        .componentName(extractValueFromDocument(XML_NAME_PATH, document))
-        .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
-        .build();
-  }
-
-  private Document toDocument(final InputStream is) throws Exception
+  private Document toDocument(final InputStream is) throws IOException, SAXException
   {
     return builder.parse(is);
   }
 
   @Nullable
-  private String extractValueFromDocument(final String path,
-                                          final Document from)
+  private String extractValueFromDocument(
+      final String path,
+      final Document from)
   {
     try {
       XPath xPath = XPathFactory.newInstance().newXPath();
       Node node = (Node) xPath.evaluate(path, from, NODE);
-      return node.getNodeValue();
+      if (node != null) {
+        return node.getNodeValue();
+      }
     }
     catch (XPathExpressionException e) {
       log.warn("Could not extract value, failed with exception: {}", e.getMessage());
-      return null;
     }
+    return null;
   }
 }

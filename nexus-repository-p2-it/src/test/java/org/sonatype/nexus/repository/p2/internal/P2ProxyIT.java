@@ -198,7 +198,7 @@ public class P2ProxyIT
 
     final Component component = findComponent(proxyRepo, COMPONENT_NAME);
     assertThat(component.version(), is(equalTo(VERSION_NUMBER)));
-    assertThat(component.group(), is(equalTo(null)));
+    assertThat(component.name(), is(equalTo(COMPONENT_NAME)));
   }
 
   @Test

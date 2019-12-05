@@ -12,8 +12,12 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+
+import javax.annotation.Nullable;
+import javax.inject.Named;
 
 import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.common.collect.AttributesMap;
@@ -30,12 +34,8 @@ import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.payloads.BlobPayload;
 
-import javax.annotation.Nullable;
-import javax.inject.Named;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 
 import static java.util.Collections.singletonList;
 import static org.sonatype.nexus.common.hash.HashAlgorithm.SHA1;

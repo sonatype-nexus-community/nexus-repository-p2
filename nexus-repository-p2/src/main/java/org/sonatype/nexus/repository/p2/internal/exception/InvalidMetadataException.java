@@ -10,26 +10,14 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.internal.fixtures
-
-import javax.annotation.Nonnull
-import org.sonatype.nexus.repository.Repository
-import org.sonatype.nexus.repository.config.Configuration
-import org.sonatype.nexus.testsuite.testsupport.fixtures.ConfigurationRecipes
-import groovy.transform.CompileStatic
+package org.sonatype.nexus.repository.p2.internal.exception;
 
 /**
- * Factory for p2 {@link Repository} {@link Configuration}
+ * @since 0.next
  */
-@CompileStatic
-trait P2RepoRecipes
-    extends ConfigurationRecipes
+public class InvalidMetadataException extends Exception
 {
-  @Nonnull
-  Repository createP2Proxy(final String name, final String remoteUrl)
-  {
-    createRepository(createProxy(name, 'p2-proxy', remoteUrl))
+  public InvalidMetadataException() {
+    super("Could not get attributes from jar");
   }
-
-  abstract Repository createRepository(final Configuration configuration)
 }
