@@ -94,7 +94,7 @@ public class JarParser
         }
       }
     }
-    catch (IOException | NullPointerException ex) {
+    catch (IOException ex) {
       throw new InvalidMetadataException();
     }
 
@@ -129,7 +129,7 @@ public class JarParser
         }
       }
     }
-    catch (IOException | NullPointerException | SAXException ex) {
+    catch (IOException | SAXException ex) {
       throw new InvalidMetadataException();
     }
     return Optional.ofNullable(p2Attributes);

@@ -12,7 +12,6 @@
  */
 package org.sonatype.nexus.repository.p2.internal;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -20,13 +19,13 @@ import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import org.sonatype.nexus.common.text.Strings2;
 import org.sonatype.nexus.repository.browse.BrowseNodeGenerator;
 import org.sonatype.nexus.repository.browse.BrowsePaths;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
 
 import com.google.common.base.Splitter;
+import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.StringUtils;
 
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
@@ -54,16 +53,11 @@ public class P2BrowseNodeGenerator
 
   @Override
   public List<BrowsePaths> computeComponentPaths(final Asset asset, final Component component) {
-    List<String> pathParts = new ArrayList<>();
-    if (!Strings2.isBlank(component.name())) {
-      pathParts.addAll(Splitter.on('.').omitEmptyStrings().splitToList(component.name()));
-    }
-
+    List<String> pathParts = Lists.newArrayList(Splitter.on('.').omitEmptyStrings().split(component.name()).iterator());
     pathParts.add(component.version());
 
-    String pathPrefix =
-        asset.name().contains(DIVIDER) ? asset.name()
-            .substring(0, asset.name().lastIndexOf(DIVIDER)) : StringUtils.EMPTY;
+    String pathPrefix = asset.name().contains(DIVIDER) ?
+        asset.name().substring(0, asset.name().lastIndexOf(DIVIDER)) : StringUtils.EMPTY;
     if (!pathPrefix.isEmpty()) {
       pathParts.add(pathPrefix);
     }
