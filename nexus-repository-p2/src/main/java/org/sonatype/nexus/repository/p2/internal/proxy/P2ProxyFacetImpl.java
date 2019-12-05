@@ -57,6 +57,8 @@ import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_K
 
 /**
  * P2 {@link ProxyFacet} implementation.
+ *
+ * @since 0.next
  */
 @Named
 public class P2ProxyFacetImpl

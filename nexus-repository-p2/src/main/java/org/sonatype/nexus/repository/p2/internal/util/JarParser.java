@@ -40,6 +40,8 @@ import static javax.xml.xpath.XPathConstants.NODE;
 
 /**
  * Utility methods for working with Jar (Jar Binks, worst character) files
+ *
+ * @since 0.next
  */
 @Named
 public class JarParser
@@ -104,7 +106,9 @@ public class JarParser
   private String normalizeName(final String name) {
     String resultName = name;
     //handle org.tigris.subversion.clientadapter.svnkit;singleton:=true
-    resultName = name.split(";")[0];
+    if (name != null) {
+      resultName = name.split(";")[0];
+    }
     return resultName;
   }
 
