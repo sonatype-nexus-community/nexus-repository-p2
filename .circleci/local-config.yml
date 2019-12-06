@@ -1,0 +1,130 @@
+# Orb 'github-maven-deploy/github-maven-deploy@1.0.5' resolved to 'github-maven-deploy/github-maven-deploy@1.0.5'
+# Orb 'sonatype-nexus-community/circleci-maven-release-orb@0.0.10' resolved to 'sonatype-nexus-community/circleci-maven-release-orb@0.0.10'
+version: 2
+jobs:
+  github-maven-deploy/build-and-test:
+    docker:
+    - image: circleci/openjdk:8u171-jdk
+    steps:
+    - checkout
+    - restore_cache:
+        key: maven-github-release-{{ checksum ".circleci/config.yml" }}
+    - run:
+        name: Build and test script
+        command: mvn clean verify -PbuildKar -Dit
+    - persist_to_workspace:
+        root: .
+        paths:
+        - .
+    - run:
+        name: Optional collect artifacts script
+        shell: /bin/bash -eo pipefail -O globstar
+        command: |
+          mkdir -p ~/project/artifacts/junit/
+          cp ~/project/nexus-repository-p2/target/surefire-reports/*.xml ~/project/artifacts/junit/
+          cp ~/project/nexus-repository-p2/target/nexus-repository-* ~/project/artifacts/
+          cp ~/project/nexus-repository-p2-it/target/failsafe-reports/*.xml ~/project/artifacts/junit/
+    - store_artifacts:
+        path: artifacts
+    - store_test_results:
+        path: artifacts/junit
+  circleci-maven-release-orb/run-maven-release:
+    docker:
+    - image: circleci/openjdk:8-jdk
+    steps:
+    - add_ssh_keys:
+        fingerprints:
+        - 07:aa:02:bc:13:62:4a:4b:ec:9a:b2:31:3b:5e:fc:60
+    - checkout
+    - attach_workspace:
+        at: .
+    - restore_cache:
+        key: maven-release-orb-{{ checksum ".circleci/config.yml" }}
+    - run:
+        command: |
+          echo $SECRING_GPG_ASC_BASE64 | base64 --decode | gpg --batch --no-tty --import --yes
+        name: Configure GPG private key for signing project artifacts in OSS Sonatype
+    - run:
+        command: |
+          git config user.name "$GITHUB_USERNAME"
+          git config user.email "$GITHUB_EMAIL"
+        name: Configure GIT with user info for pushing
+    - run:
+        command: |
+          echo "Starting new release..."
+          MVN_VERSION=$(mvn -q -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
+          echo "Preparing release from version ${MVN_VERSION}..."
+          mvn --batch-mode release:prepare -DscmCommentPrefix="[skip ci] [maven-release-plugin] "
+          if [ -f "release.properties" ]; then
+            #echo "true" >> releasePropsCreated
+            echo "Generated release.properties: ..."
+            cat release.properties
+          fi
+          mvn --batch-mode release:perform -s .circleci/.maven.xml
+          echo "Release completed"
+          MVN_VERSION_NEXT_DEV=$(mvn -q -Dexec.executable="echo" -Dexec.args='${project.version}' --non-recursive exec:exec)
+          echo "New development version ${MVN_VERSION_NEXT_DEV}"
+        name: Release new version to Maven Central and push new project version to repo
+    - persist_to_workspace:
+        paths:
+        - .
+        root: .
+    - save_cache:
+        key: maven-release-orb-{{ checksum ".circleci/config.yml" }}
+        paths:
+        - ~/.m2
+        - ~/.gnupg/pubring.kbx
+        - ~/.gitconfig
+        - releasePropsCreated
+workflows:
+  build-and-test:
+    jobs:
+    - github-maven-deploy/build-and-test
+  run-release:
+    jobs:
+    - approve-release:
+        filters:
+          branches:
+            only: master
+        type: approval
+    - circleci-maven-release-orb/run-maven-release:
+        filters:
+          branches:
+            only: master
+        requires:
+        - approve-release
+        context: rso-base
+  version: 2
+
+# Original config.yml file:
+# version: 2.1
+# 
+# orbs:
+#   github-maven-deploy: github-maven-deploy/github-maven-deploy@1.0.5
+#   circleci-maven-release-orb: sonatype-nexus-community/circleci-maven-release-orb@0.0.10
+# 
+# workflows:
+#   build-and-test:
+#     jobs:
+#       - github-maven-deploy/build-and-test:
+#           mvn-build-test-command: mvn clean verify -PbuildKar -Dit
+#           mvn-collect-artifacts-command: |
+#             mkdir -p ~/project/artifacts/junit/
+#             cp ~/project/nexus-repository-p2/target/surefire-reports/*.xml ~/project/artifacts/junit/
+#             cp ~/project/nexus-repository-p2/target/nexus-repository-* ~/project/artifacts/
+#             cp ~/project/nexus-repository-p2-it/target/failsafe-reports/*.xml ~/project/artifacts/junit/
+#   run-release:
+#     jobs:
+#       - approve-release:
+#           type: approval
+#           filters:
+#             branches:
+#               only: master
+#       - circleci-maven-release-orb/run-maven-release:
+#           requires:
+#             - approve-release
+#           ssh-fingerprints: \"07:aa:02:bc:13:62:4a:4b:ec:9a:b2:31:3b:5e:fc:60\"
+#           context: rso-base
+#           filters:
+#             branches:
+#               only: master

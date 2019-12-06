@@ -15,7 +15,7 @@
   <parent>
     <groupId>org.sonatype.nexus.plugins</groupId>
     <artifactId>nexus-plugins</artifactId>
-    <version>3.19.0-SNAPSHOT</version>
+    <version>3.19.0-01</version>
   </parent>
 
   <artifactId>p2-parent</artifactId>
@@ -43,7 +43,7 @@
   </distributionManagement>
 
   <properties>
-    <nxrm-version>3.19.0-SNAPSHOT</nxrm-version>
+    <nxrm-version>3.19.0-01</nxrm-version>
   </properties>
 
   <repositories>
@@ -115,7 +115,6 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
             <version>1.6</version>
             <executions>
