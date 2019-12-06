@@ -43,7 +43,7 @@
   </distributionManagement>
 
   <properties>
-    <nxrm-version>3.19.0-SNAPSHOT</nxrm-version>
+    <nxrm-version>3.19.0-01</nxrm-version>
   </properties>
 
   <repositories>
