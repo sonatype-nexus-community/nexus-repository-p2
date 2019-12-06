@@ -73,6 +73,20 @@ public class ArtifactsXmlAbsoluteUrlRemoverTest
   }
 
   @Test
+  public void testCheckUrl() throws Exception {
+    when(artifactsXml.get()).thenReturn(getClass().getResourceAsStream("compositeArtifacts.xml"));
+    TempBlob modified = underTest.editUrlPathForCompositeRepository(artifactsXml, repository, "compositeArtifacts", "xml");
+    assertXmlMatches(modified.get(), "compositeArtifactsWithoutDots.xml");
+  }
+
+  @Test
+  public void testCheckUrl2() throws Exception {
+    when(artifactsXml.get()).thenReturn(getClass().getResourceAsStream("compositeContent.jar"));
+    TempBlob modified = underTest.editUrlPathForCompositeRepository(artifactsXml, repository, "compositeContent", "jar");
+    assertXmlMatches(modified.get(), "compositeArtifactsWithoutDots.xml");
+  }
+
+  @Test
   public void removeAbsoluteUrl() throws Exception {
     when(artifactsXml.get()).thenReturn(getClass().getResourceAsStream(ARTIFACTS_XML));
     TempBlob modified = underTest.removeMirrorUrlFromArtifactsXml(artifactsXml, repository, "xml");

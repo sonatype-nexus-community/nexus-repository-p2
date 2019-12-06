@@ -178,6 +178,18 @@ public class P2ProxyFacetImpl
         return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
       }
     }
+    else if (assetKind.equals(AssetKind.COMPOSITE_ARTIFACTS_JAR)) {
+      try (TempBlob newMetadataContent = xmlRewriter
+          .editUrlPathForCompositeRepository(metadataContent, getRepository(), "compositeArtifacts", "jar")) {
+        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+      }
+    }
+    else if (assetKind.equals(AssetKind.COMPOSITE_CONTENT_JAR)) {
+      try (TempBlob newMetadataContent = xmlRewriter
+          .editUrlPathForCompositeRepository(metadataContent, getRepository(), "compositeContent", "jar")) {
+        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+      }
+    }
     else {
       return saveMetadataAsAsset(assetPath, metadataContent, payload, assetKind);
     }
