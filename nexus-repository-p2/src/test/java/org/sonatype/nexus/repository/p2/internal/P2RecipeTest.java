@@ -25,12 +25,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sonatype.nexus.repository.p2.internal.P2Format.NAME;
 
 public class P2RecipeTest
     extends TestSupport
 {
-  private static final String P2_FORMAT = "p2";
-
   @Mock
   private P2Format p2Format;
 
@@ -41,22 +40,22 @@ public class P2RecipeTest
 
   @Before
   public void setUp() {
-    when(p2Format.getValue()).thenReturn(P2_FORMAT);
+    when(p2Format.getValue()).thenReturn(NAME);
     p2ProxyRecipe = new P2ProxyRecipe(new ProxyType(), p2Format);
     p2ProxyRecipe.setHighAvailabilitySupportChecker(highAvailabilitySupportChecker);
   }
 
   @Test
   public void haEnabledProxyRepository() {
-    when(highAvailabilitySupportChecker.isSupported(P2_FORMAT)).thenReturn(true);
+    when(highAvailabilitySupportChecker.isSupported(NAME)).thenReturn(true);
     assertThat(p2ProxyRecipe.isFeatureEnabled(), is(equalTo(true)));
-    verify(highAvailabilitySupportChecker).isSupported(P2_FORMAT);
+    verify(highAvailabilitySupportChecker).isSupported(NAME);
   }
 
   @Test
   public void haDisabledProxyRepository() {
-    when(highAvailabilitySupportChecker.isSupported(P2_FORMAT)).thenReturn(false);
+    when(highAvailabilitySupportChecker.isSupported(NAME)).thenReturn(false);
     assertThat(p2ProxyRecipe.isFeatureEnabled(), is(equalTo(false)));
-    verify(highAvailabilitySupportChecker).isSupported(P2_FORMAT);
+    verify(highAvailabilitySupportChecker).isSupported(NAME);
   }
 }
