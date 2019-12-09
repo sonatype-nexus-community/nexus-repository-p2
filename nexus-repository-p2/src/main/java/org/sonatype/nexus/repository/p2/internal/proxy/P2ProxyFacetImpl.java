@@ -67,6 +67,10 @@ public class P2ProxyFacetImpl
 {
   private static final String PLUGIN_NAME = "plugin_name";
 
+  private static final String COMPOSITE_ARTIFACTS = "compositeArtifacts";
+
+  private static final String COMPOSITE_CONTENT = "compositeContent";
+
   private final P2PathUtils p2PathUtils;
   private final P2DataAccess p2DataAccess;
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
@@ -164,47 +168,48 @@ public class P2ProxyFacetImpl
 
     String assetPath = path;
 
-    if (assetKind.equals(AssetKind.ARTIFACT_XML)) {
-      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else if (assetKind.equals(AssetKind.ARTIFACT_JAR)) {
-      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "jar")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else if (assetKind.equals(AssetKind.ARTIFACT_XML_XZ)) {
-      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml.xz")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else if (assetKind.equals(AssetKind.COMPOSITE_ARTIFACTS_JAR)) {
-      try (TempBlob newMetadataContent = xmlRewriter
-          .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), "compositeArtifacts", "jar")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else if (assetKind.equals(AssetKind.COMPOSITE_CONTENT_JAR)) {
-      try (TempBlob newMetadataContent = xmlRewriter
-          .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), "compositeContent", "jar")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else if (assetKind.equals(AssetKind.COMPOSITE_CONTENT_XML)) {
-      try (TempBlob newMetadataContent = xmlRewriter
-          .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), "compositeContent", "xml")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else if (assetKind.equals(AssetKind.COMPOSITE_ARTIFACTS_XML)) {
-      try (TempBlob newMetadataContent = xmlRewriter
-          .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), "compositeArtifacts", "xml")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else {
-      return saveMetadataAsAsset(assetPath, metadataContent, payload, assetKind);
+    switch (assetKind) {
+      case ARTIFACT_XML:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml")) {
+          return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+        }
+      case ARTIFACT_JAR:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "jar")) {
+          return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+        }
+      case ARTIFACT_XML_XZ:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml.xz")) {
+          return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+        }
+      case COMPOSITE_ARTIFACTS_JAR:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_ARTIFACTS,
+                "jar")) {
+          return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+        }
+      case COMPOSITE_CONTENT_JAR:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_CONTENT,
+                "jar")) {
+          return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+        }
+      case COMPOSITE_CONTENT_XML:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_CONTENT,
+                "xml")) {
+          return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+        }
+      case COMPOSITE_ARTIFACTS_XML:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_ARTIFACTS,
+                "xml")) {
+          return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+        }
+      default:
+        return saveMetadataAsAsset(assetPath, metadataContent, payload, assetKind);
     }
   }
 

@@ -90,30 +90,29 @@ public class ArtifactsXmlAbsoluteUrlRemover
       // This is required in the case that the input stream is a jar to allow us to extract a single file
       Path artifactsTempFile = createTempFile("jar-entry-" + randomUUID().toString(), "xml");
       try {
-        try (InputStream xmlIn = xmlInputStream(artifact, ARTIFACTS_XML, extension, artifactsTempFile)) {
-          try (OutputStream xmlOut = xmlOutputStream(ARTIFACTS_XML, extension, tempFile)) {
-            XMLInputFactory inputFactory = XMLInputFactory.newFactory();
-            XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
-            XMLEventReader reader = null;
-            XMLEventWriter writer = null;
-            //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
-            try {
-              reader = inputFactory.createXMLEventReader(xmlIn);
-              writer = outputFactory.createXMLEventWriter(xmlOut);
-              streamXmlToWriterAndRemoveAbsoluteUrls(reader, writer);
-              writer.flush();
+        try (InputStream xmlIn = xmlInputStream(artifact, ARTIFACTS_XML, extension, artifactsTempFile);
+             OutputStream xmlOut = xmlOutputStream(ARTIFACTS_XML, extension, tempFile)) {
+          XMLInputFactory inputFactory = XMLInputFactory.newFactory();
+          XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
+          XMLEventReader reader = null;
+          XMLEventWriter writer = null;
+          //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
+          try {
+            reader = inputFactory.createXMLEventReader(xmlIn);
+            writer = outputFactory.createXMLEventWriter(xmlOut);
+            streamXmlToWriterAndRemoveAbsoluteUrls(reader, writer);
+            writer.flush();
+          }
+          finally {
+            if (reader != null) {
+              reader.close();
             }
-            finally {
-              if (reader != null) {
-                reader.close();
-              }
-              if (writer != null) {
-                writer.close();
-              }
+            if (writer != null) {
+              writer.close();
             }
           }
-          return convertFileToTempBlob(tempFile, repository);
         }
+        return convertFileToTempBlob(tempFile, repository);
       }
       finally {
         delete(tempFile);
@@ -139,30 +138,29 @@ public class ArtifactsXmlAbsoluteUrlRemover
       // This is required in the case that the input stream is a jar to allow us to extract a single file
       Path artifactsTempFile = createTempFile("jar-entry-" + randomUUID().toString(), "xml");
       try {
-        try (InputStream xmlIn = xmlInputStream(artifact, file + "." + "xml", extension, artifactsTempFile)) {
-          try (OutputStream xmlOut = xmlOutputStream(file + "." + "xml", extension, tempFile)) {
-            XMLInputFactory inputFactory = XMLInputFactory.newFactory();
-            XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
-            XMLEventReader reader = null;
-            XMLEventWriter writer = null;
-            //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
-            try {
-              reader = inputFactory.createXMLEventReader(xmlIn);
-              writer = outputFactory.createXMLEventWriter(xmlOut);
-              changeLocationToAbsoluteInCompositeRepository(reader, writer, remoteUrl, repository.getUrl());
-              writer.flush();
+        try (InputStream xmlIn = xmlInputStream(artifact, file + "." + "xml", extension, artifactsTempFile);
+             OutputStream xmlOut = xmlOutputStream(file + "." + "xml", extension, tempFile)) {
+          XMLInputFactory inputFactory = XMLInputFactory.newFactory();
+          XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
+          XMLEventReader reader = null;
+          XMLEventWriter writer = null;
+          //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
+          try {
+            reader = inputFactory.createXMLEventReader(xmlIn);
+            writer = outputFactory.createXMLEventWriter(xmlOut);
+            changeLocationToAbsoluteInCompositeRepository(reader, writer, remoteUrl, repository.getUrl());
+            writer.flush();
+          }
+          finally {
+            if (reader != null) {
+              reader.close();
             }
-            finally {
-              if (reader != null) {
-                reader.close();
-              }
-              if (writer != null) {
-                writer.close();
-              }
+            if (writer != null) {
+              writer.close();
             }
           }
-          return convertFileToTempBlob(tempFile, repository);
         }
+        return convertFileToTempBlob(tempFile, repository);
       }
       finally {
         delete(tempFile);
@@ -180,7 +178,8 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final XMLEventReader reader,
       final XMLEventWriter writer,
       final URI remoteUrl,
-      final String nexusRepositoryUrl) throws XMLStreamException {
+      final String nexusRepositoryUrl) throws XMLStreamException
+  {
     XMLEvent previous = null;
 
     List<XMLEvent> buffer = new ArrayList<>();
