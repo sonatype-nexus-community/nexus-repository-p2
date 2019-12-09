@@ -15,6 +15,7 @@ package org.sonatype.nexus.repository.p2.internal.proxy;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.jar.JarInputStream;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -180,13 +181,25 @@ public class P2ProxyFacetImpl
     }
     else if (assetKind.equals(AssetKind.COMPOSITE_ARTIFACTS_JAR)) {
       try (TempBlob newMetadataContent = xmlRewriter
-          .editUrlPathForCompositeRepository(metadataContent, getRepository(), "compositeArtifacts", "jar")) {
+          .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), "compositeArtifacts", "jar")) {
         return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
       }
     }
     else if (assetKind.equals(AssetKind.COMPOSITE_CONTENT_JAR)) {
       try (TempBlob newMetadataContent = xmlRewriter
-          .editUrlPathForCompositeRepository(metadataContent, getRepository(), "compositeContent", "jar")) {
+          .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), "compositeContent", "jar")) {
+        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+      }
+    }
+    else if (assetKind.equals(AssetKind.COMPOSITE_CONTENT_XML)) {
+      try (TempBlob newMetadataContent = xmlRewriter
+          .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), "compositeContent", "xml")) {
+        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
+      }
+    }
+    else if (assetKind.equals(AssetKind.COMPOSITE_ARTIFACTS_XML)) {
+      try (TempBlob newMetadataContent = xmlRewriter
+          .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), "compositeArtifacts", "xml")) {
         return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
       }
     }
@@ -316,7 +329,14 @@ public class P2ProxyFacetImpl
 
   @Override
   protected String getUrl(@Nonnull final Context context) {
-    return context.getRequest().getPath().substring(1);
+    String path = context.getRequest().getPath().substring(1);
+    //handle "one slash" case, e.g. http:/www.example.com
+    if (Pattern.compile("(http:|https:)[/][^/]").matcher(path).find()) {
+      return path.replaceFirst(P2PathUtils.DIVIDER, P2PathUtils.DIVIDER + P2PathUtils.DIVIDER);
+    }
+    else {
+      return path;
+    }
   }
 
   @VisibleForTesting

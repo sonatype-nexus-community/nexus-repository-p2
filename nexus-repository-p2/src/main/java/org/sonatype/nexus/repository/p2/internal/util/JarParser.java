@@ -117,7 +117,7 @@ public class JarParser
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
     try {
-      while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
+      while (p2Attributes == null && jis != null && (jarEntry = jis.getNextJarEntry()) != null) {
         if (XML_FILE_NAME.equals(jarEntry.getName())) {
           Document document = toDocument(jis);
 

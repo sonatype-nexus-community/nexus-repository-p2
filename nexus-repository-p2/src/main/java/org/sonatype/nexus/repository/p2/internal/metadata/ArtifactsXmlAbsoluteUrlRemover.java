@@ -17,6 +17,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,9 +33,6 @@ import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLEventFactory;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLEventWriter;
@@ -48,12 +46,12 @@ import javax.xml.stream.events.XMLEvent;
 
 import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.repository.Repository;
+import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
-import org.w3c.dom.Document;
 
 import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.delete;
@@ -131,6 +129,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
 
   public TempBlob editUrlPathForCompositeRepository(
       final TempBlob artifact,
+      final URI remoteUrl,
       final Repository repository,
       final String file,
       final String extension)
@@ -150,7 +149,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
             try {
               reader = inputFactory.createXMLEventReader(xmlIn);
               writer = outputFactory.createXMLEventWriter(xmlOut);
-              editUrlPaths(reader, writer);
+              changeLocationToAbsoluteInCompositeRepository(reader, writer, remoteUrl, repository.getUrl());
               writer.flush();
             }
             finally {
@@ -177,7 +176,11 @@ public class ArtifactsXmlAbsoluteUrlRemover
     }
   }
 
-  private void editUrlPaths(final XMLEventReader reader, final XMLEventWriter writer) throws XMLStreamException {
+  private void changeLocationToAbsoluteInCompositeRepository(
+      final XMLEventReader reader,
+      final XMLEventWriter writer,
+      final URI remoteUrl,
+      final String nexusRepositoryUrl) throws XMLStreamException {
     XMLEvent previous = null;
 
     List<XMLEvent> buffer = new ArrayList<>();
@@ -187,7 +190,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
 
       if ((isStartTagWithName(previous, "children") || isEndTagWithName(previous, "child")) &&
           isStartTagWithName(event, "child")) {
-        buffer.add(checkUrl((StartElement) event));
+        buffer.add(changeLocationAttribute((StartElement) event, remoteUrl, nexusRepositoryUrl));
       }
       else {
         buffer.add(event);
@@ -204,18 +207,29 @@ public class ArtifactsXmlAbsoluteUrlRemover
     }
   }
 
-  private XMLEvent checkUrl(@Nullable final StartElement event) {
-    QName child = new QName("child");
+  private XMLEvent changeLocationAttribute(
+      final StartElement event,
+      final URI remoteUrl,
+      final String nexusRepositoryUrl)
+  {
     QName location = new QName("location");
-    String value = event.getAttributeByName(location).getValue().replaceFirst("../", "/**/");
+
+    String locationValue;
+    String value = event.getAttributeByName(location).getValue();
+    URI uri = URI.create(value);
+    if (uri.isAbsolute()) {
+      locationValue = nexusRepositoryUrl + P2PathUtils.DIVIDER + value;
+    }
+    else {
+      locationValue = nexusRepositoryUrl + P2PathUtils.DIVIDER + remoteUrl.resolve(URI.create(value)).toString();
+    }
+
     StartElement startElement =
-        XMLEventFactory.newInstance().createStartElement(child, Arrays.asList(
+        XMLEventFactory.newInstance().createStartElement(new QName("child"), Collections.singletonList(
             XMLEventFactory.newInstance()
-                .createAttribute(location, value)
-            )
+                .createAttribute(location, locationValue))
                 .iterator(),
             Collections.emptyIterator());
-    //EndElement endElement = XMLEventFactory.newInstance().createEndElement(repository, Collections.emptyIterator());
     return startElement;
   }
 
