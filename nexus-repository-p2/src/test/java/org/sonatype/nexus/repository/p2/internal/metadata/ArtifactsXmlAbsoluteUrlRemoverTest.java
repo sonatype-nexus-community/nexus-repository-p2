@@ -74,7 +74,7 @@ public class ArtifactsXmlAbsoluteUrlRemoverTest
   @Test
   public void testCheckUrl() throws Exception {
     when(artifactsXml.get()).thenReturn(getClass().getResourceAsStream("compositeArtifacts.xml"));
-    when(repository.getUrl()).thenReturn("http://dummyRepoUrl");
+    when(repository.getName()).thenReturn("dummyRepoName");
     TempBlob modified = underTest.editUrlPathForCompositeRepository(artifactsXml, URI.create("http://test/test/test/"), repository, "compositeArtifacts", "xml");
     assertXmlMatches(modified.get(), "compositeArtifactsWithoutDots.xml");
   }
