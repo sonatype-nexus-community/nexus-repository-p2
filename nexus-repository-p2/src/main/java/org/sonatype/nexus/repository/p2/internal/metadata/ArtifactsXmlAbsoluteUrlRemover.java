@@ -21,7 +21,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -79,6 +78,8 @@ public class ArtifactsXmlAbsoluteUrlRemover
   private static final String MIRRORS_URL_PROPERTY = "p2.mirrorsURL";
 
   private static final String ARTIFACTS_XML = "artifacts.xml";
+
+  private static final String REPOSITORY = "repository";
 
   public TempBlob removeMirrorUrlFromArtifactsXml(
       final TempBlob artifact,
@@ -148,7 +149,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
           try {
             reader = inputFactory.createXMLEventReader(xmlIn);
             writer = outputFactory.createXMLEventWriter(xmlOut);
-            changeLocationToAbsoluteInCompositeRepository(reader, writer, remoteUrl, repository.getUrl());
+            changeLocationToAbsoluteInCompositeRepository(reader, writer, remoteUrl, repository.getName());
             writer.flush();
           }
           finally {
@@ -178,7 +179,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final XMLEventReader reader,
       final XMLEventWriter writer,
       final URI remoteUrl,
-      final String nexusRepositoryUrl) throws XMLStreamException
+      final String nexusRepositoryName) throws XMLStreamException
   {
     XMLEvent previous = null;
 
@@ -189,7 +190,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
 
       if ((isStartTagWithName(previous, "children") || isEndTagWithName(previous, "child")) &&
           isStartTagWithName(event, "child")) {
-        buffer.add(changeLocationAttribute((StartElement) event, remoteUrl, nexusRepositoryUrl));
+        buffer.add(changeLocationAttribute((StartElement) event, remoteUrl, nexusRepositoryName));
       }
       else {
         buffer.add(event);
@@ -209,7 +210,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
   private XMLEvent changeLocationAttribute(
       final StartElement event,
       final URI remoteUrl,
-      final String nexusRepositoryUrl)
+      final String nexusRepositoryName)
   {
     QName location = new QName("location");
 
@@ -217,10 +218,10 @@ public class ArtifactsXmlAbsoluteUrlRemover
     String value = event.getAttributeByName(location).getValue();
     URI uri = URI.create(value);
     if (uri.isAbsolute()) {
-      locationValue = nexusRepositoryUrl + P2PathUtils.DIVIDER + value;
+      locationValue = P2PathUtils.DIVIDER + REPOSITORY + P2PathUtils.DIVIDER + nexusRepositoryName + P2PathUtils.DIVIDER + value;
     }
     else {
-      locationValue = nexusRepositoryUrl + P2PathUtils.DIVIDER + remoteUrl.resolve(URI.create(value)).toString();
+      locationValue = P2PathUtils.DIVIDER + REPOSITORY + P2PathUtils.DIVIDER + nexusRepositoryName + P2PathUtils.DIVIDER + remoteUrl.resolve(URI.create(value)).toString();
     }
 
     StartElement startElement =
