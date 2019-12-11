@@ -29,6 +29,7 @@ import org.sonatype.nexus.repository.http.HttpHandlers
 import org.sonatype.nexus.repository.http.PartialFetchHandler
 import org.sonatype.nexus.repository.httpclient.HttpClientFacet
 import org.sonatype.nexus.repository.p2.internal.AssetKind
+import org.sonatype.nexus.repository.p2.internal.P2ComponentMaintenance
 import org.sonatype.nexus.repository.p2.internal.P2Format
 import org.sonatype.nexus.repository.p2.internal.security.P2SecurityFacet
 import org.sonatype.nexus.repository.proxy.ProxyHandler
@@ -36,7 +37,6 @@ import org.sonatype.nexus.repository.purge.PurgeUnusedFacet
 import org.sonatype.nexus.repository.routing.RoutingRuleHandler
 import org.sonatype.nexus.repository.search.SearchFacet
 import org.sonatype.nexus.repository.security.SecurityHandler
-import org.sonatype.nexus.repository.storage.DefaultComponentMaintenanceImpl
 import org.sonatype.nexus.repository.storage.StorageFacet
 import org.sonatype.nexus.repository.storage.UnitOfWorkHandler
 import org.sonatype.nexus.repository.types.ProxyType
@@ -61,20 +61,7 @@ import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher
 
 import static org.sonatype.nexus.repository.http.HttpMethods.GET
 import static org.sonatype.nexus.repository.http.HttpMethods.HEAD
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML_XZ
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_FEATURES
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_PLUGINS
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_JAR
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_XML
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_JAR
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_XML
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_JAR
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML_XZ
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.P2_INDEX
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.*
 import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.or
 
 /**
@@ -146,7 +133,7 @@ class P2ProxyRecipe
   HandlerContributor handlerContributor
 
   @Inject
-  Provider<DefaultComponentMaintenanceImpl> componentMaintenanceFacet
+  Provider<P2ComponentMaintenance> componentMaintenanceFacet
 
   @Inject
   Provider<HttpClientFacet> httpClientFacet
