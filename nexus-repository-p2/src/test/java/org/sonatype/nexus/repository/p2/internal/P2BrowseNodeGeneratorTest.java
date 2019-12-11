@@ -31,7 +31,11 @@ public class P2BrowseNodeGeneratorTest
 
   private static final String COMPONENT_VERSION = "1.7.5";
 
-  private static final String ASSET_NAME_PREFIX = "features";
+  private static final String REMOTE_PREFIX = "http:/";
+
+  private static final String FEATURES = "features";
+
+  private static final String ASSET_NAME_PREFIX = REMOTE_PREFIX + FEATURES;
 
   private static final String ASSET_NAME = "assetName";
 
@@ -44,7 +48,7 @@ public class P2BrowseNodeGeneratorTest
 
     List<BrowsePaths> paths = generator.computeAssetPaths(asset, component);
     List<String> expectedResult = new ArrayList<>(COMPONENT_NAME);
-    expectedResult.addAll(Arrays.asList(COMPONENT_VERSION, ASSET_NAME_PREFIX, ASSET_NAME));
+    expectedResult.addAll(Arrays.asList(COMPONENT_VERSION, FEATURES, ASSET_NAME));
     assertPaths(expectedResult, paths, false);
   }
 }

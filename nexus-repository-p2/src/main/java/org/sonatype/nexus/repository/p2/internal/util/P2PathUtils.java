@@ -34,6 +34,8 @@ import static java.lang.String.join;
 @Singleton
 public class P2PathUtils
 {
+  public static final String REMOTE_URL_PREFIX = "(http:|https:)[/]";
+
   public final static String DIVIDER = "/";
 
   private final static String NAME_VERSION_SPLITTER = "_";

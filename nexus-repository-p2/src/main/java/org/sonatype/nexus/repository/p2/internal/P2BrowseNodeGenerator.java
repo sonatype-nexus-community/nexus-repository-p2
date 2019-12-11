@@ -14,6 +14,8 @@ package org.sonatype.nexus.repository.p2.internal;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nullable;
 import javax.inject.Named;
@@ -21,6 +23,7 @@ import javax.inject.Singleton;
 
 import org.sonatype.nexus.repository.browse.BrowseNodeGenerator;
 import org.sonatype.nexus.repository.browse.BrowsePaths;
+import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
 
@@ -42,13 +45,13 @@ public class P2BrowseNodeGenerator
   public List<BrowsePaths> computeAssetPaths(final Asset asset, @Nullable final Component component) {
     if (component != null) {
       List<BrowsePaths> paths = computeComponentPaths(asset, component);
-      String assetName =
-          asset.name().contains(DIVIDER) ? asset.name().substring(asset.name().lastIndexOf(DIVIDER) + 1) : asset.name();
+      String assetName = getAssetNameWithoutRemotePrefix(asset);
+      assetName = assetName.contains(DIVIDER) ? assetName.substring(assetName.lastIndexOf(DIVIDER) + 1) : assetName;
       BrowsePaths.appendPath(paths, assetName);
       return paths;
     }
 
-    return BrowsePaths.fromPaths(Collections.singletonList(asset.name()), false);
+    return BrowsePaths.fromPaths(Collections.singletonList(getAssetNameWithoutRemotePrefix(asset)), false);
   }
 
   @Override
@@ -56,11 +59,18 @@ public class P2BrowseNodeGenerator
     List<String> pathParts = Lists.newArrayList(Splitter.on('.').omitEmptyStrings().split(component.name()).iterator());
     pathParts.add(component.version());
 
-    String pathPrefix = asset.name().contains(DIVIDER) ?
-        asset.name().substring(0, asset.name().lastIndexOf(DIVIDER)) : StringUtils.EMPTY;
+    String assetName = getAssetNameWithoutRemotePrefix(asset);
+    String pathPrefix = assetName.contains(DIVIDER) ?
+        assetName.substring(0, assetName.lastIndexOf(DIVIDER)) : StringUtils.EMPTY;
     if (!pathPrefix.isEmpty()) {
       pathParts.add(pathPrefix);
     }
     return BrowsePaths.fromPaths(pathParts, true);
+  }
+
+  private String getAssetNameWithoutRemotePrefix(final Asset asset) {
+    String assetName = asset.name();
+    Matcher matcher = Pattern.compile(P2PathUtils.REMOTE_URL_PREFIX).matcher(assetName);
+    return matcher.find() ? assetName.substring(matcher.end()) : assetName;
   }
 }
