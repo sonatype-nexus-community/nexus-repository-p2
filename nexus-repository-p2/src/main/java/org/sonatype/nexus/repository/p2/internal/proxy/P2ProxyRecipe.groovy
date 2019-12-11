@@ -61,7 +61,20 @@ import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher
 
 import static org.sonatype.nexus.repository.http.HttpMethods.GET
 import static org.sonatype.nexus.repository.http.HttpMethods.HEAD
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.*
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML_XZ
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_FEATURES
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_PLUGINS
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML_XZ
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.P2_INDEX
 import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.or
 
 /**
