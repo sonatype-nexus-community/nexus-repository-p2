@@ -54,6 +54,7 @@ import com.google.common.annotations.VisibleForTesting;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.REMOTE_URL_PREFIX;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 
 /**
@@ -65,6 +66,8 @@ import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_K
 public class P2ProxyFacetImpl
     extends ProxyFacetSupport
 {
+  private static final String INCORRECT_REMOTE_URL_PREFIX = REMOTE_URL_PREFIX + "[^/]";
+
   private static final String PLUGIN_NAME = "plugin_name";
 
   private static final String COMPOSITE_ARTIFACTS = "compositeArtifacts";
@@ -336,7 +339,7 @@ public class P2ProxyFacetImpl
   protected String getUrl(@Nonnull final Context context) {
     String path = context.getRequest().getPath().substring(1);
     //handle "one slash" case, e.g. http:/www.example.com
-    if (Pattern.compile("(http:|https:)[/][^/]").matcher(path).find()) {
+    if (Pattern.compile(INCORRECT_REMOTE_URL_PREFIX).matcher(path).find()) {
       return path.replaceFirst(P2PathUtils.DIVIDER, P2PathUtils.DIVIDER + P2PathUtils.DIVIDER);
     }
     else {

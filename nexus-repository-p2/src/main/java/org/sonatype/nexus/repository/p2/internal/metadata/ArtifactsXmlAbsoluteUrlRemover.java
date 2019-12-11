@@ -56,7 +56,6 @@ import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newInputStream;
 import static java.nio.file.Files.newOutputStream;
-import static java.util.UUID.randomUUID;
 import static javax.xml.stream.XMLStreamConstants.END_ELEMENT;
 import static javax.xml.stream.XMLStreamConstants.START_ELEMENT;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
@@ -77,54 +76,16 @@ public class ArtifactsXmlAbsoluteUrlRemover
 
   private static final String MIRRORS_URL_PROPERTY = "p2.mirrorsURL";
 
-  private static final String ARTIFACTS_XML = "artifacts.xml";
+  private static final String ARTIFACTS_XML = "artifacts";
 
   private static final String REPOSITORY = "repository";
 
   public TempBlob removeMirrorUrlFromArtifactsXml(
       final TempBlob artifact,
       final Repository repository,
-      final String extension)
+      final String extension) throws IOException
   {
-    try {
-      Path tempFile = createTempFile("p2-artifacts-" + randomUUID().toString(), "xml");
-      // This is required in the case that the input stream is a jar to allow us to extract a single file
-      Path artifactsTempFile = createTempFile("jar-entry-" + randomUUID().toString(), "xml");
-      try {
-        try (InputStream xmlIn = xmlInputStream(artifact, ARTIFACTS_XML, extension, artifactsTempFile);
-             OutputStream xmlOut = xmlOutputStream(ARTIFACTS_XML, extension, tempFile)) {
-          XMLInputFactory inputFactory = XMLInputFactory.newFactory();
-          XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
-          XMLEventReader reader = null;
-          XMLEventWriter writer = null;
-          //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
-          try {
-            reader = inputFactory.createXMLEventReader(xmlIn);
-            writer = outputFactory.createXMLEventWriter(xmlOut);
-            streamXmlToWriterAndRemoveAbsoluteUrls(reader, writer);
-            writer.flush();
-          }
-          finally {
-            if (reader != null) {
-              reader.close();
-            }
-            if (writer != null) {
-              writer.close();
-            }
-          }
-        }
-        return convertFileToTempBlob(tempFile, repository);
-      }
-      finally {
-        delete(tempFile);
-        delete(artifactsTempFile);
-      }
-    }
-    catch (IOException | XMLStreamException ex) {
-      log.error("Failed to fix absolute urls for file with extension {} and blob {} with reason: {} ",
-          ex, artifact.getBlob().getId(), ex);
-      return artifact;
-    }
+    return transformXmlMetadata(artifact, repository, ARTIFACTS_XML, extension, this::streamXmlToWriterAndRemoveAbsoluteUrls);
   }
 
   public TempBlob editUrlPathForCompositeRepository(
@@ -132,46 +93,56 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final URI remoteUrl,
       final Repository repository,
       final String file,
-      final String extension)
+      final String extension) throws IOException
   {
+    return transformXmlMetadata(artifact, repository, file, extension, (reader, writer) -> changeLocationToAbsoluteInCompositeRepository(
+        reader, writer, remoteUrl, repository.getName()));
+  }
+
+
+
+  private TempBlob transformXmlMetadata(final TempBlob artifact,
+                                        final Repository repository,
+                                        final String file,
+                                        final String extension,
+                                        final XmlStreamTransformer transformer) throws IOException {
+
+    Path tempFile = createTempFile("", ".xml");
+    // This is required in the case that the input stream is a jar to allow us to extract a single file
+    Path artifactsTempFile = createTempFile("", ".xml");
     try {
-      Path tempFile = createTempFile("p2-artifacts-composite-" + randomUUID().toString(), "xml");
-      // This is required in the case that the input stream is a jar to allow us to extract a single file
-      Path artifactsTempFile = createTempFile("jar-entry-" + randomUUID().toString(), "xml");
-      try {
-        try (InputStream xmlIn = xmlInputStream(artifact, file + "." + "xml", extension, artifactsTempFile);
-             OutputStream xmlOut = xmlOutputStream(file + "." + "xml", extension, tempFile)) {
-          XMLInputFactory inputFactory = XMLInputFactory.newFactory();
-          XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
-          XMLEventReader reader = null;
-          XMLEventWriter writer = null;
-          //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
-          try {
-            reader = inputFactory.createXMLEventReader(xmlIn);
-            writer = outputFactory.createXMLEventWriter(xmlOut);
-            changeLocationToAbsoluteInCompositeRepository(reader, writer, remoteUrl, repository.getName());
-            writer.flush();
+      try (InputStream xmlIn = xmlInputStream(artifact, file + "." + "xml", extension, artifactsTempFile);
+           OutputStream xmlOut = xmlOutputStream(file + "." + "xml", extension, tempFile)) {
+        XMLInputFactory inputFactory = XMLInputFactory.newFactory();
+        XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
+        XMLEventReader reader = null;
+        XMLEventWriter writer = null;
+        //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
+        try {
+          reader = inputFactory.createXMLEventReader(xmlIn);
+          writer = outputFactory.createXMLEventWriter(xmlOut);
+          transformer.transform(reader, writer);
+          writer.flush();
+        }
+        finally {
+          if (reader != null) {
+            reader.close();
           }
-          finally {
-            if (reader != null) {
-              reader.close();
-            }
-            if (writer != null) {
-              writer.close();
-            }
+          if (writer != null) {
+            writer.close();
           }
         }
-        return convertFileToTempBlob(tempFile, repository);
       }
-      finally {
-        delete(tempFile);
-        delete(artifactsTempFile);
+      catch (XMLStreamException ex) {
+        log.error("Failed to rewrite metadata for file with extension {} and blob {} with reason: {} ",
+            ex, artifact.getBlob().getId(), ex);
+        return artifact;
       }
+      return convertFileToTempBlob(tempFile, repository);
     }
-    catch (IOException | XMLStreamException ex) {
-      log.error("Failed to fix absolute urls for file with extension {} and blob {} with reason: {} ",
-          ex, artifact.getBlob().getId(), ex);
-      return artifact;
+    finally {
+      delete(tempFile);
+      delete(artifactsTempFile);
     }
   }
 
@@ -417,5 +388,9 @@ public class ArtifactsXmlAbsoluteUrlRemover
     try (InputStream tempFileInputStream = newInputStream(tempFile)) {
       return storageFacet.createTempBlob(tempFileInputStream, HASH_ALGORITHMS);
     }
+  }
+
+  private interface XmlStreamTransformer {
+    void transform(XMLEventReader reader, XMLEventWriter writer) throws XMLStreamException;
   }
 }
