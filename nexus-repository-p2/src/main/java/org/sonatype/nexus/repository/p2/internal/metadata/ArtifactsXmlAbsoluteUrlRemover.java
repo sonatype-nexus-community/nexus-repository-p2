@@ -76,7 +76,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
 
   private static final String MIRRORS_URL_PROPERTY = "p2.mirrorsURL";
 
-  private static final String ARTIFACTS_XML = "artifacts.xml";
+  private static final String ARTIFACTS_XML = "artifacts";
 
   private static final String REPOSITORY = "repository";
 
@@ -107,9 +107,9 @@ public class ArtifactsXmlAbsoluteUrlRemover
                                         final String extension,
                                         final XmlStreamTransformer transformer) throws IOException {
 
-    Path tempFile = createTempFile("", "xml");
+    Path tempFile = createTempFile("", ".xml");
     // This is required in the case that the input stream is a jar to allow us to extract a single file
-    Path artifactsTempFile = createTempFile("", "xml");
+    Path artifactsTempFile = createTempFile("", ".xml");
     try {
       try (InputStream xmlIn = xmlInputStream(artifact, file + "." + "xml", extension, artifactsTempFile);
            OutputStream xmlOut = xmlOutputStream(file + "." + "xml", extension, tempFile)) {
@@ -134,7 +134,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
         }
       }
       catch (XMLStreamException ex) {
-        log.error("Failed to fix absolute urls for file with extension {} and blob {} with reason: {} ",
+        log.error("Failed to rewrite metadata for file with extension {} and blob {} with reason: {} ",
             ex, artifact.getBlob().getId(), ex);
         return artifact;
       }
