@@ -38,6 +38,14 @@ public class P2PathUtils
 
   private final static String NAME_VERSION_SPLITTER = "_";
 
+  public static final String HTTP_NXRM_PREFIX = "http/";
+
+  public static final String HTTPS_NXRM_PREFIX = "https/";
+
+  private static final String HTTP_URL_PREFIX = "http://";
+
+  private static final String HTTPS_URL_PREFIX = "https://";
+
   /**
    * * Returns the path from a {@link TokenMatcher.State}.
    */
@@ -158,5 +166,20 @@ public class P2PathUtils
         .componentVersion(version(state))
         .path(binaryPath(path(state), name(state), version(state)))
         .build();
+  }
+
+  public static String escapeUriToPath(final String uri) {
+    return uri.replace("://", "/");
+  }
+
+  public static String unescapePathToUri(final String path) {
+    String resultPath = path;
+    if (path.startsWith(HTTP_NXRM_PREFIX)) {
+      resultPath = path.replaceFirst(HTTP_NXRM_PREFIX, HTTP_URL_PREFIX);
+    }
+    else if (path.startsWith(HTTPS_NXRM_PREFIX)) {
+      resultPath = path.replaceFirst(HTTPS_NXRM_PREFIX, HTTPS_URL_PREFIX);
+    }
+    return resultPath;
   }
 }

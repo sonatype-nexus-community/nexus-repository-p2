@@ -17,9 +17,11 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -43,6 +45,7 @@ import javax.xml.stream.events.XMLEvent;
 
 import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.repository.Repository;
+import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -53,7 +56,6 @@ import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.delete;
 import static java.nio.file.Files.newInputStream;
 import static java.nio.file.Files.newOutputStream;
-import static java.util.UUID.randomUUID;
 import static javax.xml.stream.XMLStreamConstants.END_ELEMENT;
 import static javax.xml.stream.XMLStreamConstants.START_ELEMENT;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
@@ -61,73 +63,148 @@ import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_A
 /**
  * Removes absolute URL entries from artifacts.xml
  *
- * @since 3.4
+ * @since 0.next
  */
 @Named
 @Singleton
 public class ArtifactsXmlAbsoluteUrlRemover
     extends ComponentSupport
 {
-
   private static final String XZ = "xml.xz";
 
   private static final String JAR = "jar";
 
   private static final String MIRRORS_URL_PROPERTY = "p2.mirrorsURL";
 
-  private static final String ARTIFACTS_XML = "artifacts.xml";
+  private static final String ARTIFACTS_XML = "artifacts";
 
-  public TempBlob removeMirrorUrlFromArtifactsXml(final TempBlob artifact,
-                                                  final Repository repository,
-                                                  final String extension)
+  private static final String REPOSITORY = "/repository/%s/%s";
+
+  public TempBlob removeMirrorUrlFromArtifactsXml(
+      final TempBlob artifact,
+      final Repository repository,
+      final String extension) throws IOException
   {
+    return transformXmlMetadata(artifact, repository, ARTIFACTS_XML, extension, this::streamXmlToWriterAndRemoveAbsoluteUrls);
+  }
+
+  public TempBlob editUrlPathForCompositeRepository(
+      final TempBlob artifact,
+      final URI remoteUrl,
+      final Repository repository,
+      final String file,
+      final String extension) throws IOException
+  {
+    return transformXmlMetadata(artifact, repository, file, extension, (reader, writer) -> changeLocationToAbsoluteInCompositeRepository(
+        reader, writer, remoteUrl, repository.getName()));
+  }
+
+  private TempBlob transformXmlMetadata(final TempBlob artifact,
+                                        final Repository repository,
+                                        final String file,
+                                        final String extension,
+                                        final XmlStreamTransformer transformer) throws IOException {
+
+    Path tempFile = createTempFile("", ".xml");
+    // This is required in the case that the input stream is a jar to allow us to extract a single file
+    Path artifactsTempFile = createTempFile("", ".xml");
     try {
-      Path tempFile = createTempFile("p2-artifacts-" + randomUUID().toString(), "xml");
-      // This is required in the case that the input stream is a jar to allow us to extract a single file
-      Path artifactsTempFile = createTempFile("jar-entry-" + randomUUID().toString(), "xml");
-      try {
-        try (InputStream xmlIn = xmlInputStream(artifact, extension, artifactsTempFile)) {
-          try (OutputStream xmlOut = xmlOutputStream(extension, tempFile)) {
-            XMLInputFactory inputFactory = XMLInputFactory.newFactory();
-            XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
-            XMLEventReader reader = null;
-            XMLEventWriter writer = null;
-            //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
-            try {
-              reader = inputFactory.createXMLEventReader(xmlIn);
-              writer = outputFactory.createXMLEventWriter(xmlOut);
-              streamXmlToWriterAndRemoveAbsoluteUrls(reader, writer);
-              writer.flush();
-            } finally {
-              if (reader != null) {
-                reader.close();
-              }
-              if (writer != null) {
-                writer.close();
-              }
-            }
+      try (InputStream xmlIn = xmlInputStream(artifact, file + "." + "xml", extension, artifactsTempFile);
+           OutputStream xmlOut = xmlOutputStream(file + "." + "xml", extension, tempFile)) {
+        XMLInputFactory inputFactory = XMLInputFactory.newFactory();
+        XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
+        XMLEventReader reader = null;
+        XMLEventWriter writer = null;
+        //try-with-resources will be better here, but XMLEventReader and XMLEventWriter are not AutoCloseable
+        try {
+          reader = inputFactory.createXMLEventReader(xmlIn);
+          writer = outputFactory.createXMLEventWriter(xmlOut);
+          transformer.transform(reader, writer);
+          writer.flush();
+        }
+        finally {
+          if (reader != null) {
+            reader.close();
           }
-          return convertFileToTempBlob(tempFile, repository);
+          if (writer != null) {
+            writer.close();
+          }
         }
       }
-      finally {
-        delete(tempFile);
-        delete(artifactsTempFile);
+      catch (XMLStreamException ex) {
+        log.error("Failed to rewrite metadata for file with extension {} and blob {} with reason: {} ",
+            ex, artifact.getBlob().getId(), ex);
+        return artifact;
       }
+      return convertFileToTempBlob(tempFile, repository);
     }
-    catch (IOException | XMLStreamException ex) {
-      log.error("Failed to fix absolute urls for file with extension {} and blob {} with reason: {} ",
-          ex, artifact.getBlob().getId(), ex);
-      return artifact;
+    finally {
+      delete(tempFile);
+      delete(artifactsTempFile);
     }
   }
 
-  private InputStream xmlInputStream(final TempBlob artifact, final String extension, final Path artifactsTempFile)
+  private void changeLocationToAbsoluteInCompositeRepository(
+      final XMLEventReader reader,
+      final XMLEventWriter writer,
+      final URI remoteUrl,
+      final String nexusRepositoryName) throws XMLStreamException
+  {
+    List<XMLEvent> buffer = new ArrayList<>();
+
+    while (reader.hasNext()) {
+      XMLEvent event = reader.nextEvent();
+
+      if (isStartTagWithName(event, "child")) {
+        buffer.add(changeLocationAttribute((StartElement) event, remoteUrl, nexusRepositoryName));
+      }
+      else {
+        buffer.add(event);
+      }
+
+      for (XMLEvent xmlEvent : buffer) {
+        writer.add(xmlEvent);
+      }
+      buffer.clear();
+    }
+  }
+
+  private XMLEvent changeLocationAttribute(
+      final StartElement locationElement,
+      final URI remoteUrl,
+      final String nexusRepositoryName)
+  {
+    QName locationAttrName = new QName("location");
+    Attribute locationAttribute = locationElement.getAttributeByName(locationAttrName);
+
+    if (locationAttribute == null) {
+      return locationElement;
+    }
+
+    String value = locationAttribute.getValue();
+    URI uri = URI.create(value);
+    String assetPath =
+        P2PathUtils.escapeUriToPath(uri.isAbsolute() ? uri.toString() : remoteUrl.resolve(uri).toString());
+    String locationValue = String.format(REPOSITORY, nexusRepositoryName, assetPath);
+    StartElement startElement =
+        XMLEventFactory.newInstance().createStartElement(new QName("child"), Collections.singletonList(
+            XMLEventFactory.newInstance()
+                .createAttribute(locationAttrName, locationValue))
+                .iterator(),
+            Collections.emptyIterator());
+    return startElement;
+  }
+
+  private InputStream xmlInputStream(
+      final TempBlob artifact,
+      final String file,
+      final String extension,
+      final Path artifactsTempFile)
       throws IOException
   {
     InputStream in;
     if (isCompressedWithFormat(extension, JAR)) {
-      extractArtifactsFromJarToTempFile(artifact.get(), artifactsTempFile);
+      extractFileFromJarToTempFile(artifact.get(), file, artifactsTempFile);
       in = Files.newInputStream(artifactsTempFile);
     }
     else if (isCompressedWithFormat(extension, XZ)) {
@@ -139,12 +216,14 @@ public class ArtifactsXmlAbsoluteUrlRemover
     return new BufferedInputStream(in);
   }
 
-  private void extractArtifactsFromJarToTempFile(final InputStream in, final Path jarEntry) throws IOException {
+  private void extractFileFromJarToTempFile(final InputStream in, final String fileForExtract, final Path jarEntry)
+      throws IOException
+  {
     ZipEntry zipEntry;
     try (ZipInputStream zipInputStream = new ZipInputStream(in)) {
       try (OutputStream outputStream = newOutputStream(jarEntry)) {
         while ((zipEntry = zipInputStream.getNextEntry()) != null) {
-          if (zipEntry.getName().equals(ARTIFACTS_XML)) {
+          if (zipEntry.getName().equals(fileForExtract)) {
             byte[] buffer = new byte[8192];
             int len;
             while ((len = zipInputStream.read(buffer)) != -1) {
@@ -156,7 +235,9 @@ public class ArtifactsXmlAbsoluteUrlRemover
     }
   }
 
-  private OutputStream xmlOutputStream(final String extension, final Path tempFile) throws IOException {
+  private OutputStream xmlOutputStream(final String file, final String extension, final Path tempFile)
+      throws IOException
+  {
     OutputStream result = newOutputStream(tempFile);
     try {
       if (isCompressedWithFormat(extension, XZ)) {
@@ -164,7 +245,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
       }
       else if (isCompressedWithFormat(extension, JAR)) {
         ZipOutputStream zipOutputStream = new ZipOutputStream(result);
-        zipOutputStream.putNextEntry(new ZipEntry(ARTIFACTS_XML));
+        zipOutputStream.putNextEntry(new ZipEntry(file));
         result = zipOutputStream;
       }
     }
@@ -179,8 +260,9 @@ public class ArtifactsXmlAbsoluteUrlRemover
     return extension.equals(format);
   }
 
-  private void streamXmlToWriterAndRemoveAbsoluteUrls(final XMLEventReader reader,
-                                                      final XMLEventWriter writer) throws XMLStreamException
+  private void streamXmlToWriterAndRemoveAbsoluteUrls(
+      final XMLEventReader reader,
+      final XMLEventWriter writer) throws XMLStreamException
   {
     final XMLEventFactory eventFactory = XMLEventFactory.newInstance();
     XMLEvent previous = null;
@@ -218,9 +300,10 @@ public class ArtifactsXmlAbsoluteUrlRemover
     }
   }
 
-  private XMLEvent updateSize(final StartElement tag,
-                              final int size,
-                              final XMLEventFactory eventFactory)
+  private XMLEvent updateSize(
+      final StartElement tag,
+      final int size,
+      final XMLEventFactory eventFactory)
   {
     Iterator updatedAttributes = updateSizeAttribute(tag.getAttributes(), size, eventFactory);
     return eventFactory.createStartElement(tag.getName().getPrefix(),
@@ -230,9 +313,10 @@ public class ArtifactsXmlAbsoluteUrlRemover
         null);
   }
 
-  private Iterator updateSizeAttribute(final Iterator<Attribute> attributes,
-                                       final int size,
-                                       final XMLEventFactory eventFactory)
+  private Iterator updateSizeAttribute(
+      final Iterator<Attribute> attributes,
+      final int size,
+      final XMLEventFactory eventFactory)
   {
     List<Attribute> processedAttributes = new ArrayList<>();
     while (attributes.hasNext()) {
@@ -295,5 +379,9 @@ public class ArtifactsXmlAbsoluteUrlRemover
     try (InputStream tempFileInputStream = newInputStream(tempFile)) {
       return storageFacet.createTempBlob(tempFileInputStream, HASH_ALGORITHMS);
     }
+  }
+
+  private interface XmlStreamTransformer {
+    void transform(XMLEventReader reader, XMLEventWriter writer) throws XMLStreamException;
   }
 }

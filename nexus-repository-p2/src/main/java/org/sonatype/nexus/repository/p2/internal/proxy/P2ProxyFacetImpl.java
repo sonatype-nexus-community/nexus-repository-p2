@@ -23,6 +23,7 @@ import javax.inject.Named;
 
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
+import org.sonatype.nexus.repository.p2.internal.AssetKind;
 import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
@@ -43,7 +44,6 @@ import org.sonatype.nexus.repository.transaction.TransactionalTouchBlob;
 import org.sonatype.nexus.repository.transaction.TransactionalTouchMetadata;
 import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.repository.view.Context;
-import org.sonatype.nexus.repository.p2.internal.AssetKind;
 import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 import org.sonatype.nexus.transaction.UnitOfWork;
@@ -65,6 +65,10 @@ public class P2ProxyFacetImpl
     extends ProxyFacetSupport
 {
   private static final String PLUGIN_NAME = "plugin_name";
+
+  private static final String COMPOSITE_ARTIFACTS = "compositeArtifacts";
+
+  private static final String COMPOSITE_CONTENT = "compositeContent";
 
   private final P2PathUtils p2PathUtils;
   private final P2DataAccess p2DataAccess;
@@ -161,26 +165,60 @@ public class P2ProxyFacetImpl
                                   final Payload payload,
                                   final AssetKind assetKind) throws IOException {
 
-    String assetPath = path;
+    Content resultContent;
+    switch (assetKind) {
+      case ARTIFACT_XML:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case ARTIFACT_JAR:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "jar")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case ARTIFACT_XML_XZ:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml.xz")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case COMPOSITE_ARTIFACTS_JAR:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_ARTIFACTS,
+                "jar")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case COMPOSITE_CONTENT_JAR:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_CONTENT,
+                "jar")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case COMPOSITE_CONTENT_XML:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_CONTENT,
+                "xml")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case COMPOSITE_ARTIFACTS_XML:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_ARTIFACTS,
+                "xml")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      default:
+        resultContent = saveMetadataAsAsset(path, metadataContent, payload, assetKind);
+        break;
+    }
 
-    if (assetKind.equals(AssetKind.ARTIFACT_XML)) {
-      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else if (assetKind.equals(AssetKind.ARTIFACT_JAR)) {
-      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "jar")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else if (assetKind.equals(AssetKind.ARTIFACT_XML_XZ)) {
-      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml.xz")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else {
-      return saveMetadataAsAsset(assetPath, metadataContent, payload, assetKind);
-    }
+    return resultContent;
   }
 
   @TransactionalStoreBlob
@@ -304,7 +342,8 @@ public class P2ProxyFacetImpl
 
   @Override
   protected String getUrl(@Nonnull final Context context) {
-    return context.getRequest().getPath().substring(1);
+    String path = context.getRequest().getPath().substring(1);
+    return P2PathUtils.unescapePathToUri(path);
   }
 
   @VisibleForTesting
