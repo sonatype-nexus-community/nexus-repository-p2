@@ -63,7 +63,7 @@ import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_A
 /**
  * Removes absolute URL entries from artifacts.xml
  *
- * @since 3.4
+ * @since 0.next
  */
 @Named
 @Singleton
@@ -98,8 +98,6 @@ public class ArtifactsXmlAbsoluteUrlRemover
     return transformXmlMetadata(artifact, repository, file, extension, (reader, writer) -> changeLocationToAbsoluteInCompositeRepository(
         reader, writer, remoteUrl, repository.getName()));
   }
-
-
 
   private TempBlob transformXmlMetadata(final TempBlob artifact,
                                         final Repository repository,
@@ -152,8 +150,6 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final URI remoteUrl,
       final String nexusRepositoryName) throws XMLStreamException
   {
-    XMLEvent previous = null;
-
     List<XMLEvent> buffer = new ArrayList<>();
 
     while (reader.hasNext()) {
@@ -170,10 +166,6 @@ public class ArtifactsXmlAbsoluteUrlRemover
         writer.add(xmlEvent);
       }
       buffer.clear();
-
-      if (!event.toString().trim().isEmpty()) {
-        previous = event;
-      }
     }
   }
 
@@ -182,8 +174,8 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final URI remoteUrl,
       final String nexusRepositoryName)
   {
-    QName location = new QName("location");
-    Attribute locationAttribute = locationElement.getAttributeByName(location);
+    QName locationAttrName = new QName("location");
+    Attribute locationAttribute = locationElement.getAttributeByName(locationAttrName);
 
     if (locationAttribute == null) {
       return locationElement;
@@ -197,7 +189,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
     StartElement startElement =
         XMLEventFactory.newInstance().createStartElement(new QName("child"), Collections.singletonList(
             XMLEventFactory.newInstance()
-                .createAttribute(location, locationValue))
+                .createAttribute(locationAttrName, locationValue))
                 .iterator(),
             Collections.emptyIterator());
     return startElement;

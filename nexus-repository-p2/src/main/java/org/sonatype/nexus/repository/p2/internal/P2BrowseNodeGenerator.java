@@ -43,7 +43,7 @@ import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.HTTP_NX
 public class P2BrowseNodeGenerator
     implements BrowseNodeGenerator
 {
-  private static final String REMOTE_URL_PREFIX_REGEX = "(" + HTTP_NXRM_PREFIX +"|"+HTTPS_NXRM_PREFIX+")";
+  private static final String REMOTE_URL_PREFIX_REGEX = "(" + HTTP_NXRM_PREFIX + "|" + HTTPS_NXRM_PREFIX + ")";
 
   @Override
   public List<BrowsePaths> computeAssetPaths(final Asset asset, @Nullable final Component component) {

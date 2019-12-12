@@ -173,12 +173,13 @@ public class P2PathUtils
   }
 
   public static String unescapePathToUri(final String path) {
+    String resultPath = path;
     if (path.startsWith(HTTP_NXRM_PREFIX)) {
-      return path.replaceFirst(HTTP_NXRM_PREFIX, HTTP_URL_PREFIX);
+      resultPath = path.replaceFirst(HTTP_NXRM_PREFIX, HTTP_URL_PREFIX);
     }
     else if (path.startsWith(HTTPS_NXRM_PREFIX)) {
-      return path.replaceFirst(HTTPS_NXRM_PREFIX, HTTPS_URL_PREFIX);
+      resultPath = path.replaceFirst(HTTPS_NXRM_PREFIX, HTTPS_URL_PREFIX);
     }
-    return path;
+    return resultPath;
   }
 }
