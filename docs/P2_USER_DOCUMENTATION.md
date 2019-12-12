@@ -28,10 +28,6 @@ public P2 repositories without incurring repeated downloads of packages.
 You can set up an P2 proxy repository to access a remote repository location, for example to proxy the Eclipse Oxygen
 repository at [http://mirror.csclub.uwaterloo.ca/eclipse/eclipse/updates/4.7/](http://mirror.csclub.uwaterloo.ca/eclipse/eclipse/updates/4.7/)
 
-You'll want to ensure for Eclipse sites that you are not using the link from the Foundation. Nexus Repository 2 had code
-to handle checking each mirror (Eclipse provides this in a mirrors attribute), but this as of yet does not exist for Nexus Repository 3. The
-link provided in these docs is one of many from: [http://www.eclipse.org/downloads/download.php?format=xml&amp;file=/eclipse/updates/4.7/](http://www.eclipse.org/downloads/download.php?format=xml&amp;file=/eclipse/updates/4.7/)
-
 To proxy a P2 repository, you simply create a new 'p2 (proxy)' as documented in 
 [Repository Management](https://help.sonatype.com/display/NXRM3/Configuration#Configuration-RepositoryManagement) in
 details. Minimal configuration steps are:
@@ -53,7 +49,7 @@ To help you out, here's how to set up a site using Eclipse Oxygen on Mac OS X:
 
 After doing this, your P2 Proxy site will be available for Eclipse to cache metadata from, as well as request remote artifacts from. 
 
-NOTE: Eclipse includes P2 download sites by default, you will want to remove these if you intend to proxy solely through Nexus Repository.
+NOTE: Eclipse includes P2 download sites by default, you will want to disable these if you intend to proxy solely through Nexus Repository.
 
 ### Browsing P2 Repository Packages
 
