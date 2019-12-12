@@ -16,12 +16,15 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.sonatype.nexus.common.entity.EntityId;
+import org.sonatype.nexus.common.stateguard.Guarded;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.DefaultComponentMaintenanceImpl;
 import org.sonatype.nexus.repository.storage.StorageTx;
 import org.sonatype.nexus.repository.transaction.TransactionalDeleteBlob;
 import org.sonatype.nexus.transaction.UnitOfWork;
+
+import static org.sonatype.nexus.common.stateguard.StateGuardLifecycleSupport.State.STARTED;
 
 /**
  * P2 Component and asset removing implementation
@@ -35,6 +38,7 @@ public class P2ComponentMaintenance
    * Deletes the asset and its component if it's the only asset in it.
    */
   @Override
+  @Guarded(by = STARTED)
   @TransactionalDeleteBlob
   protected Set<String> deleteAssetTx(final EntityId assetId, final boolean deleteBlob) {
     StorageTx tx = UnitOfWork.currentTx();
