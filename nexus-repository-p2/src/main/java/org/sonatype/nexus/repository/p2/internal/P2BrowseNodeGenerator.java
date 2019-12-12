@@ -32,6 +32,8 @@ import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.StringUtils;
 
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.HTTPS_NXRM_PREFIX;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.HTTP_NXRM_PREFIX;
 
 /**
  * @since 0.next
@@ -41,6 +43,8 @@ import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER
 public class P2BrowseNodeGenerator
     implements BrowseNodeGenerator
 {
+  private static final String REMOTE_URL_PREFIX_REGEX = "(" + HTTP_NXRM_PREFIX +"|"+HTTPS_NXRM_PREFIX+")";
+
   @Override
   public List<BrowsePaths> computeAssetPaths(final Asset asset, @Nullable final Component component) {
     if (component != null) {
@@ -70,7 +74,7 @@ public class P2BrowseNodeGenerator
 
   private String getAssetNameWithoutRemotePrefix(final Asset asset) {
     String assetName = asset.name();
-    Matcher matcher = Pattern.compile(P2PathUtils.REMOTE_URL_PREFIX).matcher(assetName);
+    Matcher matcher = Pattern.compile(REMOTE_URL_PREFIX_REGEX).matcher(assetName);
     return matcher.find() ? assetName.substring(matcher.end()) : assetName;
   }
 }

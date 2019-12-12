@@ -31,7 +31,7 @@ public class P2BrowseNodeGeneratorTest
 
   private static final String COMPONENT_VERSION = "1.7.5";
 
-  private static final String REMOTE_PREFIX = "http:/";
+  private static final String REMOTE_PREFIX = "http/";
 
   private static final String FEATURES = "features";
 

@@ -78,7 +78,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
 
   private static final String ARTIFACTS_XML = "artifacts";
 
-  private static final String REPOSITORY = "repository";
+  private static final String REPOSITORY = "/repository/%s/%s";
 
   public TempBlob removeMirrorUrlFromArtifactsXml(
       final TempBlob artifact,
@@ -159,8 +159,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
     while (reader.hasNext()) {
       XMLEvent event = reader.nextEvent();
 
-      if ((isStartTagWithName(previous, "children") || isEndTagWithName(previous, "child")) &&
-          isStartTagWithName(event, "child")) {
+      if (isStartTagWithName(event, "child")) {
         buffer.add(changeLocationAttribute((StartElement) event, remoteUrl, nexusRepositoryName));
       }
       else {
@@ -179,22 +178,22 @@ public class ArtifactsXmlAbsoluteUrlRemover
   }
 
   private XMLEvent changeLocationAttribute(
-      final StartElement event,
+      final StartElement locationElement,
       final URI remoteUrl,
       final String nexusRepositoryName)
   {
     QName location = new QName("location");
+    Attribute locationAttribute = locationElement.getAttributeByName(location);
 
-    String locationValue;
-    String value = event.getAttributeByName(location).getValue();
+    if (locationAttribute == null) {
+      return locationElement;
+    }
+
+    String value = locationAttribute.getValue();
     URI uri = URI.create(value);
-    if (uri.isAbsolute()) {
-      locationValue = P2PathUtils.DIVIDER + REPOSITORY + P2PathUtils.DIVIDER + nexusRepositoryName + P2PathUtils.DIVIDER + value;
-    }
-    else {
-      locationValue = P2PathUtils.DIVIDER + REPOSITORY + P2PathUtils.DIVIDER + nexusRepositoryName + P2PathUtils.DIVIDER + remoteUrl.resolve(URI.create(value)).toString();
-    }
-
+    String assetPath =
+        P2PathUtils.escapeUriToPath(uri.isAbsolute() ? uri.toString() : remoteUrl.resolve(uri).toString());
+    String locationValue = String.format(REPOSITORY, nexusRepositoryName, assetPath);
     StartElement startElement =
         XMLEventFactory.newInstance().createStartElement(new QName("child"), Collections.singletonList(
             XMLEventFactory.newInstance()
