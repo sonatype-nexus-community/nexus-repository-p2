@@ -275,7 +275,6 @@ public class P2ProxyIT
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
-
   @Test
   public void retrieveBinaryFromProxyWhenRemoteOnline() throws Exception {
     assertThat(status(proxyClient.get(BINARY_TEST_PATH)), is(HttpStatus.OK));
@@ -303,7 +302,6 @@ public class P2ProxyIT
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
-
   @Test
   public void retrieveZipFromProxyShouldNotWork() throws Exception {
     assertThat(status(proxyClient.get(INVALID_PACKAGE_URL)), is(HttpStatus.NOT_FOUND));
@@ -322,6 +320,26 @@ public class P2ProxyIT
 
       assertThat(result, equalTo(expected));
     }
+  }
+
+  @Test
+  public void checkCache() throws Exception {
+    assertThat(status(proxyClient.get(FEATURE_TEST_PATH)), is(HttpStatus.OK));
+
+    // fetch in cache and stop remote
+    Asset asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
+    assertThat(asset.name(), is(equalTo(FEATURE_TEST_PATH)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    server.stop();
+
+    // verify that fetch from cache works
+    assertThat(status(proxyClient.get(FEATURE_TEST_PATH)), is(HttpStatus.OK));
+    asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
+    assertThat(asset.name(), is(equalTo(FEATURE_TEST_PATH)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+
+    // make server work again
+    server.start();
   }
 
   @After
