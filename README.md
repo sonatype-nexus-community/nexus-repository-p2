@@ -12,14 +12,14 @@
     Eclipse Foundation. All other trademarks are the property of their respective owners.
 
 -->
-# Nexus Repository P2 Format
+# Nexus Repository p2 Format
 [![Maven Central](https://img.shields.io/maven-central/v/org.sonatype.nexus.plugins/nexus-repository-p2.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.sonatype.nexus.plugins%22%20AND%20a:%22nexus-repository-p2%22) [![CircleCI](https://circleci.com/gh/sonatype-nexus-community/nexus-repository-p2.svg?style=svg)](https://circleci.com/gh/sonatype-nexus-community/nexus-repository-p2) [![Join the chat at https://gitter.im/sonatype/nexus-developers](https://badges.gitter.im/sonatype/nexus-developers.svg)](https://gitter.im/sonatype/nexus-developers?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![DepShield Badge](https://depshield.sonatype.org/badges/sonatype-nexus-community/nexus-repository-p2/depshield.svg)](https://depshield.github.io)
 
 # Table Of Contents
 * [Developing](#developing)
    * [Requirements](#requirements)
    * [Building](#building)
-* [Using P2 with Nexus Repository Manger 3](#using-p2-with-nexus-repository-manager-3)
+* [Using p2 with Nexus Repository Manger 3](#using-p2-with-nexus-repository-manager-3)
 * [Compatibility with Nexus Repository Manager 3 Versions](#compatibility-with-nexus-repository-manager-3-versions)
 * [Features Implemented In This Plugin](#features-implemented-in-this-plugin)
 * [Installing the plugin](#installing-the-plugin)
@@ -45,7 +45,7 @@ To build the project and generate the bundle use Maven
 
     mvn clean package
 
-If everything checks out, the bundle for P2 should be available in the `target` folder
+If everything checks out, the bundle for p2 should be available in the `target` folder
 
 #### Build with Docker
 
@@ -59,7 +59,7 @@ For further information like how to persist volumes check out [the GitHub repo f
 
 The application will now be available from your browser at http://localhost:8081
 
-## Using P2 With Nexus Repository Manager 3
+## Using p2 With Nexus Repository Manager 3
 
 [We have detailed instructions on how to get started here!](docs/P2_USER_DOCUMENTATION.md)
 
@@ -87,9 +87,9 @@ All released versions can be found [here](https://github.com/sonatype-nexus-comm
 | Hosted  |                      |
 | Group   |                      |
 
-NOTE: P2 Proxy does not fully support the following as of yet:
+NOTE: p2 Proxy does not fully support the following as of yet:
 
-* Old style (non-P2) update sites. The code that accomplished this can be found [here](https://github.com/sonatype/nexus-public/blob/nexus-2.x/plugins/p2/nexus-p2-repository-plugin/src/main/java/org/sonatype/nexus/plugins/p2/repository/proxy/P2ProxyRepositoryImpl.java)
+* Old style (non-p2) update sites. The code that accomplished this can be found [here](https://github.com/sonatype/nexus-public/blob/nexus-2.x/plugins/p2/nexus-p2-repository-plugin/src/main/java/org/sonatype/nexus/plugins/p2/repository/proxy/P2ProxyRepositoryImpl.java)
   * These are fairly old, and have not been added at all
 
 If you'd like it to support the aforementioned sites, please file an issue, or better yet, submit a PR :)
@@ -98,7 +98,7 @@ If you'd like it to support the aforementioned sites, please file an issue, or b
 
 #### !!! After NXRM version 3.21, last released plugin's version is available directly in product and there is no need to install it separately !!!
 
-There are a range of options for installing the P2 plugin. You'll need to build it first, and
+There are a range of options for installing the p2 plugin. You'll need to build it first, and
 then install the plugin with the options shown below:
 
 ### Temporary Install
@@ -135,7 +135,7 @@ is running. You will still need to start the bundle using the karaf commands men
 
 ### (most) Permanent Install
 
-If you are trying to use the P2 plugin permanently, it likely makes more sense to do the following:
+If you are trying to use the p2 plugin permanently, it likely makes more sense to do the following:
 
 * Copy the bundle into `<nexus_dir>/system/org/sonatype/nexus/plugins/nexus-repository-p2/1.0.0/nexus-repository-p2-1.0.0.jar`
 * Make the following additions marked with + to `<nexus_dir>/system/org/sonatype/nexus/assemblies/nexus-core-feature/3.x.y/nexus-core-feature-3.x.y-features.xml`
@@ -157,12 +157,12 @@ If you are trying to use the P2 plugin permanently, it likely makes more sense t
 This will cause the plugin to be loaded and started with each startup of Nexus Repository.
 
 ## The Fine Print
-Starting from version 3.21+ the `P2` plugin is supported by Sonatype, but still is a contribution of ours to the open source community (read: you!)
+Starting from version 3.21+ the `p2` plugin is supported by Sonatype, but still is a contribution of ours to the open source community (read: you!)
 
 Remember:
 
 * Use this contribution at the risk tolerance that you have
-* Do NOT file Sonatype support tickets related to P2 support in regard to this plugin
+* Do NOT file Sonatype support tickets related to p2 support in regard to this plugin
 * DO file issues here on GitHub, so that the community can pitch in
 
 Phew, that was easier than I thought. Last but not least of all:
@@ -173,7 +173,7 @@ Have fun creating and using this plugin and the Nexus platform, we are glad to h
 
 Looking to contribute to our code but need some help? There's a few ways to get information:
 
-* P2 repositories Sonatype help documentation [Sonatype Help](https://help.sonatype.com/repomanager3/formats/p2-repositories)
+* p2 repositories Sonatype help documentation [Sonatype Help](https://help.sonatype.com/repomanager3/formats/p2-repositories)
 * Chat with us on [Gitter](https://gitter.im/sonatype/nexus-developers)
 * Check out the [Nexus3](http://stackoverflow.com/questions/tagged/nexus3) tag on Stack Overflow
 * Check out the [Nexus Repository User List](https://groups.google.com/a/glists.sonatype.com/forum/?hl=en#!forum/nexus-users)
