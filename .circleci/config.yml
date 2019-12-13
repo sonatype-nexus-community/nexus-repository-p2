@@ -2,49 +2,30 @@ version: 2.1
 
 orbs:
   github-maven-deploy: github-maven-deploy/github-maven-deploy@1.0.5
-
-mvn-build-test-command: &mvn-build-test-command
-  mvn-build-test-command: mvn clean verify -PbuildKar -Dit
-
-mvn-collect-artifacts-command: &mvn-collect-artifacts-command
-  mvn-collect-artifacts-command: |
-    mkdir -p ~/project/artifacts/junit/
-    cp ~/project/nexus-repository-p2/target/surefire-reports/*.xml ~/project/artifacts/junit/
-    cp ~/project/nexus-repository-p2/target/nexus-repository-* ~/project/artifacts/
-    cp ~/project/nexus-repository-p2-it/target/failsafe-reports/*.xml ~/project/artifacts/junit/
-
-mvn-deploy-command: &mvn-deploy-command
-  mvn-deploy-command: mvn -s .circleci/.maven.xml clean deploy -PbuildKar -DdeployAtEnd=true -DperformRelease=true -DskipTests -Dspotbugs.skip=true
-  context: rso-base
+  circleci-maven-release-orb: sonatype-nexus-community/circleci-maven-release-orb@0.0.11
 
 workflows:
-  workflow:
+  build-and-test:
     jobs:
       - github-maven-deploy/build-and-test:
-          <<: *mvn-build-test-command
-          <<: *mvn-collect-artifacts-command
-
-      - github-maven-deploy/approve-deploy-patch-version:
+          mvn-build-test-command: mvn clean verify -PbuildKar -Dit
+          mvn-collect-artifacts-command: |
+            mkdir -p ~/project/artifacts/junit/
+            cp ~/project/nexus-repository-p2/target/surefire-reports/*.xml ~/project/artifacts/junit/
+            cp ~/project/nexus-repository-p2/target/nexus-repository-* ~/project/artifacts/
+            cp ~/project/nexus-repository-p2-it/target/failsafe-reports/*.xml ~/project/artifacts/junit/
+  run-release:
+    jobs:
+      - approve-release:
           type: approval
+          filters:
+            branches:
+              only: master
+      - circleci-maven-release-orb/run-maven-release:
           requires:
-            - github-maven-deploy/build-and-test
-      - github-maven-deploy/approve-deploy-minor-version:
-          type: approval
-          requires:
-            - github-maven-deploy/build-and-test
-      - github-maven-deploy/approve-deploy-major-version:
-          type: approval
-          requires:
-            - github-maven-deploy/build-and-test
-      - github-maven-deploy/deploy-patch-version:
-          requires:
-            - github-maven-deploy/approve-deploy-patch-version
-          <<: *mvn-deploy-command
-      - github-maven-deploy/deploy-minor-version:
-          requires:
-            - github-maven-deploy/approve-deploy-minor-version
-          <<: *mvn-deploy-command
-      - github-maven-deploy/deploy-major-version:
-          requires:
-            - github-maven-deploy/approve-deploy-major-version
-          <<: *mvn-deploy-command
+            - approve-release
+          ssh-fingerprints: "07:aa:02:bc:13:62:4a:4b:ec:9a:b2:31:3b:5e:fc:60"
+          context: rso-base
+          filters:
+            branches:
+              only: master
