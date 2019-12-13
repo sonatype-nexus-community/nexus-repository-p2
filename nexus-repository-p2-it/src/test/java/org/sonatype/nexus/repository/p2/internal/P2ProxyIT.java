@@ -337,9 +337,6 @@ public class P2ProxyIT
     asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
     assertThat(asset.name(), is(equalTo(FEATURE_TEST_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
-
-    // make server work again
-    server.start();
   }
 
   @After
