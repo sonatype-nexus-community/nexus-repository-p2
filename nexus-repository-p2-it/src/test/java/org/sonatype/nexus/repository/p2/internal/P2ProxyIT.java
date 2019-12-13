@@ -22,6 +22,7 @@ import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.http.HttpStatus;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
+import org.sonatype.nexus.repository.storage.ComponentMaintenance;
 import org.sonatype.nexus.testsuite.testsupport.NexusITSupport;
 
 import org.apache.commons.io.IOUtils;
@@ -44,6 +45,8 @@ public class P2ProxyIT
   private static final String FORMAT_NAME = "p2";
 
   private static final String MIME_TYPE = "application/java-archive";
+
+  private static final String X_GZIP_TYPE = "application/x-gzip";
 
   private static final String COMPONENT_NAME = "org.eclipse.cvs.source";
 
@@ -127,6 +130,20 @@ public class P2ProxyIT
 
   private static final String INVALID_PACKAGE_URL = PACKAGE_BASE_PATH + INVALID_PACKAGE_NAME;
 
+  private static final String ACCELEO_FEATURE_JAR = "org.eclipse.acceleo.equinox.launcher_3.7.8.201902261618.jar";
+
+  private static final String ACCELEO_PLUGIN_GZ = "org.eclipse.acceleo.equinox.launcher_3.7.8.201902261618.jar.pack.gz";
+
+  private static final String ACCELEO_COMPONENT_NAME = "org.eclipse.acceleo.equinox.launcher";
+
+  private static final String ACCELEO_COMPONENT_VERSION = "3.7.8.201902261618";
+
+  private static final String
+      ACCELEO_FEATURE = ACCELEO_COMPONENT_NAME + ACCELEO_COMPONENT_VERSION + "/features/" + ACCELEO_FEATURE_JAR;
+
+  private static final String
+      ACCELEO_PLUGIN = ACCELEO_COMPONENT_NAME + ACCELEO_COMPONENT_VERSION + "/plugins/" + ACCELEO_PLUGIN_GZ;
+
   private P2Client proxyClient;
 
   private Repository proxyRepo;
@@ -176,6 +193,10 @@ public class P2ProxyIT
         .withBehaviours(Behaviours.file(testData.resolveFile(PLUGIN)))
         .serve("/" + FEATURE_TEST_PATH)
         .withBehaviours(Behaviours.file(testData.resolveFile(FEATURE)))
+        .serve("/" + ACCELEO_COMPONENT_NAME + ACCELEO_COMPONENT_VERSION + "/features/" + ACCELEO_FEATURE_JAR)
+        .withBehaviours(Behaviours.file(testData.resolveFile(ACCELEO_FEATURE_JAR)))
+        .serve("/" + ACCELEO_COMPONENT_NAME + ACCELEO_COMPONENT_VERSION + "/plugins/" + ACCELEO_PLUGIN_GZ)
+        .withBehaviours(Behaviours.file(testData.resolveFile(ACCELEO_PLUGIN_GZ)))
         .start();
 
     proxyRepo = repos.createP2Proxy("p2-test-proxy", server.getUrl().toExternalForm());
@@ -271,7 +292,7 @@ public class P2ProxyIT
     assertThat(status(proxyClient.get(CONTENT_JAR_PATH)), is(HttpStatus.OK));
 
     final Asset asset = findAsset(proxyRepo, CONTENT_JAR_PATH);
-    assertThat(asset.name(), is(equalTo( CONTENT_JAR_PATH)));
+    assertThat(asset.name(), is(equalTo(CONTENT_JAR_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
@@ -280,7 +301,7 @@ public class P2ProxyIT
     assertThat(status(proxyClient.get(BINARY_TEST_PATH)), is(HttpStatus.OK));
 
     final Asset asset = findAsset(proxyRepo, BINARY_TEST_PATH);
-    assertThat(asset.name(), is(equalTo( BINARY_TEST_PATH)));
+    assertThat(asset.name(), is(equalTo(BINARY_TEST_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
@@ -289,7 +310,7 @@ public class P2ProxyIT
     assertThat(status(proxyClient.get(PLUGIN_TEST_PATH)), is(HttpStatus.OK));
 
     final Asset asset = findAsset(proxyRepo, PLUGIN_TEST_PATH);
-    assertThat(asset.name(), is(equalTo( PLUGIN_TEST_PATH)));
+    assertThat(asset.name(), is(equalTo(PLUGIN_TEST_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
@@ -298,7 +319,7 @@ public class P2ProxyIT
     assertThat(status(proxyClient.get(FEATURE_TEST_PATH)), is(HttpStatus.OK));
 
     final Asset asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
-    assertThat(asset.name(), is(equalTo( FEATURE_TEST_PATH)));
+    assertThat(asset.name(), is(equalTo(FEATURE_TEST_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
   }
 
@@ -313,10 +334,10 @@ public class P2ProxyIT
 
     try (CloseableHttpResponse response = proxyClient.get(ARTIFACT_XML_TEST_PATH)) {
       HttpEntity entity = response.getEntity();
-      String result = IOUtils.toString(entity.getContent()).replaceAll("\\s+","");
+      String result = IOUtils.toString(entity.getContent()).replaceAll("\\s+", "");
 
       InputStream targetStream = new FileInputStream(testData.resolveFile(ARTIFACT_WITHOUT_MIRROR_XML));
-      String expected = IOUtils.toString(targetStream).replaceAll("\\s+","");
+      String expected = IOUtils.toString(targetStream).replaceAll("\\s+", "");
 
       assertThat(result, equalTo(expected));
     }
@@ -337,6 +358,42 @@ public class P2ProxyIT
     asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
     assertThat(asset.name(), is(equalTo(FEATURE_TEST_PATH)));
     assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
+  public void checkComponentRemovedWhenAssetRemoved() throws Exception {
+    assertThat(
+        status(proxyClient.get(ACCELEO_FEATURE)),
+        is(HttpStatus.OK));
+    assertThat(
+        status(proxyClient.get(ACCELEO_PLUGIN)),
+        is(HttpStatus.OK));
+
+    Asset assetFeature = findAsset(proxyRepo, ACCELEO_FEATURE);
+    assertThat(assetFeature.name(), is(equalTo(ACCELEO_FEATURE)));
+    assertThat(assetFeature.contentType(), is(equalTo(MIME_TYPE)));
+    assertThat(assetFeature.format(), is(equalTo(FORMAT_NAME)));
+
+    Asset assetPlugin = findAsset(proxyRepo, ACCELEO_PLUGIN);
+    assertThat(assetPlugin.name(), is(equalTo(ACCELEO_PLUGIN)));
+    assertThat(assetPlugin.contentType(), is(equalTo(X_GZIP_TYPE)));
+    assertThat(assetPlugin.format(), is(equalTo(FORMAT_NAME)));
+
+    assertThat(assetFeature.componentId(), is(equalTo(assetPlugin.componentId())));
+
+    Component component = findComponent(proxyRepo, ACCELEO_COMPONENT_NAME);
+    assertThat(component.version(), is(equalTo(ACCELEO_COMPONENT_VERSION)));
+    assertThat(component.name(), is(equalTo(ACCELEO_COMPONENT_NAME)));
+
+    ComponentMaintenance maintenanceFacet = proxyRepo.facet(ComponentMaintenance.class);
+
+    maintenanceFacet.deleteAsset(assetFeature.getEntityMetadata().getId());
+
+    component = findComponent(proxyRepo, ACCELEO_COMPONENT_NAME);
+    assertThat(component, is(equalTo(null)));
+
+    assetPlugin = findAsset(proxyRepo, ACCELEO_PLUGIN);
+    assertThat(assetPlugin, is(equalTo(null)));
   }
 
   @After
