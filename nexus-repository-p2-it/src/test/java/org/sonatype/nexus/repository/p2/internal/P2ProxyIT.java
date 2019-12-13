@@ -344,6 +344,23 @@ public class P2ProxyIT
   }
 
   @Test
+  public void checkCache() throws Exception {
+    assertThat(status(proxyClient.get(FEATURE_TEST_PATH)), is(HttpStatus.OK));
+
+    // fetch in cache and stop remote
+    Asset asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
+    assertThat(asset.name(), is(equalTo(FEATURE_TEST_PATH)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    server.stop();
+
+    // verify that fetch from cache works
+    assertThat(status(proxyClient.get(FEATURE_TEST_PATH)), is(HttpStatus.OK));
+    asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
+    assertThat(asset.name(), is(equalTo(FEATURE_TEST_PATH)));
+    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  }
+
+  @Test
   public void checkComponentRemovedWhenAssetRemoved() throws Exception {
     assertThat(
         status(proxyClient.get(ACCELEO_FEATURE)),
