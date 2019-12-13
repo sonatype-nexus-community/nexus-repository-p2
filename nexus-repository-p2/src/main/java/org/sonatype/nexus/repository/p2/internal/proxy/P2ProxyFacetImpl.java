@@ -116,7 +116,7 @@ public class P2ProxyFacetImpl
         return getAsset(p2PathUtils.maybePath(matcherState));
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
-        return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState)));
+        return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState), p2PathUtils.extension(matcherState)));
       case COMPONENT_BINARY:
         return getAsset(p2PathUtils.binaryPath(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState), p2PathUtils.version(matcherState)));
       default:
