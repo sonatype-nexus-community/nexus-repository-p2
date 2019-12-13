@@ -29,6 +29,7 @@ import org.sonatype.nexus.repository.http.HttpHandlers
 import org.sonatype.nexus.repository.http.PartialFetchHandler
 import org.sonatype.nexus.repository.httpclient.HttpClientFacet
 import org.sonatype.nexus.repository.p2.internal.AssetKind
+import org.sonatype.nexus.repository.p2.internal.P2ComponentMaintenance
 import org.sonatype.nexus.repository.p2.internal.P2Format
 import org.sonatype.nexus.repository.p2.internal.security.P2SecurityFacet
 import org.sonatype.nexus.repository.proxy.ProxyHandler
@@ -36,7 +37,6 @@ import org.sonatype.nexus.repository.purge.PurgeUnusedFacet
 import org.sonatype.nexus.repository.routing.RoutingRuleHandler
 import org.sonatype.nexus.repository.search.SearchFacet
 import org.sonatype.nexus.repository.security.SecurityHandler
-import org.sonatype.nexus.repository.storage.DefaultComponentMaintenanceImpl
 import org.sonatype.nexus.repository.storage.StorageFacet
 import org.sonatype.nexus.repository.storage.UnitOfWorkHandler
 import org.sonatype.nexus.repository.types.ProxyType
@@ -146,7 +146,7 @@ class P2ProxyRecipe
   HandlerContributor handlerContributor
 
   @Inject
-  Provider<DefaultComponentMaintenanceImpl> componentMaintenanceFacet
+  Provider<P2ComponentMaintenance> componentMaintenanceFacet
 
   @Inject
   Provider<HttpClientFacet> httpClientFacet
