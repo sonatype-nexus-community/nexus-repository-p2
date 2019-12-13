@@ -96,7 +96,7 @@ If you'd like it to support the aforementioned sites, please file an issue, or b
 
 ## Installing the plugin
 
-#### !!! After NXRM version 3.21, last released plugin's version is available directly from manager and no need to install it separately !!!
+#### !!! After NXRM version 3.21, last released plugin's version is available directly in product and there is no need to install it separately !!!
 
 There are a range of options for installing the P2 plugin. You'll need to build it first, and
 then install the plugin with the options shown below:
@@ -173,7 +173,7 @@ Have fun creating and using this plugin and the Nexus platform, we are glad to h
 
 Looking to contribute to our code but need some help? There's a few ways to get information:
 
-* P2 repositories Sonatype help documentation [Sonatype Help](https://help.sonatype.com/display/NXRM3M/p2+Repositories)
+* P2 repositories Sonatype help documentation [Sonatype Help](https://help.sonatype.com/repomanager3/formats/p2-repositories)
 * Chat with us on [Gitter](https://gitter.im/sonatype/nexus-developers)
 * Check out the [Nexus3](http://stackoverflow.com/questions/tagged/nexus3) tag on Stack Overflow
 * Check out the [Nexus Repository User List](https://groups.google.com/a/glists.sonatype.com/forum/?hl=en#!forum/nexus-users)
