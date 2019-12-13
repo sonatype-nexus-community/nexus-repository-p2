@@ -352,12 +352,12 @@ public class P2ProxyIT
         status(proxyClient.get(ACCELEO_PLUGIN)),
         is(HttpStatus.OK));
 
-    final Asset assetFeature = findAsset(proxyRepo, ACCELEO_FEATURE);
+    Asset assetFeature = findAsset(proxyRepo, ACCELEO_FEATURE);
     assertThat(assetFeature.name(), is(equalTo(ACCELEO_FEATURE)));
     assertThat(assetFeature.contentType(), is(equalTo(MIME_TYPE)));
     assertThat(assetFeature.format(), is(equalTo(FORMAT_NAME)));
 
-    final Asset assetPlugin = findAsset(proxyRepo, ACCELEO_PLUGIN);
+    Asset assetPlugin = findAsset(proxyRepo, ACCELEO_PLUGIN);
     assertThat(assetPlugin.name(), is(equalTo(ACCELEO_PLUGIN)));
     assertThat(assetPlugin.contentType(), is(equalTo(X_GZIP_TYPE)));
     assertThat(assetPlugin.format(), is(equalTo(FORMAT_NAME)));
@@ -374,6 +374,9 @@ public class P2ProxyIT
 
     component = findComponent(proxyRepo, ACCELEO_COMPONENT_NAME);
     assertThat(component, is(equalTo(null)));
+
+    assetPlugin = findAsset(proxyRepo, ACCELEO_PLUGIN);
+    assertThat(assetPlugin, is(equalTo(null)));
   }
 
   @After
