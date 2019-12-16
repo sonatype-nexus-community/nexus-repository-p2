@@ -17,13 +17,20 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -49,8 +56,10 @@ import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import org.apache.commons.io.FilenameUtils;
 
 import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.delete;
@@ -80,6 +89,10 @@ public class ArtifactsXmlAbsoluteUrlRemover
 
   private static final String REPOSITORY = "/repository/%s/%s";
 
+  private static final XMLEventFactory XML_EVENT_FACTORY = XMLEventFactory.newInstance();
+
+  private static final QName LOCATION_ATTR_NAME = new QName("location");
+
   public TempBlob removeMirrorUrlFromArtifactsXml(
       final TempBlob artifact,
       final Repository repository,
@@ -96,7 +109,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final String extension) throws IOException
   {
     return transformXmlMetadata(artifact, repository, file, extension, (reader, writer) -> changeLocationToAbsoluteInCompositeRepository(
-        reader, writer, remoteUrl, repository.getName()));
+        reader, writer, remoteUrl, repository));
   }
 
   private TempBlob transformXmlMetadata(final TempBlob artifact,
@@ -148,51 +161,146 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final XMLEventReader reader,
       final XMLEventWriter writer,
       final URI remoteUrl,
-      final String nexusRepositoryName) throws XMLStreamException
+      final Repository nexusRepository) throws XMLStreamException, IOException
   {
     List<XMLEvent> buffer = new ArrayList<>();
 
     while (reader.hasNext()) {
       XMLEvent event = reader.nextEvent();
 
-      if (isStartTagWithName(event, "child")) {
-        buffer.add(changeLocationAttribute((StartElement) event, remoteUrl, nexusRepositoryName));
+      if (isEndTagWithName(event, "child")) {
+        continue;
+      }
+      if (isStartTagWithName(event, "child") || isStartTagWithName(event, "children")) {
+        Optional<String> locationAttributeFromXmlEvent = getLocationAttributeFromXmlEvent((StartElement) event);
+        if (!locationAttributeFromXmlEvent.isPresent()) {
+          buffer.add(event);
+        }
+        else {
+          // check location attribute for composite repository and rewrite it if needed
+          List<XMLEvent> simpleRepositories = changeLocationAttribute(locationAttributeFromXmlEvent.get(), remoteUrl, nexusRepository).stream()
+              .map(assetPath -> String.format(REPOSITORY, nexusRepository.getName(), assetPath))
+              .flatMap((String locationValue) -> createLocationXmlEvent(locationValue).stream())
+              .collect(Collectors.toList());
+          buffer.addAll(simpleRepositories);
+        }
+      }
+      else if (isEndTagWithName(event, "children")) {
+        for (XMLEvent xmlEvent : buffer) {
+          if (isStartTagWithName(xmlEvent, "children")) {
+            xmlEvent = updateSize(xmlEvent.asStartElement(), countPropertyTags(buffer, "child"), XML_EVENT_FACTORY);
+          }
+          writer.add(xmlEvent);
+        }
+        buffer.clear();
       }
       else {
-        buffer.add(event);
+        writer.add(event);
       }
-
-      for (XMLEvent xmlEvent : buffer) {
-        writer.add(xmlEvent);
-      }
-      buffer.clear();
     }
   }
 
-  private XMLEvent changeLocationAttribute(
-      final StartElement locationElement,
-      final URI remoteUrl,
-      final String nexusRepositoryName)
-  {
-    QName locationAttrName = new QName("location");
-    Attribute locationAttribute = locationElement.getAttributeByName(locationAttrName);
+  private Optional<String> getLocationAttributeFromXmlEvent(final StartElement locationElement) {
+    Attribute locationAttribute = locationElement.getAttributeByName(LOCATION_ATTR_NAME);
+    if (locationAttribute != null) {
+      return Optional.ofNullable(locationAttribute.getValue());
+    }
+    return Optional.empty();
+  }
 
-    if (locationAttribute == null) {
-      return locationElement;
+  private List<String> changeLocationAttribute(
+      final String locationAttributeValue,
+      final URI remoteUrl,
+      final Repository nexusRepository) throws IOException, XMLStreamException
+  {
+    URI uri = URI.create(locationAttributeValue);
+    return convertCompositeUrlToSimples(uri.isAbsolute() ? uri.toString() : remoteUrl.resolve(uri).toString(), nexusRepository).stream()
+        .map(P2PathUtils::escapeUriToPath)
+    .collect(Collectors.toList());
+  }
+
+  private List<XMLEvent> createLocationXmlEvent(String locationValue) {
+    QName childNameAttr = new QName("child");
+    return Lists.newArrayList(XML_EVENT_FACTORY.createStartElement(childNameAttr, Collections.singletonList(
+        XML_EVENT_FACTORY
+            .createAttribute(LOCATION_ATTR_NAME, locationValue))
+            .iterator(),
+        Collections.emptyIterator()), XML_EVENT_FACTORY.createEndElement(childNameAttr, Collections.singletonList(
+        XML_EVENT_FACTORY
+            .createAttribute(LOCATION_ATTR_NAME, locationValue))
+            .iterator()));
+  }
+
+  private List<String> convertCompositeUrlToSimples(final String urlString, final Repository repository)
+      throws IOException, XMLStreamException
+  {
+    AtomicReference<Path> compositeContentTempFile = new AtomicReference<>(null);
+    try {
+      String baseUrl = urlString.endsWith(P2PathUtils.DIVIDER) ? urlString : urlString + P2PathUtils.DIVIDER;
+      getFilePath(baseUrl, "compositeContent", ".xml").ifPresent(compositeContentTempFile::set);
+      getFilePath(baseUrl, "compositeContent", ".jar").ifPresent(compositeContentTempFile::set);
+
+      if (compositeContentTempFile.get() == null) {
+        return Collections.singletonList(urlString);
+      }
+      else {
+        List<String> simpleRepositories = new ArrayList<>();
+        TempBlob tempBlob = convertFileToTempBlob(compositeContentTempFile.get(), repository);
+        try (InputStream xmlIn = xmlInputStream(tempBlob, "compositeContent.xml",
+            FilenameUtils.getExtension(compositeContentTempFile.get().toString()), compositeContentTempFile.get())) {
+          XMLInputFactory inputFactory = XMLInputFactory.newFactory();
+          XMLEventReader reader = null;
+          try {
+            reader = inputFactory.createXMLEventReader(xmlIn);
+            while (reader.hasNext()) {
+              XMLEvent event = reader.nextEvent();
+
+              if (isStartTagWithName(event, "child")) {
+                Optional<String> locationAttributeFromXmlEvent = getLocationAttributeFromXmlEvent((StartElement) event);
+                if (locationAttributeFromXmlEvent.isPresent()) {
+                  simpleRepositories.addAll(
+                      changeLocationAttribute(locationAttributeFromXmlEvent.get(), URI.create(urlString), repository));
+                }
+              }
+            }
+          }
+          finally {
+            if (reader != null) {
+              reader.close();
+            }
+          }
+        }
+        return simpleRepositories;
+      }
+    }
+    catch (MalformedURLException e) {
+      log.error("Invalid composite repository: {} ", urlString);
+    }
+    finally {
+      if (compositeContentTempFile.get() != null) {
+        delete(compositeContentTempFile.get());
+      }
+    }
+    return Collections.emptyList();
+  }
+
+  private Optional<Path> getFilePath(final String baseUrl, final String filename, final String extension) throws IOException {
+    Path tempFile = null;
+    URL url = new URL(baseUrl + filename + extension);
+    boolean isRemoteExist = isRemoteFileExist(url);
+    if (isRemoteExist) {
+      InputStream in = url.openStream();
+      tempFile = createTempFile(filename, extension);
+      Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
     }
 
-    String value = locationAttribute.getValue();
-    URI uri = URI.create(value);
-    String assetPath =
-        P2PathUtils.escapeUriToPath(uri.isAbsolute() ? uri.toString() : remoteUrl.resolve(uri).toString());
-    String locationValue = String.format(REPOSITORY, nexusRepositoryName, assetPath);
-    StartElement startElement =
-        XMLEventFactory.newInstance().createStartElement(new QName("child"), Collections.singletonList(
-            XMLEventFactory.newInstance()
-                .createAttribute(locationAttrName, locationValue))
-                .iterator(),
-            Collections.emptyIterator());
-    return startElement;
+    return Optional.ofNullable(tempFile);
+  }
+
+  private boolean isRemoteFileExist(final URL url) throws IOException {
+    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    int responseCode = connection.getResponseCode();
+    return HttpURLConnection.HTTP_OK == responseCode;
   }
 
   private InputStream xmlInputStream(
@@ -264,7 +372,6 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final XMLEventReader reader,
       final XMLEventWriter writer) throws XMLStreamException
   {
-    final XMLEventFactory eventFactory = XMLEventFactory.newInstance();
     XMLEvent previous = null;
 
     // We need to buffer events so that we can also update properties size when removing the mirrorsUrl property
@@ -289,7 +396,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
       if (isEndTagWithName(event, "properties")) {
         for (XMLEvent xmlEvent : buffer) {
           if (isStartTagWithName(xmlEvent, "properties")) {
-            xmlEvent = updateSize(xmlEvent.asStartElement(), countPropertyTags(buffer), eventFactory);
+            xmlEvent = updateSize(xmlEvent.asStartElement(), countPropertyTags(buffer, "property"), XML_EVENT_FACTORY);
           }
           writer.add(xmlEvent);
         }
@@ -305,7 +412,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final int size,
       final XMLEventFactory eventFactory)
   {
-    Iterator updatedAttributes = updateSizeAttribute(tag.getAttributes(), size, eventFactory);
+    Iterator updatedAttributes = updateSizeAttribute(tag.getAttributes(), size);
     return eventFactory.createStartElement(tag.getName().getPrefix(),
         tag.getName().getNamespaceURI(),
         tag.getName().getLocalPart(),
@@ -315,14 +422,13 @@ public class ArtifactsXmlAbsoluteUrlRemover
 
   private Iterator updateSizeAttribute(
       final Iterator<Attribute> attributes,
-      final int size,
-      final XMLEventFactory eventFactory)
+      final int size)
   {
     List<Attribute> processedAttributes = new ArrayList<>();
     while (attributes.hasNext()) {
       Attribute attribute = attributes.next();
       if (attribute.getName().getLocalPart().equals("size")) {
-        Attribute sizeAttribute = eventFactory.createAttribute(attribute.getName(), Integer.toString(size));
+        Attribute sizeAttribute = XML_EVENT_FACTORY.createAttribute(attribute.getName(), Integer.toString(size));
         if (sizeAttribute != null) {
           processedAttributes.add(sizeAttribute);
         }
@@ -334,10 +440,10 @@ public class ArtifactsXmlAbsoluteUrlRemover
     return processedAttributes.iterator();
   }
 
-  private int countPropertyTags(final List<XMLEvent> buffer) {
+  private int countPropertyTags(final List<XMLEvent> buffer, final String tagForCounting) {
     int count = 0;
     for (XMLEvent xmlEvent : buffer) {
-      if (isStartTagWithName(xmlEvent, "property")) {
+      if (isStartTagWithName(xmlEvent, tagForCounting)) {
         count++;
       }
     }
@@ -382,6 +488,6 @@ public class ArtifactsXmlAbsoluteUrlRemover
   }
 
   private interface XmlStreamTransformer {
-    void transform(XMLEventReader reader, XMLEventWriter writer) throws XMLStreamException;
+    void transform(XMLEventReader reader, XMLEventWriter writer) throws XMLStreamException, IOException;
   }
 }

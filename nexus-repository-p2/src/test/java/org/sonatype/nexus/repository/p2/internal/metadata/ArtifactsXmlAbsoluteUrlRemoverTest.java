@@ -72,11 +72,19 @@ public class ArtifactsXmlAbsoluteUrlRemoverTest
   }
 
   @Test
-  public void testCheckUrl() throws Exception {
-    when(artifactsXml.get()).thenReturn(getClass().getResourceAsStream("compositeArtifacts.xml"));
+  public void testCheckUrl09() throws Exception {
+    when(artifactsXml.get()).thenReturn(getClass().getResourceAsStream("compositeArtifacts09.xml"));
     when(repository.getName()).thenReturn("dummyRepoName");
-    TempBlob modified = underTest.editUrlPathForCompositeRepository(artifactsXml, URI.create("http://test/test/test/"), repository, "compositeArtifacts", "xml");
-    assertXmlMatches(modified.get(), "compositeArtifactsWithoutDots.xml");
+    TempBlob modified = underTest.editUrlPathForCompositeRepository(artifactsXml, URI.create("https://download.eclipse.org/releases/2019-09/"), repository, "compositeArtifacts", "xml");
+    assertXmlMatches(modified.get(), "compositeArtifactsWithResolvedUrls09.xml");
+  }
+
+  @Test
+  public void testCheckUrl12() throws Exception {
+    when(artifactsXml.get()).thenReturn(getClass().getResourceAsStream("compositeArtifacts12.xml"));
+    when(repository.getName()).thenReturn("dummyRepoName");
+    TempBlob modified = underTest.editUrlPathForCompositeRepository(artifactsXml, URI.create("https://download.eclipse.org/releases/2019-12/"), repository, "compositeArtifacts", "xml");
+    assertXmlMatches(modified.get(), "compositeArtifactsWithResolvedUrls12.xml");
   }
 
   @Test
