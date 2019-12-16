@@ -12,7 +12,7 @@
  */
 package org.sonatype.nexus.repository.p2.internal;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -23,13 +23,13 @@ import javax.inject.Singleton;
 
 import org.sonatype.nexus.repository.browse.BrowseNodeGenerator;
 import org.sonatype.nexus.repository.browse.BrowsePaths;
-import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
 
 import com.google.common.base.Splitter;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.HTTPS_NXRM_PREFIX;
@@ -47,34 +47,42 @@ public class P2BrowseNodeGenerator
 
   @Override
   public List<BrowsePaths> computeAssetPaths(final Asset asset, @Nullable final Component component) {
-    if (component != null) {
-      List<BrowsePaths> paths = computeComponentPaths(asset, component);
-      String assetName = getAssetNameWithoutRemotePrefix(asset);
-      assetName = assetName.contains(DIVIDER) ? assetName.substring(assetName.lastIndexOf(DIVIDER) + 1) : assetName;
-      BrowsePaths.appendPath(paths, assetName);
-      return paths;
-    }
-
-    return BrowsePaths.fromPaths(Collections.singletonList(getAssetNameWithoutRemotePrefix(asset)), false);
+    int shift = component == null ? 1 : 2;
+    Pair<String, String> assetName = splitToRemoteAndAssetName(asset.name(), shift);
+    List<BrowsePaths> paths = Lists.newArrayList(computeComponentPaths(asset, component).iterator());
+    paths.addAll(BrowsePaths
+        .fromPaths(Lists.newArrayList(Splitter.on(DIVIDER).omitEmptyStrings().split(assetName.getRight()).iterator()),
+            true));
+    return paths;
   }
 
   @Override
-  public List<BrowsePaths> computeComponentPaths(final Asset asset, final Component component) {
-    List<String> pathParts = Lists.newArrayList(Splitter.on('.').omitEmptyStrings().split(component.name()).iterator());
-    pathParts.add(component.version());
+  public List<BrowsePaths> computeComponentPaths(final Asset asset, @Nullable final Component component) {
+    List<String> pathParts = new ArrayList<>();
 
-    String assetName = getAssetNameWithoutRemotePrefix(asset);
-    String pathPrefix = assetName.contains(DIVIDER) ?
-        assetName.substring(0, assetName.lastIndexOf(DIVIDER)) : StringUtils.EMPTY;
-    if (!pathPrefix.isEmpty()) {
-      pathParts.add(pathPrefix);
+    int shift = component == null ? 1 : 2;
+    String remoteFromAssetName = splitToRemoteAndAssetName(asset.name(), shift).getLeft();
+    if (!remoteFromAssetName.isEmpty()) {
+      pathParts.add(remoteFromAssetName);
     }
+    if (component != null) {
+      pathParts.addAll(Lists.newArrayList(Splitter.on('.').omitEmptyStrings().split(component.name()).iterator()));
+      pathParts.add(component.version());
+    }
+
     return BrowsePaths.fromPaths(pathParts, true);
   }
 
-  private String getAssetNameWithoutRemotePrefix(final Asset asset) {
-    String assetName = asset.name();
-    Matcher matcher = Pattern.compile(REMOTE_URL_PREFIX_REGEX).matcher(assetName);
-    return matcher.find() ? assetName.substring(matcher.end()) : assetName;
+  private Pair<String, String> splitToRemoteAndAssetName(final String assetName, final int shift) {
+    int indexOfRemoteEnd = StringUtils.lastOrdinalIndexOf(assetName, DIVIDER, shift);
+    return indexOfRemoteEnd != -1 ? Pair
+        .of(getRemoteWithoutPrefix(assetName.substring(0, indexOfRemoteEnd)),
+            assetName.substring(indexOfRemoteEnd + 1)) : Pair
+        .of(StringUtils.EMPTY, assetName);
+  }
+
+  private String getRemoteWithoutPrefix(final String remote) {
+    Matcher matcher = Pattern.compile(REMOTE_URL_PREFIX_REGEX).matcher(remote);
+    return matcher.find() ? remote.substring(matcher.end()) : remote;
   }
 }
