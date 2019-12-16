@@ -71,7 +71,9 @@ public class JarParser
     this.builder = factory.newDocumentBuilder();
   }
 
-  public Optional<P2Attributes> getAttributesFromManifest(final JarInputStream jis) throws InvalidMetadataException
+  public Optional<P2Attributes> getAttributesFromManifest(
+      final JarInputStream jis,
+      final P2PathUtils p2PathUtils) throws InvalidMetadataException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
@@ -87,7 +89,7 @@ public class JarParser
           String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
 
           p2Attributes = P2Attributes.builder()
-              .componentName(name)
+              .componentName(p2PathUtils.normalizeComponentName(name))
               .pluginName(mainManifestAttributes
                   .getValue("Bundle-Name"))
               .componentVersion(mainManifestAttributes
@@ -112,7 +114,9 @@ public class JarParser
     return resultName;
   }
 
-  public Optional<P2Attributes> getAttributesFromFeatureXML(final JarInputStream jis) throws InvalidMetadataException
+  public Optional<P2Attributes> getAttributesFromFeatureXML(
+      final JarInputStream jis,
+      final P2PathUtils p2PathUtils) throws InvalidMetadataException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
@@ -126,7 +130,7 @@ public class JarParser
             componentName = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
           }
           p2Attributes = P2Attributes.builder()
-              .componentName(componentName)
+              .componentName(p2PathUtils.normalizeComponentName(componentName))
               .pluginName(extractValueFromDocument(XML_NAME_PATH, document))
               .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
               .build();

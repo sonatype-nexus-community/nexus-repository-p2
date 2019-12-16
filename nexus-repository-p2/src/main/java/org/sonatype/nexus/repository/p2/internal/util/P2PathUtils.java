@@ -20,6 +20,8 @@ import org.sonatype.nexus.repository.view.Context;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher.State;
 
+import org.apache.commons.lang.StringUtils;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.join;
@@ -45,6 +47,10 @@ public class P2PathUtils
   private static final String HTTP_URL_PREFIX = "http://";
 
   private static final String HTTPS_URL_PREFIX = "https://";
+
+  private static final String FEATURE = ".feature";
+
+  private static final String PLUGIN = ".plugin";
 
   /**
    * * Returns the path from a {@link TokenMatcher.State}.
@@ -123,7 +129,18 @@ public class P2PathUtils
    * @see #name(State)
    */
   public String componentName(final TokenMatcher.State state) {
-    return name(state).split(NAME_VERSION_SPLITTER)[0];
+    String componentName = name(state).split(NAME_VERSION_SPLITTER)[0];
+    return normalizeComponentName(componentName);
+  }
+
+  /**
+   * Returns the Component Name from the name without suffixes like ".feature" or ".plugin"
+   */
+  public String normalizeComponentName(final String componentName) {
+    String normalizedComponentName = componentName;
+    normalizedComponentName = StringUtils.removeEnd(normalizedComponentName, FEATURE);
+    normalizedComponentName = StringUtils.removeEnd(normalizedComponentName, PLUGIN);
+    return normalizedComponentName;
   }
 
   /**

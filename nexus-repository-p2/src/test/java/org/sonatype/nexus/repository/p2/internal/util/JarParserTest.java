@@ -35,6 +35,8 @@ public class JarParserTest
 {
   private JarParser underTest;
 
+  private P2PathUtils p2PathUtils;
+
   @Mock
   private TempBlob tempBlob;
 
@@ -55,6 +57,7 @@ public class JarParserTest
   @Before
   public void setUp() throws Exception {
     underTest = new JarParser();
+    p2PathUtils = new P2PathUtils();
   }
 
   @Test
@@ -62,7 +65,7 @@ public class JarParserTest
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
     JarInputStream jis = new JarInputStream(tempBlob.get());
 
-    P2Attributes attributesFromJarFile = underTest.getAttributesFromFeatureXML(jis).get();
+    P2Attributes attributesFromJarFile = underTest.getAttributesFromFeatureXML(jis, p2PathUtils).get();
     assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_XML_COMPONENT_VERSION)));
   }
 
@@ -89,7 +92,7 @@ public class JarParserTest
     JarInputStream jis = mock(JarInputStream.class);
     when(jis.getNextJarEntry()).thenReturn(null);
 
-    assertThat(underTest.getAttributesFromFeatureXML(jis).isPresent(), is(false));
+    assertThat(underTest.getAttributesFromFeatureXML(jis, p2PathUtils).isPresent(), is(false));
   }
 
   @Test
@@ -97,11 +100,11 @@ public class JarParserTest
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(NON_P2_JAR));
     JarInputStream jis = new JarInputStream(tempBlob.get());
 
-    assertThat(underTest.getAttributesFromFeatureXML(jis).isPresent(), is(false));
+    assertThat(underTest.getAttributesFromFeatureXML(jis, p2PathUtils).isPresent(), is(false));
   }
 
   private P2Attributes getAttributesFromJarFile(JarInputStream jis) throws InvalidMetadataException
   {
-    return underTest.getAttributesFromManifest(jis).orElseThrow(() -> new AssertionError("No Attributes found to use"));
+    return underTest.getAttributesFromManifest(jis, p2PathUtils).orElseThrow(() -> new AssertionError("No Attributes found to use"));
   }
 }

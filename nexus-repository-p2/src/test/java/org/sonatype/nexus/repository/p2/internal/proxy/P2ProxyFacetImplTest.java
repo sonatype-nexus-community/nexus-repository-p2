@@ -73,7 +73,7 @@ public class P2ProxyFacetImplTest
   @Test
   public void getVersion() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    when(jarParser.getAttributesFromFeatureXML(any()))
+    when(jarParser.getAttributesFromFeatureXML(any(), p2PathUtils))
         .thenReturn(of(buildWithVersionAndExtension()));
 
     P2Attributes p2Attributes = underTest
@@ -84,7 +84,7 @@ public class P2ProxyFacetImplTest
 
   @Test(expected = IOException.class)
   public void getUnknownVersion() throws Exception {
-    when(jarParser.getAttributesFromFeatureXML(any())).thenReturn(Optional.empty());
+    when(jarParser.getAttributesFromFeatureXML(any(), p2PathUtils)).thenReturn(Optional.empty());
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
     P2Attributes p2Attributes = buildWithVersionAndExtension();

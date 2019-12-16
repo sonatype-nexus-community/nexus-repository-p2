@@ -353,7 +353,7 @@ public class P2ProxyFacetImpl
     Optional<P2Attributes> p2Attributes = Optional.empty();
     // first try Features XML
     try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-      p2Attributes = jarParser.getAttributesFromFeatureXML(jis);
+      p2Attributes = jarParser.getAttributesFromFeatureXML(jis, p2PathUtils);
     }
     catch (InvalidMetadataException ex) {
       log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
@@ -362,7 +362,7 @@ public class P2ProxyFacetImpl
     // second try Manifest
     if (!p2Attributes.isPresent()) {
       try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-        p2Attributes = jarParser.getAttributesFromManifest(jis);
+        p2Attributes = jarParser.getAttributesFromManifest(jis, p2PathUtils);
       }
       catch (InvalidMetadataException ex) {
         log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());
