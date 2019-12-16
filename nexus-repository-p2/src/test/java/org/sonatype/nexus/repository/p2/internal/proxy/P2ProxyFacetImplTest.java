@@ -21,7 +21,6 @@ import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUr
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.p2.internal.util.JarParser;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
-import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
 import org.sonatype.nexus.repository.storage.TempBlob;
 

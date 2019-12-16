@@ -53,6 +53,16 @@ import com.google.common.annotations.VisibleForTesting;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.binaryPath;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.extension;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.matcherState;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.maybePath;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.name;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.path;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.toP2Attributes;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.toP2AttributesBinary;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.unescapePathToUri;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.version;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 
 /**
@@ -97,7 +107,7 @@ public class P2ProxyFacetImpl
   @Override
   protected Content getCachedContent(final Context context) throws IOException {
     AssetKind assetKind = context.getAttributes().require(AssetKind.class);
-    TokenMatcher.State matcherState = P2PathUtils.matcherState(context);
+    TokenMatcher.State matcherState = matcherState(context);
     switch(assetKind) {
       case ARTIFACT_JAR:
       case ARTIFACT_XML:
@@ -110,12 +120,12 @@ public class P2ProxyFacetImpl
       case COMPOSITE_CONTENT_JAR:
       case COMPOSITE_ARTIFACTS_XML:
       case COMPOSITE_CONTENT_XML:
-        return getAsset(P2PathUtils.maybePath(matcherState));
+        return getAsset(maybePath(matcherState));
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
-        return getAsset(P2PathUtils.path(P2PathUtils.path(matcherState), P2PathUtils.name(matcherState), P2PathUtils.extension(matcherState)));
+        return getAsset(path(path(matcherState), name(matcherState), extension(matcherState)));
       case COMPONENT_BINARY:
-        return getAsset(P2PathUtils.binaryPath(P2PathUtils.path(matcherState), P2PathUtils.name(matcherState), P2PathUtils.version(matcherState)));
+        return getAsset(binaryPath(path(matcherState), name(matcherState), version(matcherState)));
       default:
         throw new IllegalStateException();
     }
@@ -124,7 +134,7 @@ public class P2ProxyFacetImpl
   @Override
   protected Content store(final Context context, final Content content) throws IOException {
     AssetKind assetKind = context.getAttributes().require(AssetKind.class);
-    TokenMatcher.State matcherState = P2PathUtils.matcherState(context);
+    TokenMatcher.State matcherState = matcherState(context);
     switch(assetKind) {
       case ARTIFACT_JAR:
       case ARTIFACT_XML:
@@ -137,14 +147,14 @@ public class P2ProxyFacetImpl
       case COMPOSITE_CONTENT_JAR:
       case COMPOSITE_ARTIFACTS_XML:
       case COMPOSITE_CONTENT_XML:
-        return putMetadata(P2PathUtils.maybePath(matcherState),
+        return putMetadata(maybePath(matcherState),
             content,
             assetKind);
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
-        return putComponent(P2PathUtils.toP2Attributes(matcherState), content, assetKind);
+        return putComponent(toP2Attributes(matcherState), content, assetKind);
       case COMPONENT_BINARY:
-        return putBinary(P2PathUtils.toP2AttributesBinary(matcherState), content);
+        return putBinary(toP2AttributesBinary(matcherState), content);
       default:
         throw new IllegalStateException();
     }
@@ -340,7 +350,7 @@ public class P2ProxyFacetImpl
   @Override
   protected String getUrl(@Nonnull final Context context) {
     String path = context.getRequest().getPath().substring(1);
-    return P2PathUtils.unescapePathToUri(path);
+    return unescapePathToUri(path);
   }
 
   @VisibleForTesting

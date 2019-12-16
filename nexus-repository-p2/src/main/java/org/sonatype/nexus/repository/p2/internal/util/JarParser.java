@@ -37,6 +37,7 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import static javax.xml.xpath.XPathConstants.NODE;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
 
 /**
  * Utility methods for working with Jar (Jar Binks, worst character) files
@@ -110,7 +111,7 @@ public class JarParser
     if (name != null) {
       resultName = name.split(";")[0];
     }
-    return P2PathUtils.normalizeComponentName(resultName);
+    return normalizeComponentName(resultName);
   }
 
   public Optional<P2Attributes> getAttributesFromFeatureXML(
@@ -128,7 +129,7 @@ public class JarParser
             pluginId = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
           }
 
-          String componentName = P2PathUtils.normalizeComponentName(pluginId);
+          String componentName = normalizeComponentName(pluginId);
           p2Attributes = P2Attributes.builder()
               .componentName(componentName)
               .pluginName(extractValueFromDocument(XML_NAME_PATH, document))

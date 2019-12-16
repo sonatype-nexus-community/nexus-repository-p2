@@ -43,8 +43,11 @@ public class P2PathUtilsTest
   AttributesMap attributesMap;
 
   private final String fakePath = "fakepath";
+
   private final String fakeComponentName = "eclipsepackage1";
+
   private final String fakeFileName = fakeComponentName + "_2_3.jar";
+
   private final String fakeExtension = "pack.gz";
 
   @Test
