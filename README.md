@@ -45,7 +45,7 @@ To build the project and generate the bundle use Maven
 
     mvn clean package
 
-If everything checks out, the bundle for p2 should be available in the `target` folder
+If everything checks out, the bundle for p2 should be available in the `target` folder.
 
 #### Build with Docker
 
@@ -89,16 +89,15 @@ All released versions can be found [here](https://github.com/sonatype-nexus-comm
 
 NOTE: p2 Proxy does not fully support the following as of yet:
 
-* Old style (non-p2) update sites. The code that accomplished this can be found [here](https://github.com/sonatype/nexus-public/blob/nexus-2.x/plugins/p2/nexus-p2-repository-plugin/src/main/java/org/sonatype/nexus/plugins/p2/repository/proxy/P2ProxyRepositoryImpl.java)
-  * These are fairly old, and have not been added at all
+* Old style (non-p2) update sites. These are fairly old, and have not been added at all.
 
 If you'd like it to support the aforementioned sites, please file an issue, or better yet, submit a PR :)
 
 ## Installing the plugin
 
-#### !!! After NXRM version 3.21, last released plugin's version is available directly in product and there is no need to install it separately !!!
+:bangbang: `After NXRM version 3.21, last released plugin's version is available directly in product and there is no need to install it separately` :bangbang:
 
-There are a range of options for installing the p2 plugin. You'll need to build it first, and
+For older versions there are a range of options for installing the p2 plugin. You'll need to build it first, and
 then install the plugin with the options shown below:
 
 ### Temporary Install
@@ -157,7 +156,7 @@ If you are trying to use the p2 plugin permanently, it likely makes more sense t
 This will cause the plugin to be loaded and started with each startup of Nexus Repository.
 
 ## The Fine Print
-Starting from version 3.21+ the `p2` plugin is supported by Sonatype, but still is a contribution of ours to the open source community (read: you!)
+Starting from version 3.21 the `p2` plugin is supported by Sonatype, but still is a contribution of ours to the open source community (read: you!).
 
 Remember:
 
