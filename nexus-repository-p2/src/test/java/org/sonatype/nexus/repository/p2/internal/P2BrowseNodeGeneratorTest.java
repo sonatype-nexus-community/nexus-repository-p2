@@ -15,6 +15,7 @@ package org.sonatype.nexus.repository.p2.internal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.sonatype.nexus.repository.browse.BrowsePaths;
 import org.sonatype.nexus.repository.browse.BrowseTestSupport;
@@ -22,6 +23,7 @@ import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 public class P2BrowseNodeGeneratorTest
@@ -31,11 +33,13 @@ public class P2BrowseNodeGeneratorTest
 
   private static final String COMPONENT_VERSION = "1.7.5";
 
-  private static final String REMOTE_PREFIX = "http/";
+  private static final String BASE_URL = "www.dummy-url.com";
+
+  private static final String REMOTE_PREFIX = "http/" + BASE_URL;
 
   private static final String FEATURES = "features";
 
-  private static final String ASSET_NAME_PREFIX = REMOTE_PREFIX + FEATURES;
+  private static final String ASSET_NAME_PREFIX = REMOTE_PREFIX + P2PathUtils.DIVIDER + FEATURES;
 
   private static final String ASSET_NAME = "assetName";
 
@@ -46,9 +50,12 @@ public class P2BrowseNodeGeneratorTest
     Component component = createComponent(String.join(".", COMPONENT_NAME), null, COMPONENT_VERSION);
     Asset asset = createAsset(ASSET_NAME_PREFIX + P2PathUtils.DIVIDER + ASSET_NAME);
 
-    List<BrowsePaths> paths = generator.computeAssetPaths(asset, component);
-    List<String> expectedResult = new ArrayList<>(COMPONENT_NAME);
+    List<String> paths = generator.computeAssetPaths(asset, component).stream().map(BrowsePaths::getBrowsePath).collect(
+        Collectors.toList());
+    List<String> expectedResult = new ArrayList<>();
+    expectedResult.add(BASE_URL);
+    expectedResult.addAll(COMPONENT_NAME);
     expectedResult.addAll(Arrays.asList(COMPONENT_VERSION, FEATURES, ASSET_NAME));
-    assertPaths(expectedResult, paths, false);
+    Assert.assertEquals(paths, expectedResult);
   }
 }
