@@ -29,7 +29,6 @@ import org.sonatype.nexus.repository.storage.Component;
 import com.google.common.base.Splitter;
 import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.HTTPS_NXRM_PREFIX;
@@ -47,11 +46,11 @@ public class P2BrowseNodeGenerator
 
   @Override
   public List<BrowsePaths> computeAssetPaths(final Asset asset, @Nullable final Component component) {
-    int shift = component == null ? 1 : 2;
-    Pair<String, String> assetName = splitToRemoteAndAssetName(asset.name(), shift);
+    String remote = component == null ? getRemoteForMetadataAsset(asset.name()) : getRemoteForPackage(asset.name());
     List<BrowsePaths> paths = Lists.newArrayList(computeComponentPaths(asset, component).iterator());
     paths.addAll(BrowsePaths
-        .fromPaths(Lists.newArrayList(Splitter.on(DIVIDER).omitEmptyStrings().split(assetName.getRight()).iterator()),
+        .fromPaths(Lists.newArrayList(
+            Splitter.on(DIVIDER).omitEmptyStrings().split(getRelativePath(asset.name(), remote)).iterator()),
             true));
     return paths;
   }
@@ -59,26 +58,29 @@ public class P2BrowseNodeGenerator
   @Override
   public List<BrowsePaths> computeComponentPaths(final Asset asset, @Nullable final Component component) {
     List<String> pathParts = new ArrayList<>();
-
-    int shift = component == null ? 1 : 2;
-    String remoteFromAssetName = splitToRemoteAndAssetName(asset.name(), shift).getLeft();
-    if (!remoteFromAssetName.isEmpty()) {
-      pathParts.add(remoteFromAssetName);
+    String remote = component == null ? getRemoteForMetadataAsset(asset.name()) : getRemoteForPackage(asset.name());
+    if (!remote.isEmpty()) {
+      pathParts.add(getRemoteWithoutPrefix(remote));
     }
     if (component != null) {
       pathParts.addAll(Lists.newArrayList(Splitter.on('.').omitEmptyStrings().split(component.name()).iterator()));
       pathParts.add(component.version());
     }
-
     return BrowsePaths.fromPaths(pathParts, true);
   }
 
-  private Pair<String, String> splitToRemoteAndAssetName(final String assetName, final int shift) {
-    int indexOfRemoteEnd = StringUtils.lastOrdinalIndexOf(assetName, DIVIDER, shift);
-    return indexOfRemoteEnd != -1 ? Pair
-        .of(getRemoteWithoutPrefix(assetName.substring(0, indexOfRemoteEnd)),
-            assetName.substring(indexOfRemoteEnd + 1)) : Pair
-        .of(StringUtils.EMPTY, assetName);
+  private String getRemoteForMetadataAsset(String path) {
+    int endIndex = StringUtils.lastOrdinalIndexOf(path, DIVIDER, 1);
+    return endIndex != -1 ? path.substring(0, endIndex): path;
+  }
+
+  private String getRemoteForPackage(String path) {
+    int endIndex = StringUtils.lastOrdinalIndexOf(path, DIVIDER, 2);
+    return endIndex != -1 ? path.substring(0, endIndex): path;
+  }
+
+  private String getRelativePath(String fullUrl, String remote) {
+    return StringUtils.removeStart(fullUrl, remote);
   }
 
   private String getRemoteWithoutPrefix(final String remote) {
