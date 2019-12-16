@@ -109,7 +109,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final String extension) throws IOException
   {
     return transformXmlMetadata(artifact, repository, file, extension, (reader, writer) -> changeLocationToAbsoluteInCompositeRepository(
-        reader, writer, remoteUrl, repository));
+        reader, writer, file, remoteUrl, repository));
   }
 
   private TempBlob transformXmlMetadata(final TempBlob artifact,
@@ -160,6 +160,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
   private void changeLocationToAbsoluteInCompositeRepository(
       final XMLEventReader reader,
       final XMLEventWriter writer,
+      final String file,
       final URI remoteUrl,
       final Repository nexusRepository) throws XMLStreamException, IOException
   {
@@ -178,7 +179,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
         }
         else {
           // check location attribute for composite repository and rewrite it if needed
-          List<XMLEvent> simpleRepositories = changeLocationAttribute(locationAttributeFromXmlEvent.get(), remoteUrl, nexusRepository).stream()
+          List<XMLEvent> simpleRepositories = changeLocationAttribute(locationAttributeFromXmlEvent.get(), remoteUrl, nexusRepository, file).stream()
               .map(assetPath -> String.format(REPOSITORY, nexusRepository.getName(), assetPath))
               .flatMap((String locationValue) -> createLocationXmlEvent(locationValue).stream())
               .collect(Collectors.toList());
@@ -211,10 +212,11 @@ public class ArtifactsXmlAbsoluteUrlRemover
   private List<String> changeLocationAttribute(
       final String locationAttributeValue,
       final URI remoteUrl,
-      final Repository nexusRepository) throws IOException, XMLStreamException
+      final Repository nexusRepository,
+      final String file) throws IOException, XMLStreamException
   {
     URI uri = URI.create(locationAttributeValue);
-    return convertCompositeUrlToSimples(uri.isAbsolute() ? uri.toString() : remoteUrl.resolve(uri).toString(), nexusRepository).stream()
+    return convertCompositeUrlToSimples(uri.isAbsolute() ? uri.toString() : remoteUrl.resolve(uri).toString(), nexusRepository, file).stream()
         .map(P2PathUtils::escapeUriToPath)
     .collect(Collectors.toList());
   }
@@ -231,14 +233,14 @@ public class ArtifactsXmlAbsoluteUrlRemover
             .iterator()));
   }
 
-  private List<String> convertCompositeUrlToSimples(final String urlString, final Repository repository)
+  private List<String> convertCompositeUrlToSimples(final String urlString, final Repository repository, final String file)
       throws IOException, XMLStreamException
   {
     AtomicReference<Path> compositeContentTempFile = new AtomicReference<>(null);
     try {
       String baseUrl = urlString.endsWith(P2PathUtils.DIVIDER) ? urlString : urlString + P2PathUtils.DIVIDER;
-      getFilePath(baseUrl, "compositeContent", ".xml").ifPresent(compositeContentTempFile::set);
-      getFilePath(baseUrl, "compositeContent", ".jar").ifPresent(compositeContentTempFile::set);
+      getFilePath(baseUrl, file, ".xml").ifPresent(compositeContentTempFile::set);
+      getFilePath(baseUrl, file, ".jar").ifPresent(compositeContentTempFile::set);
 
       if (compositeContentTempFile.get() == null) {
         return Collections.singletonList(urlString);
@@ -246,7 +248,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
       else {
         List<String> simpleRepositories = new ArrayList<>();
         TempBlob tempBlob = convertFileToTempBlob(compositeContentTempFile.get(), repository);
-        try (InputStream xmlIn = xmlInputStream(tempBlob, "compositeContent.xml",
+        try (InputStream xmlIn = xmlInputStream(tempBlob, file + ".xml",
             FilenameUtils.getExtension(compositeContentTempFile.get().toString()), compositeContentTempFile.get())) {
           XMLInputFactory inputFactory = XMLInputFactory.newFactory();
           XMLEventReader reader = null;
@@ -259,7 +261,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
                 Optional<String> locationAttributeFromXmlEvent = getLocationAttributeFromXmlEvent((StartElement) event);
                 if (locationAttributeFromXmlEvent.isPresent()) {
                   simpleRepositories.addAll(
-                      changeLocationAttribute(locationAttributeFromXmlEvent.get(), URI.create(urlString), repository));
+                      changeLocationAttribute(locationAttributeFromXmlEvent.get(), URI.create(urlString), repository, file));
                 }
               }
             }
