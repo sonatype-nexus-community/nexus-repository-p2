@@ -70,20 +70,17 @@ public class P2ProxyFacetImpl
 
   private static final String COMPOSITE_CONTENT = "compositeContent";
 
-  private final P2PathUtils p2PathUtils;
   private final P2DataAccess p2DataAccess;
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
   private final JarParser jarParser;
   private final TempBlobConverter tempBlobConverter;
 
   @Inject
-  public P2ProxyFacetImpl(final P2PathUtils p2PathUtils,
-                          final P2DataAccess p2DataAccess,
+  public P2ProxyFacetImpl(final P2DataAccess p2DataAccess,
                           final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
                           final JarParser jarParser,
                           final TempBlobConverter tempBlobConverter)
   {
-    this.p2PathUtils = checkNotNull(p2PathUtils);
     this.p2DataAccess = checkNotNull(p2DataAccess);
     this.xmlRewriter = checkNotNull(xmlRewriter);
     this.jarParser = checkNotNull(jarParser);
@@ -100,7 +97,7 @@ public class P2ProxyFacetImpl
   @Override
   protected Content getCachedContent(final Context context) throws IOException {
     AssetKind assetKind = context.getAttributes().require(AssetKind.class);
-    TokenMatcher.State matcherState = p2PathUtils.matcherState(context);
+    TokenMatcher.State matcherState = P2PathUtils.matcherState(context);
     switch(assetKind) {
       case ARTIFACT_JAR:
       case ARTIFACT_XML:
@@ -113,12 +110,12 @@ public class P2ProxyFacetImpl
       case COMPOSITE_CONTENT_JAR:
       case COMPOSITE_ARTIFACTS_XML:
       case COMPOSITE_CONTENT_XML:
-        return getAsset(p2PathUtils.maybePath(matcherState));
+        return getAsset(P2PathUtils.maybePath(matcherState));
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
-        return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState), p2PathUtils.extension(matcherState)));
+        return getAsset(P2PathUtils.path(P2PathUtils.path(matcherState), P2PathUtils.name(matcherState), P2PathUtils.extension(matcherState)));
       case COMPONENT_BINARY:
-        return getAsset(p2PathUtils.binaryPath(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState), p2PathUtils.version(matcherState)));
+        return getAsset(P2PathUtils.binaryPath(P2PathUtils.path(matcherState), P2PathUtils.name(matcherState), P2PathUtils.version(matcherState)));
       default:
         throw new IllegalStateException();
     }
@@ -127,7 +124,7 @@ public class P2ProxyFacetImpl
   @Override
   protected Content store(final Context context, final Content content) throws IOException {
     AssetKind assetKind = context.getAttributes().require(AssetKind.class);
-    TokenMatcher.State matcherState = p2PathUtils.matcherState(context);
+    TokenMatcher.State matcherState = P2PathUtils.matcherState(context);
     switch(assetKind) {
       case ARTIFACT_JAR:
       case ARTIFACT_XML:
@@ -140,14 +137,14 @@ public class P2ProxyFacetImpl
       case COMPOSITE_CONTENT_JAR:
       case COMPOSITE_ARTIFACTS_XML:
       case COMPOSITE_CONTENT_XML:
-        return putMetadata(p2PathUtils.maybePath(matcherState),
+        return putMetadata(P2PathUtils.maybePath(matcherState),
             content,
             assetKind);
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
-        return putComponent(p2PathUtils.toP2Attributes(matcherState), content, assetKind);
+        return putComponent(P2PathUtils.toP2Attributes(matcherState), content, assetKind);
       case COMPONENT_BINARY:
-        return putBinary(p2PathUtils.toP2AttributesBinary(matcherState), content);
+        return putBinary(P2PathUtils.toP2AttributesBinary(matcherState), content);
       default:
         throw new IllegalStateException();
     }
@@ -353,7 +350,7 @@ public class P2ProxyFacetImpl
     Optional<P2Attributes> p2Attributes = Optional.empty();
     // first try Features XML
     try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-      p2Attributes = jarParser.getAttributesFromFeatureXML(jis, p2PathUtils);
+      p2Attributes = jarParser.getAttributesFromFeatureXML(jis);
     }
     catch (InvalidMetadataException ex) {
       log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
@@ -362,7 +359,7 @@ public class P2ProxyFacetImpl
     // second try Manifest
     if (!p2Attributes.isPresent()) {
       try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-        p2Attributes = jarParser.getAttributesFromManifest(jis, p2PathUtils);
+        p2Attributes = jarParser.getAttributesFromManifest(jis);
       }
       catch (InvalidMetadataException ex) {
         log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());

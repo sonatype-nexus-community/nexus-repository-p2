@@ -72,8 +72,7 @@ public class JarParser
   }
 
   public Optional<P2Attributes> getAttributesFromManifest(
-      final JarInputStream jis,
-      final P2PathUtils p2PathUtils) throws InvalidMetadataException
+      final JarInputStream jis) throws InvalidMetadataException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
@@ -89,7 +88,7 @@ public class JarParser
           String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
 
           p2Attributes = P2Attributes.builder()
-              .componentName(p2PathUtils.normalizeComponentName(name))
+              .componentName(name)
               .pluginName(mainManifestAttributes
                   .getValue("Bundle-Name"))
               .componentVersion(mainManifestAttributes
@@ -111,12 +110,11 @@ public class JarParser
     if (name != null) {
       resultName = name.split(";")[0];
     }
-    return resultName;
+    return P2PathUtils.normalizeComponentName(resultName);
   }
 
   public Optional<P2Attributes> getAttributesFromFeatureXML(
-      final JarInputStream jis,
-      final P2PathUtils p2PathUtils) throws InvalidMetadataException
+      final JarInputStream jis) throws InvalidMetadataException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
@@ -125,12 +123,14 @@ public class JarParser
         if (XML_FILE_NAME.equals(jarEntry.getName())) {
           Document document = toDocument(jis);
 
-          String componentName = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
-          if (componentName == null) {
-            componentName = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
+          String pluginId = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
+          if (pluginId == null) {
+            pluginId = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
           }
+
+          String componentName = P2PathUtils.normalizeComponentName(pluginId);
           p2Attributes = P2Attributes.builder()
-              .componentName(p2PathUtils.normalizeComponentName(componentName))
+              .componentName(componentName)
               .pluginName(extractValueFromDocument(XML_NAME_PATH, document))
               .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
               .build();

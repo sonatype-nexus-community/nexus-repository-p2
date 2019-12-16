@@ -46,9 +46,6 @@ public class P2ProxyFacetImplTest
   private static final String JAR_NAME = "org.eclipse.core.runtime.feature_1.2.100.v20170912-1859.jar";
 
   @Mock
-  private P2PathUtils p2PathUtils;
-
-  @Mock
   private P2DataAccess p2DataAccess;
 
   @Mock
@@ -67,13 +64,13 @@ public class P2ProxyFacetImplTest
 
   @Before
   public void setUp() throws Exception {
-    underTest = new P2ProxyFacetImpl(p2PathUtils, p2DataAccess, artifactsXmlAbsoluteUrlRemover, jarParser, tempBlobConverter);
+    underTest = new P2ProxyFacetImpl(p2DataAccess, artifactsXmlAbsoluteUrlRemover, jarParser, tempBlobConverter);
   }
 
   @Test
   public void getVersion() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    when(jarParser.getAttributesFromFeatureXML(any(), any()))
+    when(jarParser.getAttributesFromFeatureXML(any()))
         .thenReturn(of(buildWithVersionAndExtension()));
 
     P2Attributes p2Attributes = underTest
@@ -84,7 +81,7 @@ public class P2ProxyFacetImplTest
 
   @Test(expected = IOException.class)
   public void getUnknownVersion() throws Exception {
-    when(jarParser.getAttributesFromFeatureXML(any(), any())).thenReturn(Optional.empty());
+    when(jarParser.getAttributesFromFeatureXML(any())).thenReturn(Optional.empty());
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
     P2Attributes p2Attributes = buildWithVersionAndExtension();
