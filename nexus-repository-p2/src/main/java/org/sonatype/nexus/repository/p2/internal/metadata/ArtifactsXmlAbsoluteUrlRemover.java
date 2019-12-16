@@ -490,6 +490,6 @@ public class ArtifactsXmlAbsoluteUrlRemover
   }
 
   private interface XmlStreamTransformer {
-    void transform(XMLEventReader reader, XMLEventWriter writer) throws XMLStreamException, IOException;
+    void transform(final XMLEventReader reader, final XMLEventWriter writer) throws XMLStreamException, IOException;
   }
 }
