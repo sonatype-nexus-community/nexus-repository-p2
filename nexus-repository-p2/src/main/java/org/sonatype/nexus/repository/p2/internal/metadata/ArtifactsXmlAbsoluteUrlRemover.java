@@ -71,6 +71,7 @@ import static java.nio.file.Files.newOutputStream;
 import static javax.xml.stream.XMLStreamConstants.END_ELEMENT;
 import static javax.xml.stream.XMLStreamConstants.START_ELEMENT;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
 
 /**
  * Removes absolute URL entries from artifacts.xml
@@ -242,7 +243,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
     AtomicReference<Path> compositeContentLoadedFile = new AtomicReference<>(null);
     Path compositeContentTempFileXml = null;
     try {
-      String baseUrl = urlString.endsWith(P2PathUtils.DIVIDER) ? urlString : urlString + P2PathUtils.DIVIDER;
+      String baseUrl = urlString.endsWith(DIVIDER) ? urlString : urlString + DIVIDER;
       getFileFromRemote(baseUrl, file, ".xml").ifPresent(compositeContentLoadedFile::set);
       getFileFromRemote(baseUrl, file, ".jar").ifPresent(compositeContentLoadedFile::set);
 

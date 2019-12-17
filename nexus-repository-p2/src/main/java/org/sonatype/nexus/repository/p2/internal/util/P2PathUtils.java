@@ -12,13 +12,12 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
-
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.view.Context;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher.State;
+
+import org.apache.commons.lang.StringUtils;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -30,8 +29,6 @@ import static java.lang.String.join;
  * @since 0.next
  *
  */
-@Named
-@Singleton
 public class P2PathUtils
 {
   public final static String DIVIDER = "/";
@@ -46,15 +43,23 @@ public class P2PathUtils
 
   private static final String HTTPS_URL_PREFIX = "https://";
 
+  private static final String FEATURE = ".feature";
+
+  private static final String PLUGIN = ".plugin";
+
+  private P2PathUtils() {
+    throw new UnsupportedOperationException();
+  }
+
   /**
    * * Returns the path from a {@link TokenMatcher.State}.
    */
-  public String path(final TokenMatcher.State state) {
+  public static String path(final TokenMatcher.State state) {
     return match(state, "path");
   }
 
 
-  public String maybePath(final TokenMatcher.State state) {
+  public static String maybePath(final TokenMatcher.State state) {
     checkNotNull(state);
     String path = state.getTokens().get("path");
     if (isNullOrEmpty(path)) {
@@ -66,7 +71,7 @@ public class P2PathUtils
   /**
    * Utility method encapsulating getting a particular token by name from a matcher, including preconditions.
    */
-  private String match(final TokenMatcher.State state, final String name) {
+  private static String match(final TokenMatcher.State state, final String name) {
     checkNotNull(state);
     String result = state.getTokens().get(name);
     checkNotNull(result);
@@ -76,7 +81,7 @@ public class P2PathUtils
   /**
    * Builds a path to an archive for a particular path and name.
    */
-  public String path(final String path, final String filename) {
+  public static String path(final String path, final String filename) {
     if(isNullOrEmpty(path)) {
       return filename;
     }
@@ -88,7 +93,7 @@ public class P2PathUtils
   /**
    * Builds a path to an archive for a particular path, name and extension.
    */
-  public String path(final String path, final String filename, final String extension) {
+  public static String path(final String path, final String filename, final String extension) {
     String file = join(".", filename, extension);
     return isNullOrEmpty(path) ? file : join("/", path, file);
   }
@@ -96,7 +101,7 @@ public class P2PathUtils
   /**
    * Builds a path to a binary for a particular path, name and version.
    */
-  public String binaryPath(final String path, final String name, final String version) {
+  public static String binaryPath(final String path, final String name, final String version) {
     String file = join("_", name, version);
     return isNullOrEmpty(path) ? file : join("/", path, file);
   }
@@ -104,26 +109,36 @@ public class P2PathUtils
   /**
    * Returns the name from a {@link TokenMatcher.State}.
    */
-  public String name(final TokenMatcher.State state) {
+  public static String name(final TokenMatcher.State state) {
     return match(state, "name");
   }
 
   /**
    * Returns the name and extension from a {@link TokenMatcher.State}.
    */
-  public String filename(final TokenMatcher.State state) {
+  public static String filename(final TokenMatcher.State state) {
     return name(state) + '.' + extension(state);
   }
 
-  public String version(final TokenMatcher.State state) { return match(state, "version"); }
+  public static String version(final TokenMatcher.State state) { return match(state, "version"); }
 
   /**
    * Returns the Component Name from the name as a default from a {@link TokenMatcher.State}.
    *
    * @see #name(State)
    */
-  public String componentName(final TokenMatcher.State state) {
-    return name(state).split(NAME_VERSION_SPLITTER)[0];
+  public static String componentName(final TokenMatcher.State state) {
+    return normalizeComponentName(name(state).split(NAME_VERSION_SPLITTER)[0]);
+  }
+
+  /**
+   * Returns the Component Name from the name without suffixes like ".feature" or ".plugin"
+   */
+  public static String normalizeComponentName(final String componentName) {
+    String normalizedComponentName = componentName;
+    normalizedComponentName = StringUtils.removeEnd(normalizedComponentName, FEATURE);
+    normalizedComponentName = StringUtils.removeEnd(normalizedComponentName, PLUGIN);
+    return normalizedComponentName;
   }
 
   /**
@@ -131,25 +146,25 @@ public class P2PathUtils
    *
    * @see #name(State)
    */
-  public String componentVersion(final TokenMatcher.State state) {
+  public static String componentVersion(final TokenMatcher.State state) {
     return name(state).split(NAME_VERSION_SPLITTER)[1];
   }
 
   /**
    * Returns the extension from a {@link TokenMatcher.State}.
    */
-  public String extension(final TokenMatcher.State state) {
+  public static String extension(final TokenMatcher.State state) {
     return match(state, "extension");
   }
 
   /**
    * Returns the {@link TokenMatcher.State} for the content.
    */
-  public TokenMatcher.State matcherState(final Context context) {
+  public static TokenMatcher.State matcherState(final Context context) {
     return context.getAttributes().require(TokenMatcher.State.class);
   }
 
-  public P2Attributes toP2Attributes(final TokenMatcher.State state) {
+  public static P2Attributes toP2Attributes(final TokenMatcher.State state) {
     return P2Attributes.builder()
         .componentName(componentName(state))
         .componentVersion(componentVersion(state))
@@ -159,7 +174,7 @@ public class P2PathUtils
         .build();
   }
 
-  public P2Attributes toP2AttributesBinary(final TokenMatcher.State state) {
+  public static P2Attributes toP2AttributesBinary(final TokenMatcher.State state) {
     return P2Attributes.builder()
         .pluginName(name(state))
         .componentName(name(state))
