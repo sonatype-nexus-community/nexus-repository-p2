@@ -51,6 +51,8 @@ public class P2PathUtilsTest
 
   private final String fakeFileName = fakeComponentName + "_2_3.jar";
 
+  private final String fakeFileNameWithFeature = fakeComponentName + ".feature" + "_2_3.jar";
+
   private final String fakeExtension = "pack.gz";
 
   @Test
@@ -105,6 +107,15 @@ public class P2PathUtilsTest
   @Test
   public void componentName() throws Exception {
     final Map<String, String> someMap = Collections.singletonMap("name", fakeFileName);
+    when(state.getTokens())
+        .thenReturn(someMap);
+    String componentName = P2PathUtils.componentName(state);
+    assertThat(componentName, is(equalTo(fakeComponentName)));
+  }
+
+  @Test
+  public void testNormalizeComponentName() throws Exception {
+    final Map<String, String> someMap = Collections.singletonMap("name", fakeFileNameWithFeature);
     when(state.getTokens())
         .thenReturn(someMap);
     String componentName = P2PathUtils.componentName(state);
