@@ -19,12 +19,13 @@ import java.util.stream.Collectors;
 
 import org.sonatype.nexus.repository.browse.BrowsePaths;
 import org.sonatype.nexus.repository.browse.BrowseTestSupport;
-import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
 
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
 
 public class P2BrowseNodeGeneratorTest
     extends BrowseTestSupport
@@ -46,7 +47,7 @@ public class P2BrowseNodeGeneratorTest
   @Test
   public void testCompositeRepository() {
     Component component = createComponent(String.join(".", COMPONENT_NAME), null, COMPONENT_VERSION);
-    Asset asset = createAsset(REMOTE_PREFIX + P2PathUtils.DIVIDER + FEATURES + P2PathUtils.DIVIDER + ASSET_NAME);
+    Asset asset = createAsset(REMOTE_PREFIX + DIVIDER + FEATURES + DIVIDER + ASSET_NAME);
 
     List<String> paths = generator.computeAssetPaths(asset, component).stream().map(BrowsePaths::getBrowsePath).collect(
         Collectors.toList());
@@ -59,7 +60,7 @@ public class P2BrowseNodeGeneratorTest
 
   @Test
   public void testCompositeRepositoryWithoutComponent() {
-    Asset asset = createAsset(REMOTE_PREFIX + P2PathUtils.DIVIDER + ASSET_NAME);
+    Asset asset = createAsset(REMOTE_PREFIX + DIVIDER + ASSET_NAME);
 
     List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getBrowsePath).collect(
         Collectors.toList());
@@ -72,7 +73,7 @@ public class P2BrowseNodeGeneratorTest
   @Test
   public void testSimpleRepository() {
     Component component = createComponent(String.join(".", COMPONENT_NAME), null, COMPONENT_VERSION);
-    Asset asset = createAsset(FEATURES + P2PathUtils.DIVIDER + ASSET_NAME);
+    Asset asset = createAsset(FEATURES + DIVIDER + ASSET_NAME);
 
     List<String> paths = generator.computeAssetPaths(asset, component).stream().map(BrowsePaths::getBrowsePath).collect(
         Collectors.toList());
