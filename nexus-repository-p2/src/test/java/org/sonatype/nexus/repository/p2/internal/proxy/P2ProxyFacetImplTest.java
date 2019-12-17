@@ -21,7 +21,6 @@ import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUr
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.p2.internal.util.JarParser;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
-import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -46,9 +45,6 @@ public class P2ProxyFacetImplTest
   private static final String JAR_NAME = "org.eclipse.core.runtime.feature_1.2.100.v20170912-1859.jar";
 
   @Mock
-  private P2PathUtils p2PathUtils;
-
-  @Mock
   private P2DataAccess p2DataAccess;
 
   @Mock
@@ -67,7 +63,7 @@ public class P2ProxyFacetImplTest
 
   @Before
   public void setUp() throws Exception {
-    underTest = new P2ProxyFacetImpl(p2PathUtils, p2DataAccess, artifactsXmlAbsoluteUrlRemover, jarParser, tempBlobConverter);
+    underTest = new P2ProxyFacetImpl(p2DataAccess, artifactsXmlAbsoluteUrlRemover, jarParser, tempBlobConverter);
   }
 
   @Test

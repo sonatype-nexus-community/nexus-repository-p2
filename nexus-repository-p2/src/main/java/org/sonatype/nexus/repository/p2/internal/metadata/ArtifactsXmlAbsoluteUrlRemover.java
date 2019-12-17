@@ -45,7 +45,6 @@ import javax.xml.stream.events.XMLEvent;
 
 import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.repository.Repository;
-import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -59,6 +58,7 @@ import static java.nio.file.Files.newOutputStream;
 import static javax.xml.stream.XMLStreamConstants.END_ELEMENT;
 import static javax.xml.stream.XMLStreamConstants.START_ELEMENT;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.escapeUriToPath;
 
 /**
  * Removes absolute URL entries from artifacts.xml
@@ -184,7 +184,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
     String value = locationAttribute.getValue();
     URI uri = URI.create(value);
     String assetPath =
-        P2PathUtils.escapeUriToPath(uri.isAbsolute() ? uri.toString() : remoteUrl.resolve(uri).toString());
+        escapeUriToPath(uri.isAbsolute() ? uri.toString() : remoteUrl.resolve(uri).toString());
     String locationValue = String.format(REPOSITORY, nexusRepositoryName, assetPath);
     StartElement startElement =
         XMLEventFactory.newInstance().createStartElement(new QName("child"), Collections.singletonList(
