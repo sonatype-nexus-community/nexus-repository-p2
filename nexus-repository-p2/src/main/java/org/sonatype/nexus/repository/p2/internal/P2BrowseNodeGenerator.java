@@ -69,17 +69,17 @@ public class P2BrowseNodeGenerator
     return BrowsePaths.fromPaths(pathParts, true);
   }
 
-  private String getRemoteForMetadataAsset(String path) {
+  private String getRemoteForMetadataAsset(final String path) {
     int endIndex = StringUtils.lastOrdinalIndexOf(path, DIVIDER, 1);
-    return endIndex != -1 ? path.substring(0, endIndex): StringUtils.EMPTY;
+    return endIndex != -1 ? path.substring(0, endIndex) : StringUtils.EMPTY;
   }
 
-  private String getRemoteForPackage(String path) {
+  private String getRemoteForPackage(final String path) {
     int endIndex = StringUtils.lastOrdinalIndexOf(path, DIVIDER, 2);
-    return endIndex != -1 ? path.substring(0, endIndex): StringUtils.EMPTY;
+    return endIndex != -1 ? path.substring(0, endIndex) : StringUtils.EMPTY;
   }
 
-  private String getRelativePath(String fullUrl, String remote) {
+  private String getRelativePath(final String fullUrl, final String remote) {
     return StringUtils.removeStart(fullUrl, remote);
   }
 
