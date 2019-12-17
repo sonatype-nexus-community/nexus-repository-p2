@@ -71,12 +71,12 @@ public class P2BrowseNodeGenerator
 
   private String getRemoteForMetadataAsset(String path) {
     int endIndex = StringUtils.lastOrdinalIndexOf(path, DIVIDER, 1);
-    return endIndex != -1 ? path.substring(0, endIndex): path;
+    return endIndex != -1 ? path.substring(0, endIndex): StringUtils.EMPTY;
   }
 
   private String getRemoteForPackage(String path) {
     int endIndex = StringUtils.lastOrdinalIndexOf(path, DIVIDER, 2);
-    return endIndex != -1 ? path.substring(0, endIndex): path;
+    return endIndex != -1 ? path.substring(0, endIndex): StringUtils.EMPTY;
   }
 
   private String getRelativePath(String fullUrl, String remote) {

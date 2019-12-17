@@ -39,16 +39,14 @@ public class P2BrowseNodeGeneratorTest
 
   private static final String FEATURES = "features";
 
-  private static final String ASSET_NAME_PREFIX = REMOTE_PREFIX + P2PathUtils.DIVIDER + FEATURES;
-
   private static final String ASSET_NAME = "assetName";
 
   private P2BrowseNodeGenerator generator = new P2BrowseNodeGenerator();
 
   @Test
-  public void computeComponentPath() {
+  public void testCompositeRepository() {
     Component component = createComponent(String.join(".", COMPONENT_NAME), null, COMPONENT_VERSION);
-    Asset asset = createAsset(ASSET_NAME_PREFIX + P2PathUtils.DIVIDER + ASSET_NAME);
+    Asset asset = createAsset(REMOTE_PREFIX + P2PathUtils.DIVIDER + FEATURES + P2PathUtils.DIVIDER + ASSET_NAME);
 
     List<String> paths = generator.computeAssetPaths(asset, component).stream().map(BrowsePaths::getBrowsePath).collect(
         Collectors.toList());
@@ -56,6 +54,42 @@ public class P2BrowseNodeGeneratorTest
     expectedResult.add(BASE_URL);
     expectedResult.addAll(COMPONENT_NAME);
     expectedResult.addAll(Arrays.asList(COMPONENT_VERSION, FEATURES, ASSET_NAME));
-    Assert.assertEquals(paths, expectedResult);
+    Assert.assertEquals(expectedResult, paths);
+  }
+
+  @Test
+  public void testCompositeRepositoryWithoutComponent() {
+    Asset asset = createAsset(REMOTE_PREFIX + P2PathUtils.DIVIDER + ASSET_NAME);
+
+    List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getBrowsePath).collect(
+        Collectors.toList());
+    List<String> expectedResult = new ArrayList<>();
+    expectedResult.add(BASE_URL);
+    expectedResult.add(ASSET_NAME);
+    Assert.assertEquals(expectedResult, paths);
+  }
+
+  @Test
+  public void testSimpleRepository() {
+    Component component = createComponent(String.join(".", COMPONENT_NAME), null, COMPONENT_VERSION);
+    Asset asset = createAsset(FEATURES + P2PathUtils.DIVIDER + ASSET_NAME);
+
+    List<String> paths = generator.computeAssetPaths(asset, component).stream().map(BrowsePaths::getBrowsePath).collect(
+        Collectors.toList());
+    List<String> expectedResult = new ArrayList<>();
+    expectedResult.addAll(COMPONENT_NAME);
+    expectedResult.addAll(Arrays.asList(COMPONENT_VERSION, FEATURES, ASSET_NAME));
+    Assert.assertEquals(expectedResult, paths);
+  }
+
+  @Test
+  public void testSimpleRepositoryWithoutComponent() {
+    Asset asset = createAsset(ASSET_NAME);
+
+    List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getBrowsePath).collect(
+        Collectors.toList());
+    List<String> expectedResult = new ArrayList<>();
+    expectedResult.add(ASSET_NAME);
+    Assert.assertEquals(expectedResult, paths);
   }
 }
