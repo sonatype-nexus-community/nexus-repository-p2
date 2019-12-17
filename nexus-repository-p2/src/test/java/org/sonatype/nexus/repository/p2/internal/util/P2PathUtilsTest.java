@@ -29,6 +29,9 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.maybePath;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.name;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.path;
 
 public class P2PathUtilsTest
     extends TestSupport
@@ -55,20 +58,20 @@ public class P2PathUtilsTest
     final Map<String, String> someMap = Collections.singletonMap("path", fakePath);
     when(state.getTokens())
         .thenReturn(someMap);
-    String path = P2PathUtils.path(state);
+    String path = path(state);
     assertThat(path, is(equalTo(fakePath)));
   }
 
   @Test
   public void pathWithPathAndFileName() throws Exception {
-    String path = P2PathUtils.path(fakePath, fakeFileName);
+    String path = path(fakePath, fakeFileName);
     String expectedResult = fakePath + "/" + fakeFileName;
     assertThat(path, is(equalTo(expectedResult)));
   }
 
   @Test
   public void pathWithNoPathAndFileName() throws Exception {
-    String path = P2PathUtils.path("", fakeFileName);
+    String path = path("", fakeFileName);
     String expectedResult = fakeFileName;
     assertThat(path, is(equalTo(expectedResult)));
   }
@@ -80,12 +83,12 @@ public class P2PathUtilsTest
     someMap.put("extension", fakeExtension);
     when(state.getTokens())
         .thenReturn(someMap);
-    String path = P2PathUtils.maybePath(state);
+    String path = maybePath(state);
 
     assertThat(path, is(equalTo(fakeFileName + "." + fakeExtension)));
 
     someMap.put("path", fakePath);
-    path = P2PathUtils.maybePath(state);
+    path = maybePath(state);
 
     assertThat(path, is(equalTo(fakePath + "/" + fakeFileName + "." + fakeExtension)));
   }
@@ -95,7 +98,7 @@ public class P2PathUtilsTest
     final Map<String, String> someMap = Collections.singletonMap("name", fakeFileName);
     when(state.getTokens())
         .thenReturn(someMap);
-    String filename = P2PathUtils.name(state);
+    String filename = name(state);
     assertThat(filename, is(equalTo(fakeFileName)));
   }
 
@@ -110,7 +113,7 @@ public class P2PathUtilsTest
 
   @Test
   public void pathWithPathAndFilenameAndExtension() throws Exception {
-    String path = P2PathUtils.path(fakePath, fakeFileName, fakeExtension);
+    String path = path(fakePath, fakeFileName, fakeExtension);
     String expectedResult = fakePath + "/" + fakeFileName + "." + fakeExtension;
     assertThat(path, is(equalTo(expectedResult)));
   }
