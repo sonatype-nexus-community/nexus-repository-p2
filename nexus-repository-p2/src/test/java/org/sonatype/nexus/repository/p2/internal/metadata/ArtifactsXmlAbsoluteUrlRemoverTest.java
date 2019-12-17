@@ -66,9 +66,9 @@ public class ArtifactsXmlAbsoluteUrlRemoverTest
 
   @Before
   public void setup() throws Exception {
-    setupRepositoryMock();
     when(artifactsXml.getBlob()).thenReturn(mock(Blob.class)); // Allow exceptions to be logged without npe
     underTest = new ArtifactsXmlAbsoluteUrlRemover();
+    setupRepositoryMock();
   }
 
   @Test

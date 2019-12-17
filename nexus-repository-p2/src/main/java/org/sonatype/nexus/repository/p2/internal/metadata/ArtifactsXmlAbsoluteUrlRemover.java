@@ -20,7 +20,6 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -60,6 +59,10 @@ import com.google.common.collect.Lists;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 
 import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.delete;
@@ -122,7 +125,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
     // This is required in the case that the input stream is a jar to allow us to extract a single file
     Path artifactsTempFile = createTempFile("", ".xml");
     try {
-      try (InputStream xmlIn = xmlInputStream(artifact, file + "." + "xml", extension, artifactsTempFile);
+      try (InputStream xmlIn = xmlInputStream(artifact.get(), file + "." + "xml", extension, artifactsTempFile);
            OutputStream xmlOut = xmlOutputStream(file + "." + "xml", extension, tempFile)) {
         XMLInputFactory inputFactory = XMLInputFactory.newFactory();
         XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
@@ -230,26 +233,28 @@ public class ArtifactsXmlAbsoluteUrlRemover
         Collections.emptyIterator()), XML_EVENT_FACTORY.createEndElement(childNameAttr, Collections.singletonList(
         XML_EVENT_FACTORY
             .createAttribute(LOCATION_ATTR_NAME, locationValue))
-            .iterator()));
+        .iterator()));
   }
 
   private List<String> convertCompositeUrlToSimples(final String urlString, final Repository repository, final String file)
       throws IOException, XMLStreamException
   {
-    AtomicReference<Path> compositeContentTempFile = new AtomicReference<>(null);
+    AtomicReference<Path> compositeContentLoadedFile = new AtomicReference<>(null);
+    Path compositeContentTempFileXml = null;
     try {
       String baseUrl = urlString.endsWith(P2PathUtils.DIVIDER) ? urlString : urlString + P2PathUtils.DIVIDER;
-      getFilePath(baseUrl, file, ".xml").ifPresent(compositeContentTempFile::set);
-      getFilePath(baseUrl, file, ".jar").ifPresent(compositeContentTempFile::set);
+      getFileFromRemote(baseUrl, file, ".xml").ifPresent(compositeContentLoadedFile::set);
+      getFileFromRemote(baseUrl, file, ".jar").ifPresent(compositeContentLoadedFile::set);
 
-      if (compositeContentTempFile.get() == null) {
+      if (compositeContentLoadedFile.get() == null) {
         return Collections.singletonList(urlString);
       }
       else {
         List<String> simpleRepositories = new ArrayList<>();
-        TempBlob tempBlob = convertFileToTempBlob(compositeContentTempFile.get(), repository);
-        try (InputStream xmlIn = xmlInputStream(tempBlob, file + ".xml",
-            FilenameUtils.getExtension(compositeContentTempFile.get().toString()), compositeContentTempFile.get())) {
+        compositeContentTempFileXml = createTempFile("", ".xml");
+        try (InputStream inputStream = newInputStream(compositeContentLoadedFile.get());
+             InputStream xmlIn = xmlInputStream(inputStream, file + ".xml",
+                 FilenameUtils.getExtension(compositeContentLoadedFile.get().toString()), compositeContentTempFileXml)) {
           XMLInputFactory inputFactory = XMLInputFactory.newFactory();
           XMLEventReader reader = null;
           try {
@@ -261,7 +266,8 @@ public class ArtifactsXmlAbsoluteUrlRemover
                 Optional<String> locationAttributeFromXmlEvent = getLocationAttributeFromXmlEvent((StartElement) event);
                 if (locationAttributeFromXmlEvent.isPresent()) {
                   simpleRepositories.addAll(
-                      changeLocationAttribute(locationAttributeFromXmlEvent.get(), URI.create(urlString), repository, file));
+                      changeLocationAttribute(locationAttributeFromXmlEvent.get(), URI.create(urlString), repository,
+                          file));
                 }
               }
             }
@@ -279,34 +285,37 @@ public class ArtifactsXmlAbsoluteUrlRemover
       log.error("Invalid composite repository: {} ", urlString);
     }
     finally {
-      if (compositeContentTempFile.get() != null) {
-        delete(compositeContentTempFile.get());
+      if (compositeContentLoadedFile.get() != null) {
+        delete(compositeContentLoadedFile.get());
+      }
+      if (compositeContentTempFileXml != null) {
+        delete(compositeContentTempFileXml);
       }
     }
     return Collections.emptyList();
   }
 
-  private Optional<Path> getFilePath(final String baseUrl, final String filename, final String extension) throws IOException {
+  private Optional<Path> getFileFromRemote(
+      final String baseUrl,
+      final String filename,
+      final String extension) throws IOException {
     Path tempFile = null;
-    URL url = new URL(baseUrl + filename + extension);
-    boolean isRemoteExist = isRemoteFileExist(url);
-    if (isRemoteExist) {
-      InputStream in = url.openStream();
-      tempFile = createTempFile(filename, extension);
-      Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+    HttpPost post = new HttpPost(baseUrl + filename + extension);
+    try (CloseableHttpClient client = HttpClients.createMinimal()) {
+      HttpResponse httpResponse = client.execute(post);
+      if (HttpURLConnection.HTTP_OK == httpResponse.getStatusLine().getStatusCode()) {
+        tempFile = createTempFile(filename, extension);
+        try (InputStream is = httpResponse.getEntity().getContent()) {
+          Files.copy(is, tempFile, StandardCopyOption.REPLACE_EXISTING);
+        }
+      }
     }
 
     return Optional.ofNullable(tempFile);
   }
 
-  private boolean isRemoteFileExist(final URL url) throws IOException {
-    HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-    int responseCode = connection.getResponseCode();
-    return HttpURLConnection.HTTP_OK == responseCode;
-  }
-
   private InputStream xmlInputStream(
-      final TempBlob artifact,
+      final InputStream inputStream,
       final String file,
       final String extension,
       final Path artifactsTempFile)
@@ -314,14 +323,14 @@ public class ArtifactsXmlAbsoluteUrlRemover
   {
     InputStream in;
     if (isCompressedWithFormat(extension, JAR)) {
-      extractFileFromJarToTempFile(artifact.get(), file, artifactsTempFile);
+      extractFileFromJarToTempFile(inputStream, file, artifactsTempFile);
       in = Files.newInputStream(artifactsTempFile);
     }
     else if (isCompressedWithFormat(extension, XZ)) {
-      in = new XZCompressorInputStream(artifact.get());
+      in = new XZCompressorInputStream(inputStream);
     }
     else {
-      in = artifact.get();
+      in = inputStream;
     }
     return new BufferedInputStream(in);
   }
