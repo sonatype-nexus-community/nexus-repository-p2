@@ -78,8 +78,6 @@ public class ArtifactsXmlAbsoluteUrlRemover
 
   private static final String ARTIFACTS_XML = "artifacts";
 
-  private static final String REPOSITORY = "/repository/%s/%s";
-
   public TempBlob removeMirrorUrlFromArtifactsXml(
       final TempBlob artifact,
       final Repository repository,
@@ -96,7 +94,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
       final String extension) throws IOException
   {
     return transformXmlMetadata(artifact, repository, file, extension, (reader, writer) -> changeLocationToAbsoluteInCompositeRepository(
-        reader, writer, remoteUrl, repository.getName()));
+        reader, writer, remoteUrl));
   }
 
   private TempBlob transformXmlMetadata(final TempBlob artifact,
@@ -147,8 +145,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
   private void changeLocationToAbsoluteInCompositeRepository(
       final XMLEventReader reader,
       final XMLEventWriter writer,
-      final URI remoteUrl,
-      final String nexusRepositoryName) throws XMLStreamException
+      final URI remoteUrl) throws XMLStreamException
   {
     List<XMLEvent> buffer = new ArrayList<>();
 
@@ -156,7 +153,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
       XMLEvent event = reader.nextEvent();
 
       if (isStartTagWithName(event, "child")) {
-        buffer.add(changeLocationAttribute((StartElement) event, remoteUrl, nexusRepositoryName));
+        buffer.add(changeLocationAttribute((StartElement) event, remoteUrl));
       }
       else {
         buffer.add(event);
@@ -171,8 +168,7 @@ public class ArtifactsXmlAbsoluteUrlRemover
 
   private XMLEvent changeLocationAttribute(
       final StartElement locationElement,
-      final URI remoteUrl,
-      final String nexusRepositoryName)
+      final URI remoteUrl)
   {
     QName locationAttrName = new QName("location");
     Attribute locationAttribute = locationElement.getAttributeByName(locationAttrName);
@@ -185,11 +181,10 @@ public class ArtifactsXmlAbsoluteUrlRemover
     URI uri = URI.create(value);
     String assetPath =
         escapeUriToPath(uri.isAbsolute() ? uri.toString() : remoteUrl.resolve(uri).toString());
-    String locationValue = String.format(REPOSITORY, nexusRepositoryName, assetPath);
     StartElement startElement =
         XMLEventFactory.newInstance().createStartElement(new QName("child"), Collections.singletonList(
             XMLEventFactory.newInstance()
-                .createAttribute(locationAttrName, locationValue))
+                .createAttribute(locationAttrName, assetPath))
                 .iterator(),
             Collections.emptyIterator());
     return startElement;
