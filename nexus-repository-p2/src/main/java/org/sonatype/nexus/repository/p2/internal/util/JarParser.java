@@ -37,6 +37,7 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import static javax.xml.xpath.XPathConstants.NODE;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
 
 /**
  * Utility methods for working with Jar (Jar Binks, worst character) files
@@ -71,7 +72,8 @@ public class JarParser
     this.builder = factory.newDocumentBuilder();
   }
 
-  public Optional<P2Attributes> getAttributesFromManifest(final JarInputStream jis) throws InvalidMetadataException
+  public Optional<P2Attributes> getAttributesFromManifest(
+      final JarInputStream jis) throws InvalidMetadataException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
@@ -109,10 +111,11 @@ public class JarParser
     if (name != null) {
       resultName = name.split(";")[0];
     }
-    return resultName;
+    return normalizeComponentName(resultName);
   }
 
-  public Optional<P2Attributes> getAttributesFromFeatureXML(final JarInputStream jis) throws InvalidMetadataException
+  public Optional<P2Attributes> getAttributesFromFeatureXML(
+      final JarInputStream jis) throws InvalidMetadataException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
@@ -121,10 +124,12 @@ public class JarParser
         if (XML_FILE_NAME.equals(jarEntry.getName())) {
           Document document = toDocument(jis);
 
-          String componentName = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
-          if (componentName == null) {
-            componentName = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
+          String pluginId = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
+          if (pluginId == null) {
+            pluginId = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
           }
+
+          String componentName = normalizeComponentName(pluginId);
           p2Attributes = P2Attributes.builder()
               .componentName(componentName)
               .pluginName(extractValueFromDocument(XML_NAME_PATH, document))
