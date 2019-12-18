@@ -1,24 +1,10 @@
-/*
- * Sonatype Nexus (TM) Open Source Version
- * Copyright (c) 2017-present Sonatype, Inc.
- * All rights reserved. Includes the third-party code listed at http://links.sonatype.com/products/nexus/oss/attributions.
- *
- * This program and the accompanying materials are made available under the terms of the Eclipse Public License Version 1.0,
- * which accompanies this distribution and is available at http://www.eclipse.org/legal/epl-v10.html.
- *
- * Sonatype Nexus (TM) Professional Version is available from Sonatype, Inc. "Sonatype" and "Sonatype Nexus" are trademarks
- * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
- * Eclipse Foundation. All other trademarks are the property of their respective owners.
- */
-package org.sonatype.nexus.repository.p2.api;
+package org.sonatype.nexus.repository.p2.rest;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Map;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -34,15 +20,12 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
-import org.apache.http.entity.FileEntity;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.junit.Rule;
+import org.sonatype.nexus.repository.p2.api.P2ProxyRepositoryApiRequest;
 import org.sonatype.nexus.repository.p2.internal.P2Format;
-import org.sonatype.nexus.repository.p2.internal.P2ITSupport;
+import org.sonatype.nexus.repository.p2.internal.fixtures.RepositoryRuleP2;
 import org.sonatype.nexus.repository.rest.api.model.AbstractRepositoryApiRequest;
 import org.sonatype.nexus.repository.rest.api.model.CleanupPolicyAttributes;
 import org.sonatype.nexus.repository.rest.api.model.HttpClientAttributes;
@@ -53,11 +36,12 @@ import org.sonatype.nexus.repository.rest.api.model.ProxyAttributes;
 import org.sonatype.nexus.repository.rest.api.model.StorageAttributes;
 import org.sonatype.nexus.repository.types.ProxyType;
 import org.sonatype.nexus.security.role.Role;
+import org.sonatype.nexus.testsuite.testsupport.RepositoryITSupport;
 import org.sonatype.nexus.testsuite.testsupport.fixtures.SecurityRule;
 
-import static javax.ws.rs.core.Response.*;
+import static javax.ws.rs.core.Response.status;
 
-public class RepositoriesApiResourceMemberITSupport extends P2ITSupport
+public class P2ResourceITSupport extends RepositoryITSupport
 {
   // SET YOUR FORMAT DATA
   public static final String FORMAT_VALUE = P2Format.NAME;
@@ -78,6 +62,9 @@ public class RepositoriesApiResourceMemberITSupport extends P2ITSupport
   @Rule
   public SecurityRule securityRule = new SecurityRule(() -> securitySystem, () -> selectorManager);
 
+  @Rule
+  public RepositoryRuleP2 repos = new RepositoryRuleP2(() -> repositoryManager);
+
   protected void setUnauthorizedUser() {
     String randomRoleName = "role_" + UUID.randomUUID().toString();
 
@@ -90,7 +77,7 @@ public class RepositoriesApiResourceMemberITSupport extends P2ITSupport
     credentials = new UsernamePasswordCredentials("fake_user", "fake_user");
   }
 
-  protected String getCreateRepositoryPathFor(final String type) {
+  protected String getCreateRepositoryPathUrl(final String type) {
     return new StringJoiner("/")
         .add(REPOSITORIES_API_URL)
         .add(FORMAT_VALUE)
@@ -98,7 +85,7 @@ public class RepositoriesApiResourceMemberITSupport extends P2ITSupport
         .toString();
   }
 
-  protected String getUpdateRepositoryPathFor(final String type, final String name) {
+  protected String getUpdateRepositoryPathUrl(final String type, final String name) {
     return new StringJoiner("/")
         .add(REPOSITORIES_API_URL)
         .add(FORMAT_VALUE)
@@ -120,61 +107,42 @@ public class RepositoriesApiResourceMemberITSupport extends P2ITSupport
     HttpClientAttributes httpClient = new HttpClientAttributes(false, true, connection, authentication);
 
     // SET YOUR FORMAT DATA
-    return new P2ProxyRepositoryApiRequest(RepositoriesApiResourceMemberITSupport.PROXY_NAME, true, storage, cleanup,
+    return new P2ProxyRepositoryApiRequest(PROXY_NAME, true, storage, cleanup,
         proxy, negativeCache,
         httpClient, null);
   }
 
-  protected Response post(final String url, final Object entity) throws Exception {
-    return execute(new HttpPost(), url, entity, Collections.emptyMap());
+  protected Response post(final String url, final Object body) throws Exception {
+    HttpPost request = new HttpPost();
+    prepareRequest(request, url, body);
+    return execute(request);
   }
 
-  protected Response put(final String url, final Object entity) throws Exception {
-    return execute(new HttpPut(), url, entity, Collections.emptyMap());
+  protected Response put(final String url, final Object body) throws Exception {
+    HttpPut request = new HttpPut();
+    prepareRequest(request, url, body);
+    return execute(request);
   }
 
-  private Response execute(
-      final HttpRequestBase httpRequestBase,
-      final String url,
-      final Object body,
-      final Map<String, String> queryParams) throws Exception
-  {
-    if (httpRequestBase instanceof HttpEntityEnclosingRequestBase) {
-      HttpEntityEnclosingRequestBase request = (HttpEntityEnclosingRequestBase) httpRequestBase;
-      if (body instanceof String) {
-        request.setEntity(new StringEntity((String) body, ContentType.TEXT_PLAIN));
+  private Response execute(HttpEntityEnclosingRequestBase request) throws Exception {
+    try (CloseableHttpResponse response = clientBuilder().build().execute(request)) {
+      Response.ResponseBuilder responseBuilder = status(response.getStatusLine().getStatusCode());
+      Arrays.stream(response.getAllHeaders()).forEach(h -> responseBuilder.header(h.getName(), h.getValue()));
+
+      HttpEntity entity = response.getEntity();
+      if (entity != null) {
+        responseBuilder.entity(new ByteArrayInputStream(IOUtils.toByteArray(entity.getContent())));
       }
-      else if (body instanceof byte[]) {
-        request.setEntity(new ByteArrayEntity((byte[]) body, ContentType.APPLICATION_OCTET_STREAM));
-      }
-      else if (body instanceof File) {
-        request.setEntity(new FileEntity((File) body, ContentType.APPLICATION_OCTET_STREAM));
-      }
-      else {
-        request.setEntity(
-            new StringEntity(objectMapper.writerFor(body.getClass()).writeValueAsString(body),
-                ContentType.APPLICATION_JSON));
-      }
+      return responseBuilder.build();
     }
+  }
+
+  private void prepareRequest(HttpEntityEnclosingRequestBase request, String url, Object body) throws Exception {
+    request.setEntity(new ByteArrayEntity(objectMapper.writeValueAsBytes(body), ContentType.APPLICATION_JSON));
     UriBuilder uriBuilder = UriBuilder.fromUri(nexusUrl.toString()).path(url);
-    queryParams.forEach(uriBuilder::queryParam);
-    httpRequestBase.setURI(uriBuilder.build());
-
+    request.setURI(uriBuilder.build());
     String auth = credentials.getUserName() + ":" + credentials.getPassword();
-    httpRequestBase.setHeader(HttpHeaders.AUTHORIZATION,
+    request.setHeader(HttpHeaders.AUTHORIZATION,
         "Basic " + new String(Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8))));
-
-    try (CloseableHttpClient client = super.clientBuilder().build()) {
-      try (CloseableHttpResponse response = client.execute(httpRequestBase)) {
-        ResponseBuilder responseBuilder = status(response.getStatusLine().getStatusCode());
-        Arrays.stream(response.getAllHeaders()).forEach(h -> responseBuilder.header(h.getName(), h.getValue()));
-
-        HttpEntity entity = response.getEntity();
-        if (entity != null) {
-          responseBuilder.entity(new ByteArrayInputStream(IOUtils.toByteArray(entity.getContent())));
-        }
-        return responseBuilder.build();
-      }
-    }
   }
 }

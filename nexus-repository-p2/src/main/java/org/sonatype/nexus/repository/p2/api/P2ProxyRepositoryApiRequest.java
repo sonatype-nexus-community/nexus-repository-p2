@@ -24,7 +24,8 @@ import org.sonatype.nexus.repository.rest.api.model.ProxyRepositoryApiRequest;
 import org.sonatype.nexus.repository.rest.api.model.StorageAttributes;
 
 @JsonIgnoreProperties({"format", "type"})
-public class P2ProxyRepositoryApiRequest extends ProxyRepositoryApiRequest
+public class P2ProxyRepositoryApiRequest
+    extends ProxyRepositoryApiRequest
 {
   @JsonCreator
   public P2ProxyRepositoryApiRequest(

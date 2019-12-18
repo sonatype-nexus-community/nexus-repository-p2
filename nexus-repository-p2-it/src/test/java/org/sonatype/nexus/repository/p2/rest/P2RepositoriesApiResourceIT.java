@@ -10,7 +10,7 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.api;
+package org.sonatype.nexus.repository.p2.rest;
 
 import javax.ws.rs.core.Response;
 
@@ -21,6 +21,7 @@ import org.ops4j.pax.exam.Option;
 import org.sonatype.nexus.common.app.BaseUrlHolder;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.p2.internal.P2Format;
+import org.sonatype.nexus.repository.p2.internal.P2ITSupport;
 import org.sonatype.nexus.repository.rest.api.model.AbstractRepositoryApiRequest;
 import org.sonatype.nexus.repository.types.ProxyType;
 
@@ -30,9 +31,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class P2RepositoriesApiResourceMemberIT
-    extends RepositoriesApiResourceMemberITSupport
+public class P2RepositoriesApiResourceIT
+    extends P2ResourceITSupport
 {
+  private static final String REMOTE_URL = "http://example.com";
+
   @Configuration
   public static Option[] configureNexus() {
     return options(
@@ -49,7 +52,7 @@ public class P2RepositoriesApiResourceMemberIT
   @Test
   public void createProxy() throws Exception {
     AbstractRepositoryApiRequest request = createProxyRequest(true);
-    Response response = post(getCreateRepositoryPathFor(ProxyType.NAME), request);
+    Response response = post(getCreateRepositoryPathUrl(ProxyType.NAME), request);
     assertEquals(response.getStatus(), Status.CREATED.getStatusCode());
 
     Repository repository = repositoryManager.get(request.getName());
@@ -64,7 +67,7 @@ public class P2RepositoriesApiResourceMemberIT
   public void createProxyBadCredentials() throws Exception {
     setBadCredentials();
     AbstractRepositoryApiRequest request = createProxyRequest(true);
-    Response response = post(getCreateRepositoryPathFor(ProxyType.NAME), request);
+    Response response = post(getCreateRepositoryPathUrl(ProxyType.NAME), request);
     assertEquals(response.getStatus(), Status.UNAUTHORIZED.getStatusCode());
   }
 
@@ -72,17 +75,17 @@ public class P2RepositoriesApiResourceMemberIT
   public void createProxyUnauthorized() throws Exception {
     setUnauthorizedUser();
     AbstractRepositoryApiRequest request = createProxyRequest(true);
-    Response response = post(getCreateRepositoryPathFor(ProxyType.NAME), request);
+    Response response = post(getCreateRepositoryPathUrl(ProxyType.NAME), request);
     assertEquals(response.getStatus(), Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
   public void updateProxy() throws Exception {
-    repos.createP2Proxy(PROXY_NAME, "http://example.com");
+    repos.createP2Proxy(PROXY_NAME, REMOTE_URL);
 
     AbstractRepositoryApiRequest request = createProxyRequest(false);
 
-    Response response = put(getUpdateRepositoryPathFor(ProxyType.NAME, PROXY_NAME), request);
+    Response response = put(getUpdateRepositoryPathUrl(ProxyType.NAME, PROXY_NAME), request);
     assertEquals(response.getStatus(), Status.NO_CONTENT.getStatusCode());
 
     Repository repository = repositoryManager.get(request.getName());
@@ -99,18 +102,18 @@ public class P2RepositoriesApiResourceMemberIT
     setBadCredentials();
     AbstractRepositoryApiRequest request = createProxyRequest(false);
 
-    Response response = put(getUpdateRepositoryPathFor(ProxyType.NAME, PROXY_NAME), request);
+    Response response = put(getUpdateRepositoryPathUrl(ProxyType.NAME, PROXY_NAME), request);
     assertEquals(response.getStatus(), Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void updateProxyUnauthorized() throws Exception {
-    repos.createP2Proxy(PROXY_NAME, "http://example.com");
+    repos.createP2Proxy(PROXY_NAME, REMOTE_URL);
 
     setUnauthorizedUser();
     AbstractRepositoryApiRequest request = createProxyRequest(false);
 
-    Response response = put(getUpdateRepositoryPathFor(ProxyType.NAME, PROXY_NAME), request);
+    Response response = put(getUpdateRepositoryPathUrl(ProxyType.NAME, PROXY_NAME), request);
     assertEquals(response.getStatus(), Status.FORBIDDEN.getStatusCode());
   }
 }
