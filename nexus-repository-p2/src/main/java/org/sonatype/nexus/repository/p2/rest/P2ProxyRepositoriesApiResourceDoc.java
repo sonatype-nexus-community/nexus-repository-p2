@@ -32,7 +32,7 @@ import static org.sonatype.nexus.rest.ApiDocConstants.REPOSITORY_UPDATED;
 @Api(value = API_REPOSITORY_MANAGEMENT)
 public interface P2ProxyRepositoriesApiResourceDoc
 {
-  @ApiOperation("Create Helm proxy repository")
+  @ApiOperation("Create P2 proxy repository")
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = REPOSITORY_CREATED),
       @ApiResponse(code = 401, message = AUTHENTICATION_REQUIRED),
@@ -40,7 +40,7 @@ public interface P2ProxyRepositoriesApiResourceDoc
   })
   Response createRepository(@Valid @NotNull final P2ProxyRepositoryApiRequest request);
 
-  @ApiOperation("Update Helm proxy repository")
+  @ApiOperation("Update P2 proxy repository")
   @ApiResponses(value = {
       @ApiResponse(code = 204, message = REPOSITORY_UPDATED),
       @ApiResponse(code = 401, message = AUTHENTICATION_REQUIRED),

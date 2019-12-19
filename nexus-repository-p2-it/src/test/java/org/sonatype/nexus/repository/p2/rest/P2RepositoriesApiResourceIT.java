@@ -21,11 +21,11 @@ import org.ops4j.pax.exam.Option;
 import org.sonatype.nexus.common.app.BaseUrlHolder;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.p2.internal.P2Format;
-import org.sonatype.nexus.repository.p2.internal.P2ITSupport;
 import org.sonatype.nexus.repository.rest.api.model.AbstractRepositoryApiRequest;
+import org.sonatype.nexus.repository.storage.StorageFacetConstants;
 import org.sonatype.nexus.repository.types.ProxyType;
 
-import static javax.ws.rs.core.Response.*;
+import static javax.ws.rs.core.Response.Status;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -91,8 +91,8 @@ public class P2RepositoriesApiResourceIT
     Repository repository = repositoryManager.get(request.getName());
     assertNotNull(repository);
 
-    assertThat(repository.getConfiguration().attributes("storage")
-            .get("strictContentTypeValidation"),
+    assertThat(repository.getConfiguration().attributes(StorageFacetConstants.STORAGE)
+            .get(StorageFacetConstants.STRICT_CONTENT_TYPE_VALIDATION),
         is(false));
     repositoryManager.delete(PROXY_NAME);
   }

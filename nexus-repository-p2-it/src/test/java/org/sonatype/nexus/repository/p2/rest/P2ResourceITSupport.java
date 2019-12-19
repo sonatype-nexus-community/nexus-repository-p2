@@ -26,6 +26,7 @@ import org.junit.Rule;
 import org.sonatype.nexus.repository.p2.api.P2ProxyRepositoryApiRequest;
 import org.sonatype.nexus.repository.p2.internal.P2Format;
 import org.sonatype.nexus.repository.p2.internal.fixtures.RepositoryRuleP2;
+import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.rest.api.model.AbstractRepositoryApiRequest;
 import org.sonatype.nexus.repository.rest.api.model.CleanupPolicyAttributes;
 import org.sonatype.nexus.repository.rest.api.model.HttpClientAttributes;
@@ -53,7 +54,7 @@ public class P2ResourceITSupport extends RepositoryITSupport
 
   private static final String REPOSITORIES_API_URL = "service/rest/beta/repositories";
 
-  private static final ObjectMapper objectMapper = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   public static final String REMOTE_URL = "http://example.net";
 
@@ -74,11 +75,11 @@ public class P2ResourceITSupport extends RepositoryITSupport
   }
 
   protected void setBadCredentials() {
-    credentials = new UsernamePasswordCredentials("fake_user", "fake_user");
+    credentials = new UsernamePasswordCredentials("fake_user", "fake_user_pass");
   }
 
   protected String getCreateRepositoryPathUrl(final String type) {
-    return new StringJoiner("/")
+    return new StringJoiner(P2PathUtils.DIVIDER)
         .add(REPOSITORIES_API_URL)
         .add(FORMAT_VALUE)
         .add(type)
@@ -138,7 +139,7 @@ public class P2ResourceITSupport extends RepositoryITSupport
   }
 
   private void prepareRequest(HttpEntityEnclosingRequestBase request, String url, Object body) throws Exception {
-    request.setEntity(new ByteArrayEntity(objectMapper.writeValueAsBytes(body), ContentType.APPLICATION_JSON));
+    request.setEntity(new ByteArrayEntity(OBJECT_MAPPER.writeValueAsBytes(body), ContentType.APPLICATION_JSON));
     UriBuilder uriBuilder = UriBuilder.fromUri(nexusUrl.toString()).path(url);
     request.setURI(uriBuilder.build());
     String auth = credentials.getUserName() + ":" + credentials.getPassword();
