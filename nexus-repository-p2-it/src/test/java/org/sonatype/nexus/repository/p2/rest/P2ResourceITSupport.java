@@ -87,7 +87,7 @@ public class P2ResourceITSupport extends RepositoryITSupport
   }
 
   protected String getUpdateRepositoryPathUrl(final String type, final String name) {
-    return new StringJoiner("/")
+    return new StringJoiner(P2PathUtils.DIVIDER)
         .add(REPOSITORIES_API_URL)
         .add(FORMAT_VALUE)
         .add(type)
