@@ -21,6 +21,8 @@ Sonatype internal people:
 * [@ctownshend](https://github.com/ctownshend/) (Cameron Townshend)
 * [@jlstephens89](https://github.com/jlstephens89/) (Joseph Stephens)
 * [@SirMaster](https://github.com/sirmaster/) (Moncef Ben-Soula)
+* [@DreamVan](https://github.com/DreamVan) (Ivan Sverdlov)
+* [@proteus1121](https://github.com/proteus1121) (Artem Ishchenko)
 
 External contributors:
 
