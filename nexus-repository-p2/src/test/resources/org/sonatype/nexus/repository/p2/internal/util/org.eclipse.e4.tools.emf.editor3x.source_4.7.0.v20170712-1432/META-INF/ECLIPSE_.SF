@@ -1,0 +1,94 @@
+Signature-Version: 1.0
+SHA-256-Digest-Manifest-Main-Attributes: 0Y316djDsTKIzyXKOcCUPTjl6aJfo
+ PRXaX0qIPT/DpM=
+SHA-256-Digest-Manifest: h5pUUZMX6XqagoYC4/zoLFfoLSAahdXE3SU6mjcqFn8=
+Created-By: 1.8.0_121 (Oracle Corporation)
+
+Name: org/eclipse/e4/tools/emf/editor3x/extension/ToolControlContribut
+ ionEditor.java
+SHA-256-Digest: N/sT5v+U9ot+TUuQ/JSnyhHg7/P4gySVn+d6vipRH60=
+
+Name: org/eclipse/e4/tools/emf/editor3x/extension/PartContributionEdit
+ or.java
+SHA-256-Digest: 7NOtFdFI/hU7Owt/JteN6P6S5t/cf6oxxt7+osroEuM=
+
+Name: org/eclipse/e4/tools/emf/editor3x/PDEClassContributionProvider.j
+ ava
+SHA-256-Digest: j/UP22zPzuwIxAehwGLDY66/3cHcEg6n2AbyvebHlrA=
+
+Name: org/eclipse/e4/tools/emf/editor3x/RefactorModel.java
+SHA-256-Digest: GIdDV4wVSdwHBTY7vqwiku2pd5TIu8X5wzfTrfR4pR4=
+
+Name: org/eclipse/e4/tools/emf/editor3x/extension/AddonContributionEdi
+ tor.java
+SHA-256-Digest: /I0jwLGtLrVTuMYua5ovLX0Dv6meAncQf1tc0E3nlkk=
+
+Name: org/eclipse/e4/tools/emf/editor3x/E4WorkbenchModelEditor.java
+SHA-256-Digest: 5lj0ZKnLEFCq9/Ha1Es4ZTOmeU7EPfW0GRD01arUrOs=
+
+Name: org/eclipse/e4/tools/emf/editor3x/extension/Util.java
+SHA-256-Digest: zEPiqzSSnsc27NXOOT9as5LaDu5mJQ/Ssnb4krbczM4=
+
+Name: org/eclipse/e4/tools/emf/editor3x/ModelEditorPreferencePage.java
+SHA-256-Digest: cWsIAP0EZPkq9ZoJWBRu30BAI7jZqMKn2owHpHeehOY=
+
+Name: org/eclipse/e4/tools/emf/editor3x/Messages.java
+SHA-256-Digest: qogQeO6MODf/RFTflCtc94FqkFvJM6+zJNetCEAHJ+I=
+
+Name: org/eclipse/e4/tools/emf/editor3x/refactorparticipants/RefactorP
+ articipantDelegate.java
+SHA-256-Digest: mIS8+nsq5HBJiu1O9k7TZLB9L9bbeUUHHD1NzJOD6oQ=
+
+Name: about.html
+SHA-256-Digest: y0Nnq7TskV7QJ04jzKslI0YhAq41CUlTCBk54tIwgRs=
+
+Name: org/eclipse/e4/tools/emf/editor3x/PDEExtensionLookup.java
+SHA-256-Digest: zpDDaEkaUcuv+/BW7eCqwriLlKKg0Rihx+i+nF/lCEU=
+
+Name: org/eclipse/e4/tools/emf/editor3x/ModelExtractor.java
+SHA-256-Digest: f98j4YcG18iiDuM+xpFZT6wyjdKhLuw+mJwoQsdYKv0=
+
+Name: org/eclipse/e4/tools/emf/editor3x/extension/HandlerContributionE
+ ditor.java
+SHA-256-Digest: ID9GbdnEJ8jahiiK6L7eGBuppcdbcre2tUqAuy9j67U=
+
+Name: OSGI-INF/l10n/bundle-src.properties
+SHA-256-Digest: fqiALNAMbdMk5gpoO9bWlyxDJD3ihUHJrKOUeTJuvRk=
+
+Name: org/eclipse/e4/tools/emf/editor3x/extension/ImperativeExpression
+ ContributionEditor.java
+SHA-256-Digest: cPbI1IQ0y+psr78mSZ1C0IFEH7pu8QIKNms6cSjMWuM=
+
+Name: org/eclipse/e4/tools/emf/editor3x/RedoAction.java
+SHA-256-Digest: 5zBR6Fur9qfR5DMDi0hNOgHwORk65lwHTrFuzaAmxmc=
+
+Name: org/eclipse/e4/tools/emf/editor3x/EditorProjectFunction.java
+SHA-256-Digest: 4mSHsLPv6vhyO6rXvkxKva5XO8jks9Un71ysdVMHXJI=
+
+Name: org/eclipse/e4/tools/emf/editor3x/TargetElementProviders.java
+SHA-256-Digest: SzYek5PrJNWARdFTIeaK+Ki6wtyIzCT6ZGpyJmrgyfY=
+
+Name: org/eclipse/e4/tools/emf/editor3x/refactorparticipants/ModelMove
+ Participant.java
+SHA-256-Digest: jJ/5L1zsQTdZhh/qMeMGUuvFwqzoZP6t1halm1hi4d8=
+
+Name: org/eclipse/e4/tools/emf/editor3x/UndoAction.java
+SHA-256-Digest: 0ohHoJFyGM425MH4uFZUu55s9Dq2OqQjKwVmbZb6rEs=
+
+Name: org/eclipse/e4/tools/emf/editor3x/extension/DynamicMenuContribut
+ ionContributionEditor.java
+SHA-256-Digest: ke1n1U8C52qY4OANEtO49NJeYttOpWx4IKitIiYns6c=
+
+Name: org/eclipse/e4/tools/emf/editor3x/XMIResourceFunction.java
+SHA-256-Digest: 6ykL0LwBC5M/soCGN1LScSo4cAY4Fp2OLHv3UaE5j7I=
+
+Name: org/eclipse/e4/tools/emf/editor3x/messages.properties
+SHA-256-Digest: FXtQf7Tv7aZ+L7+bL9z5mU0BXXKMDdpcs5EIkMJ7CC0=
+
+Name: org/eclipse/e4/tools/emf/editor3x/refactorparticipants/ModelRena
+ meParticipant.java
+SHA-256-Digest: DyPfKvvoLcP6SWMWjaJjLHiSlo3B/LoEsUa+m7L3bd4=
+
+Name: org/eclipse/e4/tools/emf/editor3x/emf/EditUIUtil.java
+SHA-256-Digest: tnGaYL8qoUglYy9VwGSfNcirarqf8rtuGEjb70ZVzrI=
+

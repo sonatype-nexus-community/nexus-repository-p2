@@ -34,6 +34,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
 public class P2ProxyFacetImplTest
@@ -62,13 +63,13 @@ public class P2ProxyFacetImplTest
 
   @Before
   public void setUp() throws Exception {
-    underTest = new P2ProxyFacetImpl(p2DataAccess, artifactsXmlAbsoluteUrlRemover, jarParser, tempBlobConverter);
+    underTest = new P2ProxyFacetImpl(p2DataAccess, artifactsXmlAbsoluteUrlRemover, jarParser);
   }
 
   @Test
   public void getVersion() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    when(jarParser.getAttributesFromFeatureXML(any()))
+    when(jarParser.getAttributesFromFeatureXML(any(), any()))
         .thenReturn(of(buildWithVersionAndExtension()));
 
     P2Attributes p2Attributes = underTest
@@ -79,7 +80,7 @@ public class P2ProxyFacetImplTest
 
   @Test(expected = IOException.class)
   public void getUnknownVersion() throws Exception {
-    when(jarParser.getAttributesFromFeatureXML(any())).thenReturn(Optional.empty());
+    when(jarParser.getAttributesFromFeatureXML(any(), anyString())).thenReturn(Optional.empty());
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
     P2Attributes p2Attributes = buildWithVersionAndExtension();
@@ -89,7 +90,7 @@ public class P2ProxyFacetImplTest
   @Test
   public void getJarWithJarFile() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    assertThat(underTest.getJar(tempBlob, EXTENSION), is(instanceOf(JarInputStream.class)));
+    assertThat(jarParser.getJarStreamFromBlob(tempBlob, EXTENSION), is(instanceOf(JarInputStream.class)));
   }
 
   @Test
@@ -97,7 +98,7 @@ public class P2ProxyFacetImplTest
     when(tempBlobConverter.getJarFromPackGz(tempBlob)).thenReturn(getClass().getResourceAsStream(JAR_NAME));
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
-    assertThat(underTest.getJar(tempBlob, "pack.gz"), is(instanceOf(JarInputStream.class)));
+    assertThat(jarParser.getJarStreamFromBlob(tempBlob, "pack.gz"), is(instanceOf(JarInputStream.class)));
   }
 
   private P2Attributes buildWithVersionAndExtension() {

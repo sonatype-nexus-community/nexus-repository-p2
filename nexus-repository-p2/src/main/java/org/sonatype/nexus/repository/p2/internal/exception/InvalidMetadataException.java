@@ -17,7 +17,13 @@ package org.sonatype.nexus.repository.p2.internal.exception;
  */
 public class InvalidMetadataException extends Exception
 {
+  private static final String EXCEPTION_MESSAGE = "Could not get attributes from jar";
+
   public InvalidMetadataException() {
-    super("Could not get attributes from jar");
+    super(EXCEPTION_MESSAGE);
+  }
+
+  public InvalidMetadataException(Exception ex) {
+    super(EXCEPTION_MESSAGE + " due to " + ex.getMessage());
   }
 }

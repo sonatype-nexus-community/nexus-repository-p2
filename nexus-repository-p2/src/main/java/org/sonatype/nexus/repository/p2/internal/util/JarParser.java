@@ -12,9 +12,11 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Optional;
+import java.util.PropertyResourceBundle;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -31,11 +33,15 @@ import javax.xml.xpath.XPathFactory;
 import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.storage.TempBlob;
 
+import com.google.common.annotations.VisibleForTesting;
+import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static javax.xml.xpath.XPathConstants.NODE;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
 
@@ -64,7 +70,10 @@ public class JarParser
 
   private final DocumentBuilder builder;
 
-  public JarParser() throws Exception {
+  private final TempBlobConverter tempBlobConverter;
+
+  public JarParser(final TempBlobConverter tempBlobConverter) throws Exception {
+    this.tempBlobConverter = checkNotNull(tempBlobConverter);
     this.factory = DocumentBuilderFactory.newInstance();
     factory.setValidating(false);
     factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
@@ -72,37 +81,67 @@ public class JarParser
     this.builder = factory.newDocumentBuilder();
   }
 
-  public Optional<P2Attributes> getAttributesFromManifest(
-      final JarInputStream jis) throws InvalidMetadataException
+  public Optional<P2Attributes> getAttributesFromManifest(final TempBlob tempBlob, final String extension)
+      throws InvalidMetadataException
   {
-    P2Attributes p2Attributes = null;
-    JarEntry jarEntry;
-    try {
-      while (p2Attributes == null && (jarEntry = jis.getNextJarEntry()) != null) {
-        if (jarEntry.getName().startsWith(MANIFEST_FILE_PREFIX)) {
+    P2Attributes p2Attributes;
+    Optional<Manifest> manifestJarEntity = getSpecificEntity(tempBlob, extension, MANIFEST_FILE_PREFIX,
+        (jarInputStream, jarEntry) -> JarParser.this.getManifestFromJarInputStream(jarInputStream));
+    if (!manifestJarEntity.isPresent()) {
+      return Optional.empty();
+    }
 
-          Manifest manifest = jis.getManifest();
-          if (manifest == null) {
-            manifest = new Manifest(jis);
-          }
-          Attributes mainManifestAttributes = manifest.getMainAttributes();
-          String name = normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName"));
+    Attributes mainManifestAttributes = manifestJarEntity.get().getMainAttributes();
+    String bundleLocalizationValue = mainManifestAttributes.getValue("Bundle-Localization");
+    Optional<PropertyResourceBundle> propertiesOpt =
+        getSpecificEntity(tempBlob, extension, bundleLocalizationValue, ((jarInputStream, jarEntry) ->
+            new PropertyResourceBundle(new ByteArrayInputStream(IOUtils.toByteArray(jarInputStream)))));
 
-          p2Attributes = P2Attributes.builder()
-              .componentName(name)
-              .pluginName(mainManifestAttributes
-                  .getValue("Bundle-Name"))
-              .componentVersion(mainManifestAttributes
-                  .getValue("Bundle-Version"))
-              .build();
+    // get property key for bundle name without '%' character in start
+    String bundleName = mainManifestAttributes.getValue("Bundle-Name").substring(1);
+    if (propertiesOpt.isPresent() && propertiesOpt.get().containsKey(bundleName))
+    {
+      bundleName = propertiesOpt.get().getString(bundleName);
+    }
+
+    p2Attributes = P2Attributes.builder()
+        .componentName(normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName")))
+        .pluginName(bundleName)
+        .componentVersion(mainManifestAttributes
+            .getValue("Bundle-Version"))
+        .build();
+
+    return Optional.ofNullable(p2Attributes);
+  }
+
+  private Manifest getManifestFromJarInputStream(final JarInputStream jarInputStream) throws IOException {
+    Manifest manifest = jarInputStream.getManifest();
+    if (manifest != null) {
+      return manifest;
+    }
+    return new Manifest(jarInputStream);
+  }
+
+  private <T> Optional<T> getSpecificEntity(
+      final TempBlob tempBlob,
+      final String extension,
+      @Nullable final String startNameForSearch,
+      ThrowingBiFunction<JarInputStream, JarEntry, T> getEntityFunction
+  ) throws InvalidMetadataException
+  {
+    try (JarInputStream jis = getJarStreamFromBlob(tempBlob, extension)) {
+      JarEntry jarEntry;
+      while ((jarEntry = jis.getNextJarEntry()) != null) {
+        if (startNameForSearch != null && jarEntry.getName().startsWith(startNameForSearch)) {
+          return Optional.ofNullable(getEntityFunction.apply(jis, jarEntry));
         }
       }
     }
     catch (IOException ex) {
-      throw new InvalidMetadataException();
+      throw new InvalidMetadataException(ex);
     }
 
-    return Optional.ofNullable(p2Attributes);
+    return Optional.empty();
   }
 
   private String normalizeName(final String name) {
@@ -114,12 +153,11 @@ public class JarParser
     return normalizeComponentName(resultName);
   }
 
-  public Optional<P2Attributes> getAttributesFromFeatureXML(
-      final JarInputStream jis) throws InvalidMetadataException
+  public Optional<P2Attributes> getAttributesFromFeatureXML(final TempBlob tempBlob, final String extension) throws InvalidMetadataException
   {
     P2Attributes p2Attributes = null;
     JarEntry jarEntry;
-    try {
+    try (JarInputStream jis = getJarStreamFromBlob(tempBlob, extension)) {
       while (p2Attributes == null && jis != null && (jarEntry = jis.getNextJarEntry()) != null) {
         if (XML_FILE_NAME.equals(jarEntry.getName())) {
           Document document = toDocument(jis);
@@ -165,5 +203,15 @@ public class JarParser
       log.warn("Could not extract value, failed with exception: {}", e.getMessage());
     }
     return null;
+  }
+
+  @VisibleForTesting
+  public JarInputStream getJarStreamFromBlob(final TempBlob tempBlob, final String extension) throws IOException {
+    if (extension.equals("jar")) {
+      return new JarInputStream(tempBlob.get());
+    }
+    else {
+      return new JarInputStream(tempBlobConverter.getJarFromPackGz(tempBlob));
+    }
   }
 }
