@@ -12,10 +12,11 @@
     Eclipse Foundation. All other trademarks are the property of their respective owners.
 
 -->
-# Nexus Repository p2 Format
+# Nexus Repository Manger p2 Format
 [![Maven Central](https://img.shields.io/maven-central/v/org.sonatype.nexus.plugins/nexus-repository-p2.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22org.sonatype.nexus.plugins%22%20AND%20a:%22nexus-repository-p2%22) [![CircleCI](https://circleci.com/gh/sonatype-nexus-community/nexus-repository-p2.svg?style=svg)](https://circleci.com/gh/sonatype-nexus-community/nexus-repository-p2) [![Join the chat at https://gitter.im/sonatype/nexus-developers](https://badges.gitter.im/sonatype/nexus-developers.svg)](https://gitter.im/sonatype/nexus-developers?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![DepShield Badge](https://depshield.sonatype.org/badges/sonatype-nexus-community/nexus-repository-p2/depshield.svg)](https://depshield.github.io)
 
 # Table Of Contents
+* [Release notes](https://help.sonatype.com/display/NXRM3/2019+Release+Notes)
 * [Developing](#developing)
    * [Requirements](#requirements)
    * [Building](#building)
@@ -61,20 +62,20 @@ The application will now be available from your browser at http://localhost:8081
 
 ## Using p2 With Nexus Repository Manager 3
 
-[We have detailed instructions on how to get started here!](docs/P2_USER_DOCUMENTATION.md)
+[We have detailed instructions on how to get started here!](https://help.sonatype.com/repomanager3/formats/p2-repositories)
 
 ## Compatibility with Nexus Repository Manager 3 Versions
 
-The table below outlines what version of Nexus Repository the plugin was built against
+The table below outlines what version of Nexus Repository Manager the plugin was built against
 
-| Plugin Version | Nexus Repository Version |
-|----------------|--------------------------|
-| v0.0.2         | 3.8.0-02                 |
-| v1.0.0         | 3.21.0+                  |
+| Plugin Version    | Nexus Repository Manager Version |
+|-------------------|----------------------------------|
+| v0.0.2            | 3.8.0-02                         |
+| v1.0.0 In product | 3.21.0+                          |
 
-If a new version of Nexus Repository is released and the plugin needs changes, a new release will be made, and this
-table will be updated to indicate which version of Nexus Repository it will function against. This is done on a time 
-available basis, as this is community supported. If you see a new version of Nexus Repository, go ahead and update the
+If a new version of Nexus Repository Manager is released and the plugin needs changes, a new release will be made, and this
+table will be updated to indicate which version of Nexus Repository Manager it will function against. This is done on a time 
+available basis, as this is community supported. If you see a new version of Nexus Repository Manager, go ahead and update the
 plugin and send us a PR after testing it out!
 
 All released versions can be found [here](https://github.com/sonatype-nexus-community/nexus-repository-p2/releases).
@@ -95,14 +96,14 @@ If you'd like it to support the aforementioned sites, please file an issue, or b
 
 ## Installing the plugin
 
-:bangbang: `After NXRM version 3.21, last released plugin's version is available directly in product and there is no need to install it separately` :bangbang:
+:bangbang: `After Nexus Repository Manager version 3.21, last released plugin's version is available directly in product and there is no need to install it separately` :bangbang:
 
 For older versions there are a range of options for installing the p2 plugin. You'll need to build it first, and
 then install the plugin with the options shown below:
 
 ### Temporary Install
 
-Installations done via the Karaf console will be wiped out with every restart of Nexus Repository. This is a
+Installations done via the Karaf console will be wiped out with every restart of Nexus Repository Manager. This is a
 good installation path if you are just testing or doing development on the plugin.
 
 * Enable Nexus console: edit `<nexus_dir>/bin/nexus.vmoptions` and change `karaf.startLocalConsole`  to `true`.
@@ -128,8 +129,8 @@ For more permanent installs of the nexus-repository-p2 plugin, follow these inst
 
 * Copy the bundle (nexus-repository-p2-1.0.0.jar) into <nexus_dir>/deploy
 
-This will cause the plugin to be loaded with each restart of Nexus Repository. As well, this folder is monitored
-by Nexus Repository and the plugin should load within 60 seconds of being copied there if Nexus Repository
+This will cause the plugin to be loaded with each restart of Nexus Repository Manager. As well, this folder is monitored
+by Nexus Repository Manager and the plugin should load within 60 seconds of being copied there if Nexus Repository Manager
 is running. You will still need to start the bundle using the karaf commands mentioned in the temporary install.
 
 ### (most) Permanent Install
@@ -153,16 +154,13 @@ If you are trying to use the p2 plugin permanently, it likely makes more sense t
    + </feature>
     </features>
    ```
-This will cause the plugin to be loaded and started with each startup of Nexus Repository.
+This will cause the plugin to be loaded and started with each startup of Nexus Repository Manager.
 
 ## The Fine Print
 Starting from version 3.21 the `p2` plugin is supported by Sonatype, but still is a contribution of ours to the open source community (read: you!).
 
 Remember:
-
-* Use this contribution at the risk tolerance that you have
-* Do NOT file Sonatype support tickets related to p2 support in regard to this plugin
-* DO file issues here on GitHub, so that the community can pitch in
+* Do file Sonatype support tickets related to p2 support in regard to this plugin
 
 Phew, that was easier than I thought. Last but not least of all:
 
@@ -175,4 +173,4 @@ Looking to contribute to our code but need some help? There's a few ways to get 
 * p2 repositories Sonatype help documentation [Sonatype Help](https://help.sonatype.com/repomanager3/formats/p2-repositories)
 * Chat with us on [Gitter](https://gitter.im/sonatype/nexus-developers)
 * Check out the [Nexus3](http://stackoverflow.com/questions/tagged/nexus3) tag on Stack Overflow
-* Check out the [Nexus Repository User List](https://groups.google.com/a/glists.sonatype.com/forum/?hl=en#!forum/nexus-users)
+* Check out the [Nexus Repository Manager User List](https://groups.google.com/a/glists.sonatype.com/forum/?hl=en#!forum/nexus-users)
