@@ -16,7 +16,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
-import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingExceptionException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -51,7 +51,7 @@ public class AttributesParserFeatureXml
       super(tempBlobConverter);
       documentJarExtractor = new JarExtractor<Document>(tempBlobConverter) {
           @Override
-          protected Document createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws AttributeParsingExceptionException {
+          protected Document createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws AttributeParsingException {
               DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
               factory.setValidating(false);
               try {
@@ -59,14 +59,14 @@ public class AttributesParserFeatureXml
                   factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
                   return factory.newDocumentBuilder().parse(jis);
               } catch (ParserConfigurationException | SAXException | IOException e) {
-                  throw new AttributeParsingExceptionException(e);
+                  throw new AttributeParsingException(e);
               }
           }
       };
   }
 
   @Override
-  public Optional<P2Attributes> getAttributesFromBlob(final TempBlob tempBlob, final String extension) throws AttributeParsingExceptionException {
+  public Optional<P2Attributes> getAttributesFromBlob(final TempBlob tempBlob, final String extension) throws AttributeParsingException {
     P2Attributes p2Attributes;
 
       Optional<Document> featureXmlOpt = documentJarExtractor.getSpecificEntity(tempBlob, extension, XML_FILE_NAME);
@@ -98,14 +98,14 @@ public class AttributesParserFeatureXml
   @Nullable
   private String extractValueFromDocument(
       final String path,
-      final Document from) throws AttributeParsingExceptionException
+      final Document from) throws AttributeParsingException
   {
     XPath xPath = XPathFactory.newInstance().newXPath();
       Node node;
       try {
           node = (Node) xPath.evaluate(path, from, NODE);
       } catch (XPathExpressionException e) {
-          throw new AttributeParsingExceptionException(e);
+          throw new AttributeParsingException(e);
       }
       if (node != null) {
       return node.getNodeValue();

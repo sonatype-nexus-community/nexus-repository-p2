@@ -4,7 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.sonatype.goodies.testsupport.TestSupport;
-import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingExceptionException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -41,7 +41,7 @@ public class AttributesParserManifestTest extends TestSupport {
     }
 
     @Test
-    public void getVersionFromManifestJarInputStream() throws AttributeParsingExceptionException {
+    public void getVersionFromManifestJarInputStream() throws AttributeParsingException {
         when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME_WITH_MANIFEST));
 
         P2Attributes attributesFromJarFile = getAttributesFromJarFile(tempBlob, "jar");
@@ -50,7 +50,7 @@ public class AttributesParserManifestTest extends TestSupport {
     }
 
     @Test
-    public void getVersionFromSourceJar() throws AttributeParsingExceptionException {
+    public void getVersionFromSourceJar() throws AttributeParsingException {
         when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_SOURCES_NAME));
         P2Attributes attributesFromJarFile = getAttributesFromJarFile(tempBlob, "jar");
         assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_SOURCES_COMPONENT_VERSION)));
@@ -58,18 +58,18 @@ public class AttributesParserManifestTest extends TestSupport {
     }
 
     @Test
-    public void getEmptyAttributesFromJarInputStream() throws AttributeParsingExceptionException {
+    public void getEmptyAttributesFromJarInputStream() throws AttributeParsingException {
         when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_SOURCES_XML_NAME));
         assertThat(underTest.getAttributesFromBlob(tempBlob, "jar").isPresent(), is(false));
     }
 
-    @Test (expected = AttributeParsingExceptionException.class)
-    public void getNoneP2FileFromJarInputStream() throws AttributeParsingExceptionException {
+    @Test (expected = AttributeParsingException.class)
+    public void getNoneP2FileFromJarInputStream() throws AttributeParsingException {
         when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(NON_P2_JAR));
         underTest.getAttributesFromBlob(tempBlob, "zip");
     }
 
-    private P2Attributes getAttributesFromJarFile(final TempBlob tempBlob, final String jar) throws AttributeParsingExceptionException
+    private P2Attributes getAttributesFromJarFile(final TempBlob tempBlob, final String jar) throws AttributeParsingException
     {
         return underTest.getAttributesFromBlob(tempBlob, jar).orElseThrow(() -> new AssertionError("No Attributes found to use"));
     }

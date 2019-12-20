@@ -23,7 +23,7 @@ import javax.inject.Named;
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
 import org.sonatype.nexus.repository.p2.internal.AssetKind;
-import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingExceptionException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.p2.internal.util.AttributesParserFeatureXml;
@@ -366,7 +366,7 @@ public class P2ProxyFacetImpl
         p2Attributes = featureXmlParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
       }
     }
-    catch (AttributeParsingExceptionException ex) {
+    catch (AttributeParsingException ex) {
       log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
     }
 

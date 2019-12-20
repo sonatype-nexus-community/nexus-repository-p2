@@ -10,7 +10,7 @@ import java.util.jar.JarInputStream;
 import javax.annotation.Nullable;
 import javax.xml.xpath.XPathExpressionException;
 
-import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingExceptionException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -27,14 +27,14 @@ public abstract class AbstractAttributesParser
   protected Optional<PropertyResourceBundle> getBundleProperties(
           final TempBlob tempBlob,
           final String extension,
-          @Nullable final String startNameForSearch) throws AttributeParsingExceptionException {
+          @Nullable final String startNameForSearch) throws AttributeParsingException {
     JarExtractor<PropertyResourceBundle> jarExtractor = new JarExtractor<PropertyResourceBundle>(tempBlobConverter) {
       @Override
-      protected PropertyResourceBundle createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws AttributeParsingExceptionException {
+      protected PropertyResourceBundle createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws AttributeParsingException {
         try {
           return new PropertyResourceBundle(new ByteArrayInputStream(IOUtils.toByteArray(jis)));
         } catch (IOException e) {
-          throw new AttributeParsingExceptionException(e);
+          throw new AttributeParsingException(e);
         }
       }
     };
@@ -53,5 +53,5 @@ public abstract class AbstractAttributesParser
   }
 
   public abstract Optional<P2Attributes> getAttributesFromBlob(final TempBlob tempBlob, final String extension)
-      throws AttributeParsingExceptionException, XPathExpressionException;
+      throws AttributeParsingException, XPathExpressionException;
 }

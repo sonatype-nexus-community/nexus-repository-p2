@@ -1,6 +1,6 @@
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingExceptionException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -31,7 +31,7 @@ public class AttributesParserManifest
     super(tempBlobConverter);
     manifestJarExtractor = new JarExtractor<Manifest>(tempBlobConverter) {
       @Override
-      protected Manifest createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws AttributeParsingExceptionException {
+      protected Manifest createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws AttributeParsingException {
         Manifest manifest = jis.getManifest();
         if (manifest != null) {
           return manifest;
@@ -39,7 +39,7 @@ public class AttributesParserManifest
         try {
           return new Manifest(jis);
         } catch (IOException e) {
-          throw new AttributeParsingExceptionException(e);
+          throw new AttributeParsingException(e);
         }
       }
     };
@@ -47,7 +47,7 @@ public class AttributesParserManifest
 
   @Override
   public Optional<P2Attributes> getAttributesFromBlob(final TempBlob tempBlob, final String extension)
-      throws AttributeParsingExceptionException
+      throws AttributeParsingException
   {
     P2Attributes p2Attributes;
     Optional<Manifest> manifestJarEntity = manifestJarExtractor.getSpecificEntity(tempBlob, extension, MANIFEST_FILE_PREFIX);
