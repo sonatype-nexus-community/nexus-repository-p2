@@ -26,7 +26,8 @@ import org.sonatype.nexus.repository.p2.internal.AssetKind;
 import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.util.JarParser;
+import org.sonatype.nexus.repository.p2.internal.util.AttributesParserFeatureXml;
+import org.sonatype.nexus.repository.p2.internal.util.AttributesParserManifest;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
 import org.sonatype.nexus.repository.proxy.ProxyFacet;
 import org.sonatype.nexus.repository.proxy.ProxyFacetSupport;
@@ -78,16 +79,19 @@ public class P2ProxyFacetImpl
 
   private final P2DataAccess p2DataAccess;
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
-  private final JarParser jarParser;
+  private final AttributesParserFeatureXml featureXmlParser;
+  private final AttributesParserManifest manifestParser;
 
   @Inject
   public P2ProxyFacetImpl(final P2DataAccess p2DataAccess,
                           final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
-                          final JarParser jarParser)
+                          final AttributesParserFeatureXml featureXmlParser,
+                          AttributesParserManifest manifestParser)
   {
     this.p2DataAccess = checkNotNull(p2DataAccess);
     this.xmlRewriter = checkNotNull(xmlRewriter);
-    this.jarParser = checkNotNull(jarParser);
+    this.featureXmlParser = checkNotNull(featureXmlParser);
+    this.manifestParser = checkNotNull(manifestParser);
   }
 
   // HACK: Workaround for known CGLIB issue, forces an Import-Package for org.sonatype.nexus.repository.config
@@ -355,11 +359,11 @@ public class P2ProxyFacetImpl
     Optional<P2Attributes> p2Attributes = Optional.empty();
     try {
       // first try Features XML
-      p2Attributes = jarParser.getAttributesFromFeatureXML(tempBlob, sourceP2Attributes.getExtension());
+      p2Attributes = featureXmlParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
 
       // second try Manifest
       if (!p2Attributes.isPresent()) {
-        p2Attributes = jarParser.getAttributesFromManifest(tempBlob, sourceP2Attributes.getExtension());
+        p2Attributes = featureXmlParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
       }
     }
     catch (InvalidMetadataException ex) {

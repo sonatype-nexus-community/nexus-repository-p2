@@ -29,7 +29,7 @@ import static org.sonatype.goodies.testsupport.hamcrest.DiffMatchers.equalTo;
 public class JarParserTest
     extends TestSupport
 {
-  private JarParser underTest;
+  private JarExtractor underTest;
 
   @Mock
   private TempBlob tempBlob;
@@ -56,7 +56,7 @@ public class JarParserTest
 
   @Before
   public void setUp() throws Exception {
-    underTest = new JarParser(new TempBlobConverter());
+    underTest = new JarExtractor(new TempBlobConverter());
   }
 
   @Test

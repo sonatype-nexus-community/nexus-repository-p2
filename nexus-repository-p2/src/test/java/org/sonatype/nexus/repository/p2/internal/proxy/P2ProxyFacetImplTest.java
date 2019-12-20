@@ -18,7 +18,7 @@ import java.util.jar.JarInputStream;
 import org.sonatype.goodies.testsupport.TestSupport;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.util.JarParser;
+import org.sonatype.nexus.repository.p2.internal.util.JarExtractor;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
 import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
 import org.sonatype.nexus.repository.storage.TempBlob;
@@ -57,7 +57,7 @@ public class P2ProxyFacetImplTest
   private TempBlobConverter tempBlobConverter;
 
   @Spy @InjectMocks
-  private JarParser jarParser;
+  private JarExtractor jarParser;
 
   @Mock
   private TempBlob tempBlob;
