@@ -12,53 +12,31 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Optional;
-import java.util.PropertyResourceBundle;
-import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
-import java.util.jar.Manifest;
-
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
-import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
-import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.apache.commons.io.IOUtils;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.xml.sax.SAXException;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static javax.xml.xpath.XPathConstants.NODE;
-import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 
 /**
  * Utility methods for working with Jar (Jar Binks, worst character) files
  *
  * @since 0.next
  */
-public interface JarExtractor<T>
+public abstract class JarExtractor<T>
 {
-  default Optional<T> getSpecificEntity(
+  TempBlobConverter tempBlobConverter;
+  public JarExtractor(TempBlobConverter tempBlobConverter){
+    this.tempBlobConverter = tempBlobConverter;
+  }
+
+  protected Optional<T> getSpecificEntity(
       final TempBlob tempBlob,
       final String extension,
-      @Nullable final String startNameForSearch)
+      @Nullable final String startNameForSearch) throws InvalidMetadataException
   {
     try (JarInputStream jis = getJarStreamFromBlob(tempBlob, extension)) {
       JarEntry jarEntry;
@@ -69,22 +47,20 @@ public interface JarExtractor<T>
       }
     }
     catch (IOException e) {
-      e.printStackTrace();
+      throw new InvalidMetadataException(e);
     }
 
     return Optional.empty();
   }
 
-  T createSpecificEntity(final JarInputStream jis, final JarEntry jarEntry)
-      throws IOException, ParserConfigurationException, SAXException;
+  protected abstract T createSpecificEntity(final JarInputStream jis, final JarEntry jarEntry) throws InvalidMetadataException;
 
-  default JarInputStream getJarStreamFromBlob(final TempBlob tempBlob, final String extension) throws IOException {
+  private JarInputStream getJarStreamFromBlob(final TempBlob tempBlob, final String extension) throws IOException {
     if (extension.equals("jar")) {
       return new JarInputStream(tempBlob.get());
     }
     else {
-      return null;
-      //return new JarInputStream(tempBlobConverter.getJarFromPackGz(tempBlob));
+      return new JarInputStream(tempBlobConverter.getJarFromPackGz(tempBlob));
     }
   }
 }

@@ -1,17 +1,19 @@
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import java.util.Optional;
-import java.util.PropertyResourceBundle;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
+import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.storage.TempBlob;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-
-import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
-import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.storage.TempBlob;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.PropertyResourceBundle;
+import java.util.jar.Attributes;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
 
@@ -22,17 +24,25 @@ public class AttributesParserManifest
 {
   private static final String MANIFEST_FILE_PREFIX = "META-INF/";
 
-  private static final JarExtractor<Manifest> MANIFEST_JAR_EXTRACTOR = (jis, jarEntry) -> {
-    Manifest manifest = jis.getManifest();
-    if (manifest != null) {
-      return manifest;
-    }
-    return new Manifest(jis);
-  };
+  private JarExtractor<Manifest> manifestJarExtractor;
 
   @Inject
-  public AttributesParserManifest(TempBlobConverter tempBlobConverter){
+  public AttributesParserManifest(TempBlobConverter tempBlobConverter) {
     super(tempBlobConverter);
+    manifestJarExtractor = new JarExtractor<Manifest>(tempBlobConverter) {
+      @Override
+      protected Manifest createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws InvalidMetadataException {
+        Manifest manifest = jis.getManifest();
+        if (manifest != null) {
+          return manifest;
+        }
+        try {
+          return new Manifest(jis);
+        } catch (IOException e) {
+          throw new InvalidMetadataException(e);
+        }
+      }
+    };
   }
 
   @Override
@@ -40,7 +50,7 @@ public class AttributesParserManifest
       throws InvalidMetadataException
   {
     P2Attributes p2Attributes;
-    Optional<Manifest> manifestJarEntity = MANIFEST_JAR_EXTRACTOR.getSpecificEntity(tempBlob, extension, MANIFEST_FILE_PREFIX);
+    Optional<Manifest> manifestJarEntity = manifestJarExtractor.getSpecificEntity(tempBlob, extension, MANIFEST_FILE_PREFIX);
     if (!manifestJarEntity.isPresent()) {
       return Optional.empty();
     }

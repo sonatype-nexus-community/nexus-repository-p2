@@ -1,22 +1,28 @@
 package org.sonatype.nexus.repository.p2.internal.util;
 
+import java.io.IOException;
 import java.util.Optional;
 import java.util.PropertyResourceBundle;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+import org.xml.sax.SAXException;
 
 import static javax.xml.xpath.XPathConstants.NODE;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
@@ -38,26 +44,32 @@ public class AttributesParserFeatureXml
 
   private static final String FEATURE_PROPERTIES = "feature.properties";
 
-  private static final JarExtractor<Document> DOCUMENT_JAR_EXTRACTOR = (jis, jarEntry) -> {
-    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-    factory.setValidating(false);
-    factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
-    factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-    return factory.newDocumentBuilder().parse(jis);
-  };
+  private JarExtractor<Document> documentJarExtractor;
 
   @Inject
   public AttributesParserFeatureXml(final TempBlobConverter tempBlobConverter) {
-    super(tempBlobConverter);
+      super(tempBlobConverter);
+      documentJarExtractor = new JarExtractor<Document>(tempBlobConverter) {
+          @Override
+          protected Document createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws InvalidMetadataException {
+              DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+              factory.setValidating(false);
+              try {
+                  factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
+                  factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+                  return factory.newDocumentBuilder().parse(jis);
+              } catch (ParserConfigurationException | SAXException | IOException e) {
+                  throw new InvalidMetadataException(e);
+              }
+          }
+      };
   }
 
   @Override
-  public Optional<P2Attributes> getAttributesFromBlob(final TempBlob tempBlob, final String extension)
-  {
+  public Optional<P2Attributes> getAttributesFromBlob(final TempBlob tempBlob, final String extension) throws InvalidMetadataException {
     P2Attributes p2Attributes;
 
-    Optional<Document> featureXmlOpt =
-        DOCUMENT_JAR_EXTRACTOR.getSpecificEntity(tempBlob, extension, XML_FILE_NAME);
+      Optional<Document> featureXmlOpt = documentJarExtractor.getSpecificEntity(tempBlob, extension, XML_FILE_NAME);
 
     if (!featureXmlOpt.isPresent()) {
       return Optional.empty();
@@ -86,11 +98,16 @@ public class AttributesParserFeatureXml
   @Nullable
   private String extractValueFromDocument(
       final String path,
-      final Document from) throws XPathExpressionException
+      final Document from) throws InvalidMetadataException
   {
     XPath xPath = XPathFactory.newInstance().newXPath();
-    Node node = (Node) xPath.evaluate(path, from, NODE);
-    if (node != null) {
+      Node node;
+      try {
+          node = (Node) xPath.evaluate(path, from, NODE);
+      } catch (XPathExpressionException e) {
+          throw new InvalidMetadataException(e);
+      }
+      if (node != null) {
       return node.getNodeValue();
     }
 

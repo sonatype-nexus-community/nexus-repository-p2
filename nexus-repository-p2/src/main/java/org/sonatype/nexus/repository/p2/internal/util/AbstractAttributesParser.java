@@ -1,8 +1,11 @@
 package org.sonatype.nexus.repository.p2.internal.util;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.PropertyResourceBundle;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 
 import javax.annotation.Nullable;
 import javax.xml.xpath.XPathExpressionException;
@@ -15,13 +18,26 @@ import org.apache.commons.io.IOUtils;
 
 public abstract class AbstractAttributesParser
 {
+  protected final TempBlobConverter tempBlobConverter;
+
+  public AbstractAttributesParser(TempBlobConverter tempBlobConverter) {
+    this.tempBlobConverter = tempBlobConverter;
+  }
+
   protected Optional<PropertyResourceBundle> getBundleProperties(
-      final TempBlob tempBlob,
-      final String extension,
-      @Nullable final String startNameForSearch)
-  {
-    JarExtractor<PropertyResourceBundle> jarExtractor =
-        (jis, jarEntry) -> new PropertyResourceBundle(new ByteArrayInputStream(IOUtils.toByteArray(jis)));
+          final TempBlob tempBlob,
+          final String extension,
+          @Nullable final String startNameForSearch) throws InvalidMetadataException {
+    JarExtractor<PropertyResourceBundle> jarExtractor = new JarExtractor<PropertyResourceBundle>(tempBlobConverter) {
+      @Override
+      protected PropertyResourceBundle createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws InvalidMetadataException {
+        try {
+          return new PropertyResourceBundle(new ByteArrayInputStream(IOUtils.toByteArray(jis)));
+        } catch (IOException e) {
+          throw new InvalidMetadataException(e);
+        }
+      }
+    };
 
     return jarExtractor.getSpecificEntity(tempBlob, extension, startNameForSearch);
   }
