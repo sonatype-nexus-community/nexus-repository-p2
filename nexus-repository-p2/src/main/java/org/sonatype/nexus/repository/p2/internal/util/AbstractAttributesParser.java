@@ -20,7 +20,7 @@ public abstract class AbstractAttributesParser
 {
   protected final TempBlobConverter tempBlobConverter;
 
-  public AbstractAttributesParser(TempBlobConverter tempBlobConverter) {
+  public AbstractAttributesParser(final TempBlobConverter tempBlobConverter) {
     this.tempBlobConverter = tempBlobConverter;
   }
 

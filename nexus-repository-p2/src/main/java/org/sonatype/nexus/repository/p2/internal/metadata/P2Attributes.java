@@ -100,7 +100,7 @@ public class P2Attributes
       return new P2Attributes(this);
     }
 
-    private boolean isNull(String ...args) {
+    private boolean isNull(final String ...args) {
       for (String a : args) {
         if (a != null) {
           return false;

@@ -86,7 +86,7 @@ public class P2ProxyFacetImpl
   public P2ProxyFacetImpl(final P2DataAccess p2DataAccess,
                           final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
                           final AttributesParserFeatureXml featureXmlParser,
-                          AttributesParserManifest manifestParser)
+                          final AttributesParserManifest manifestParser)
   {
     this.p2DataAccess = checkNotNull(p2DataAccess);
     this.xmlRewriter = checkNotNull(xmlRewriter);
