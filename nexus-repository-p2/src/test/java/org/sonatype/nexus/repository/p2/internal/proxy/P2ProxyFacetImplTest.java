@@ -12,26 +12,24 @@
  */
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
-import java.util.Optional;
-import java.util.jar.JarInputStream;
-
-import org.sonatype.goodies.testsupport.TestSupport;
-import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
-import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.util.JarParser;
-import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
-import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
-import org.sonatype.nexus.repository.storage.TempBlob;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
+import org.sonatype.goodies.testsupport.TestSupport;
+import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.p2.internal.util.AttributesParserFeatureXml;
+import org.sonatype.nexus.repository.p2.internal.util.AttributesParserManifest;
+import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
+import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
+import org.sonatype.nexus.repository.storage.TempBlob;
+
+import java.util.Optional;
 
 import static java.util.Optional.of;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -57,7 +55,10 @@ public class P2ProxyFacetImplTest
   private TempBlobConverter tempBlobConverter;
 
   @Spy @InjectMocks
-  private JarParser jarParser;
+  private AttributesParserFeatureXml xmlParser;
+
+  @Spy @InjectMocks
+  private AttributesParserManifest jarParser;
 
   @Mock
   private TempBlob tempBlob;
@@ -66,13 +67,13 @@ public class P2ProxyFacetImplTest
 
   @Before
   public void setUp() throws Exception {
-    underTest = new P2ProxyFacetImpl(p2DataAccess, artifactsXmlAbsoluteUrlRemover, jarParser);
+    underTest = new P2ProxyFacetImpl(p2DataAccess, artifactsXmlAbsoluteUrlRemover, xmlParser, jarParser);
   }
 
   @Test
   public void getVersion() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    doReturn(of(buildWithVersionAndExtension())).when(jarParser).getAttributesFromFeatureXML(any(), any());
+    doReturn(of(buildWithVersionAndExtension())).when(jarParser).getAttributesFromBlob(any(), any());
 
     P2Attributes p2Attributes = underTest
         .mergeAttributesFromTempBlob(tempBlob, buildWithVersionAndExtension());
@@ -82,7 +83,7 @@ public class P2ProxyFacetImplTest
 
   @Test
   public void getUnknownVersion() throws Exception {
-    doReturn(Optional.empty()).when(jarParser).getAttributesFromFeatureXML(any(), anyString());
+    doReturn(Optional.empty()).when(jarParser).getAttributesFromBlob(any(), anyString());
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
     P2Attributes p2Attributes = buildWithVersionAndExtension();
@@ -92,15 +93,15 @@ public class P2ProxyFacetImplTest
   @Test
   public void getJarWithJarFile() throws Exception {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
-    assertThat(jarParser.getJarStreamFromBlob(tempBlob, EXTENSION), is(instanceOf(JarInputStream.class)));
+    assertThat(xmlParser.getAttributesFromBlob(tempBlob, EXTENSION).isPresent(), is(true));
   }
 
   @Test
   public void getJarWithPackGz() throws Exception {
     when(tempBlobConverter.getJarFromPackGz(tempBlob)).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
+    when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
 
-    assertThat(jarParser.getJarStreamFromBlob(tempBlob, "pack.gz"), is(instanceOf(JarInputStream.class)));
+    assertThat(xmlParser.getAttributesFromBlob(tempBlob, EXTENSION).isPresent(), is(true));
   }
 
   private P2Attributes buildWithVersionAndExtension() {

@@ -94,7 +94,19 @@ public class P2Attributes
     }
 
     public P2Attributes build() {
+      if (isNull(pluginName, componentName, componentVersion, path, fileName, extension, null)) {
+        return null;
+      }
       return new P2Attributes(this);
+    }
+
+    private boolean isNull(String ...args) {
+      for (String a : args) {
+        if (a != null) {
+          return false;
+        }
+      }
+      return true;
     }
 
     public Builder merge(final P2Attributes one, P2Attributes two) {

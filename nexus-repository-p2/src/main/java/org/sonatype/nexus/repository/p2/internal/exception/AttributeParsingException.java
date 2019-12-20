@@ -10,15 +10,20 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.internal.util;
+package org.sonatype.nexus.repository.p2.internal.exception;
 
 /**
- * A BiFunction which can throw Exceptions.
- *
  * @since 0.next
  */
-@FunctionalInterface
-public interface ThrowingBiFunction<T, U, R>
+public class AttributeParsingException extends Exception
 {
-  R apply(T t, U u) throws Exception;
+  private static final String EXCEPTION_MESSAGE = "Could not get attributes from jar";
+
+  public AttributeParsingException() {
+    super(EXCEPTION_MESSAGE);
+  }
+
+  public AttributeParsingException(final Exception ex) {
+    super(EXCEPTION_MESSAGE + " due to " + ex.getMessage());
+  }
 }

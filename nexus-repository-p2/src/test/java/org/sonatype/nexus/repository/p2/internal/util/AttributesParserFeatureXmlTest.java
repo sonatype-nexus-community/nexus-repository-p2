@@ -13,7 +13,7 @@
 package org.sonatype.nexus.repository.p2.internal.util;
 
 import org.sonatype.goodies.testsupport.TestSupport;
-import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -26,10 +26,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 import static org.sonatype.goodies.testsupport.hamcrest.DiffMatchers.equalTo;
 
-public class JarParserTest
+public class AttributesParserFeatureXmlTest
     extends TestSupport
 {
-  private JarParser underTest;
+  private AttributesParserFeatureXml underTest;
 
   @Mock
   private TempBlob tempBlob;
@@ -56,49 +56,32 @@ public class JarParserTest
 
   @Before
   public void setUp() throws Exception {
-    underTest = new JarParser(new TempBlobConverter());
+    underTest = new AttributesParserFeatureXml(new TempBlobConverter());
   }
 
   @Test
-  public void getVersionFromJarInputStream() throws InvalidMetadataException {
+  public void getVersionFromJarInputStream() throws AttributeParsingException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
 
-    P2Attributes attributesFromJarFile = underTest.getAttributesFromFeatureXML(tempBlob, "jar").get();
+    P2Attributes attributesFromJarFile = underTest.getAttributesFromBlob(tempBlob, "jar").get();
     assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_XML_COMPONENT_VERSION)));
     assertThat(attributesFromJarFile.getPluginName(), is(equalTo(XML_PLUGIN_NAME)));
   }
 
   @Test
-  public void getVersionFromManifestJarInputStream() throws InvalidMetadataException {
+  public void getEmptyAttributesFromJarInputStream() throws AttributeParsingException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME_WITH_MANIFEST));
-
-    P2Attributes attributesFromJarFile = getAttributesFromJarFile(tempBlob, "jar");
-    assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_MANIFEST_COMPONENT_VERSION)));
-    assertThat(attributesFromJarFile.getPluginName(), is(equalTo(MANIFEST_PLUGIN_NAME)));
+    assertThat(underTest.getAttributesFromBlob(tempBlob, "jar").isPresent(), is(false));
   }
 
-  @Test
-  public void getVersionFromSourceJar() throws InvalidMetadataException {
-    when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_SOURCES_NAME));
-    P2Attributes attributesFromJarFile = getAttributesFromJarFile(tempBlob, "jar");
-    assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_SOURCES_COMPONENT_VERSION)));
-    assertThat(attributesFromJarFile.getPluginName(), is(equalTo(SOURCES_PLUGIN_NAME)));
-  }
-
-  @Test
-  public void getEmptyAttributesFromJarInputStream() throws InvalidMetadataException {
-    when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME_WITH_MANIFEST));
-    assertThat(underTest.getAttributesFromFeatureXML(tempBlob, "jar").isPresent(), is(false));
-  }
-
-  @Test (expected = InvalidMetadataException.class)
-  public void getNoneP2FileFromJarInputStream() throws InvalidMetadataException {
+  @Test (expected = AttributeParsingException.class)
+  public void getNoneP2FileFromJarInputStream() throws AttributeParsingException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(NON_P2_JAR));
-    underTest.getAttributesFromFeatureXML(tempBlob, "zip");
+    underTest.getAttributesFromBlob(tempBlob, "zip");
   }
 
-  private P2Attributes getAttributesFromJarFile(final TempBlob tempBlob, final String jar) throws InvalidMetadataException
+  private P2Attributes getAttributesFromJarFile(final TempBlob tempBlob, final String jar) throws AttributeParsingException
   {
-    return underTest.getAttributesFromManifest(tempBlob, jar).orElseThrow(() -> new AssertionError("No Attributes found to use"));
+    return underTest.getAttributesFromBlob(tempBlob, jar).orElseThrow(() -> new AssertionError("No Attributes found to use"));
   }
 }
