@@ -12,22 +12,17 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import java.io.IOException;
-import java.util.jar.JarInputStream;
-
 import org.sonatype.goodies.testsupport.TestSupport;
 import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonatype.goodies.testsupport.hamcrest.DiffMatchers.equalTo;
 
@@ -53,45 +48,53 @@ public class JarParserTest
 
   private static final String JAR_SOURCES_COMPONENT_VERSION = "4.7.0.v20170712-1432";
 
+  private static final String XML_PLUGIN_NAME = "Eclipse Core Runtime Infrastructure";
+
+  private static final String MANIFEST_PLUGIN_NAME = "SVNKit Client Adapter";
+
+  private static final String SOURCES_PLUGIN_NAME = "Editor3x Source";
+
   @Before
   public void setUp() throws Exception {
     underTest = new JarParser(new TempBlobConverter());
   }
 
   @Test
-  @Ignore // xml coming soon =)
-  public void getVersionFromJarInputStream() throws Exception {
+  public void getVersionFromJarInputStream() throws InvalidMetadataException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
 
-    P2Attributes attributesFromJarFile = underTest.getAttributesFromFeatureXML(tempBlob, ".jar").get();
-    assertThat(attributesFromJarFile.getPluginName(), is(equalTo(JAR_XML_COMPONENT_VERSION)));
+    P2Attributes attributesFromJarFile = underTest.getAttributesFromFeatureXML(tempBlob, "jar").get();
+    assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_XML_COMPONENT_VERSION)));
+    assertThat(attributesFromJarFile.getPluginName(), is(equalTo(XML_PLUGIN_NAME)));
   }
 
   @Test
-  public void getVersionFromManifestJarInputStream() throws Exception {
+  public void getVersionFromManifestJarInputStream() throws InvalidMetadataException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME_WITH_MANIFEST));
 
     P2Attributes attributesFromJarFile = getAttributesFromJarFile(tempBlob, "jar");
     assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_MANIFEST_COMPONENT_VERSION)));
+    assertThat(attributesFromJarFile.getPluginName(), is(equalTo(MANIFEST_PLUGIN_NAME)));
   }
 
   @Test
-  public void getVersionFromSourceJar() throws Exception {
+  public void getVersionFromSourceJar() throws InvalidMetadataException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_SOURCES_NAME));
     P2Attributes attributesFromJarFile = getAttributesFromJarFile(tempBlob, "jar");
-    assertThat(attributesFromJarFile.getPluginName(), is(equalTo(JAR_SOURCES_COMPONENT_VERSION)));
+    assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_SOURCES_COMPONENT_VERSION)));
+    assertThat(attributesFromJarFile.getPluginName(), is(equalTo(SOURCES_PLUGIN_NAME)));
   }
 
   @Test
-  public void getEmptyAttributesFromJarInputStream() throws Exception {
-    when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream("org.tigris.subversion.clientadapter.svnkit_1.7.5.jar"));
-    assertThat(underTest.getAttributesFromFeatureXML(tempBlob, ".jar").isPresent(), is(false));
+  public void getEmptyAttributesFromJarInputStream() throws InvalidMetadataException {
+    when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME_WITH_MANIFEST));
+    assertThat(underTest.getAttributesFromFeatureXML(tempBlob, "jar").isPresent(), is(false));
   }
 
-  @Test
-  public void getNoneP2FileFromJarInputStream() throws IOException, InvalidMetadataException {
+  @Test (expected = InvalidMetadataException.class)
+  public void getNoneP2FileFromJarInputStream() throws InvalidMetadataException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(NON_P2_JAR));
-    assertThat(underTest.getAttributesFromFeatureXML(tempBlob, ".zip").isPresent(), is(false));
+    underTest.getAttributesFromFeatureXML(tempBlob, "zip");
   }
 
   private P2Attributes getAttributesFromJarFile(final TempBlob tempBlob, final String jar) throws InvalidMetadataException

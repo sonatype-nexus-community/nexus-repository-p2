@@ -66,6 +66,8 @@ public class JarParser
 
   private static final String MANIFEST_FILE_PREFIX = "META-INF/";
 
+  private static final String FEATURE_PROPERTIES = "feature.properties";
+
   private final DocumentBuilderFactory factory;
 
   private final DocumentBuilder builder;
@@ -97,18 +99,43 @@ public class JarParser
         getSpecificEntity(tempBlob, extension, bundleLocalizationValue, ((jarInputStream, jarEntry) ->
             new PropertyResourceBundle(new ByteArrayInputStream(IOUtils.toByteArray(jarInputStream)))));
 
-    // get property key for bundle name without '%' character in start
-    String bundleName = mainManifestAttributes.getValue("Bundle-Name").substring(1);
-    if (propertiesOpt.isPresent() && propertiesOpt.get().containsKey(bundleName))
-    {
-      bundleName = propertiesOpt.get().getString(bundleName);
+    p2Attributes = P2Attributes.builder()
+        .componentName(normalizeName(extractValueFromProperty(mainManifestAttributes.getValue("Bundle-SymbolicName"), propertiesOpt)))
+        .pluginName(extractValueFromProperty(mainManifestAttributes.getValue("Bundle-Name"), propertiesOpt))
+        .componentVersion(extractValueFromProperty(mainManifestAttributes.getValue("Bundle-Version"), propertiesOpt))
+        .build();
+
+    return Optional.ofNullable(p2Attributes);
+  }
+
+  public Optional<P2Attributes> getAttributesFromFeatureXML(final TempBlob tempBlob, final String extension) throws InvalidMetadataException
+  {
+    P2Attributes p2Attributes;
+
+    Optional<Document> featureXmlOpt =
+        getSpecificEntity(tempBlob, extension, XML_FILE_NAME, ((jarInputStream, jarEntry) ->
+            toDocument(jarInputStream)));
+
+    if (!featureXmlOpt.isPresent()) {
+      return Optional.empty();
     }
 
+    Optional<PropertyResourceBundle> propertiesOpt =
+        getSpecificEntity(tempBlob, extension, FEATURE_PROPERTIES, ((jarInputStream, jarEntry) ->
+            new PropertyResourceBundle(new ByteArrayInputStream(IOUtils.toByteArray(jarInputStream)))));
+
+    Document document = featureXmlOpt.get();
+
+    String pluginId = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
+    if (pluginId == null) {
+      pluginId = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
+    }
+
+    String componentName = normalizeComponentName(extractValueFromProperty(pluginId, propertiesOpt));
     p2Attributes = P2Attributes.builder()
-        .componentName(normalizeName(mainManifestAttributes.getValue("Bundle-SymbolicName")))
-        .pluginName(bundleName)
-        .componentVersion(mainManifestAttributes
-            .getValue("Bundle-Version"))
+        .componentName(componentName)
+        .pluginName(extractValueFromProperty(extractValueFromDocument(XML_NAME_PATH, document), propertiesOpt))
+        .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
         .build();
 
     return Optional.ofNullable(p2Attributes);
@@ -137,11 +164,20 @@ public class JarParser
         }
       }
     }
-    catch (IOException ex) {
+    catch (Exception ex) {
       throw new InvalidMetadataException(ex);
     }
 
     return Optional.empty();
+  }
+
+  private String extractValueFromProperty(String value, Optional<PropertyResourceBundle> propertyResourceBundleOpt) {
+    if (!propertyResourceBundleOpt.isPresent() || value == null || !propertyResourceBundleOpt.get().containsKey(value.substring(1))) {
+      return value;
+    }
+
+    // get property key for bundle name without '%' character in start
+    return propertyResourceBundleOpt.get().getString(value.substring(1));
   }
 
   private String normalizeName(final String name) {
@@ -151,35 +187,6 @@ public class JarParser
       resultName = name.split(";")[0];
     }
     return normalizeComponentName(resultName);
-  }
-
-  public Optional<P2Attributes> getAttributesFromFeatureXML(final TempBlob tempBlob, final String extension) throws InvalidMetadataException
-  {
-    P2Attributes p2Attributes = null;
-    JarEntry jarEntry;
-    try (JarInputStream jis = getJarStreamFromBlob(tempBlob, extension)) {
-      while (p2Attributes == null && jis != null && (jarEntry = jis.getNextJarEntry()) != null) {
-        if (XML_FILE_NAME.equals(jarEntry.getName())) {
-          Document document = toDocument(jis);
-
-          String pluginId = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
-          if (pluginId == null) {
-            pluginId = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
-          }
-
-          String componentName = normalizeComponentName(pluginId);
-          p2Attributes = P2Attributes.builder()
-              .componentName(componentName)
-              .pluginName(extractValueFromDocument(XML_NAME_PATH, document))
-              .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
-              .build();
-        }
-      }
-    }
-    catch (IOException | SAXException ex) {
-      throw new InvalidMetadataException();
-    }
-    return Optional.ofNullable(p2Attributes);
   }
 
   private Document toDocument(final InputStream is) throws IOException, SAXException
