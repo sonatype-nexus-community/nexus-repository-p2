@@ -28,10 +28,8 @@ import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
 import java.util.Optional;
-import java.util.jar.JarInputStream;
 
 import static java.util.Optional.of;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -95,15 +93,15 @@ public class P2ProxyFacetImplTest
   @Test
   public void getJarWithJarFile() throws Exception {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
-    assertThat(jarParser.getAttributesFromBlob(tempBlob, EXTENSION), is(instanceOf(JarInputStream.class)));
+    assertThat(xmlParser.getAttributesFromBlob(tempBlob, EXTENSION).isPresent(), is(true));
   }
 
   @Test
   public void getJarWithPackGz() throws Exception {
     when(tempBlobConverter.getJarFromPackGz(tempBlob)).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
+    when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
 
-    assertThat(jarParser.getAttributesFromBlob(tempBlob, "pack.gz"), is(instanceOf(JarInputStream.class)));
+    assertThat(xmlParser.getAttributesFromBlob(tempBlob, EXTENSION).isPresent(), is(true));
   }
 
   private P2Attributes buildWithVersionAndExtension() {
