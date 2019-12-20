@@ -4,7 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.sonatype.goodies.testsupport.TestSupport;
-import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingExceptionException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -41,7 +41,7 @@ public class AttributesParserManifestTest extends TestSupport {
     }
 
     @Test
-    public void getVersionFromManifestJarInputStream() throws InvalidMetadataException {
+    public void getVersionFromManifestJarInputStream() throws AttributeParsingExceptionException {
         when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME_WITH_MANIFEST));
 
         P2Attributes attributesFromJarFile = getAttributesFromJarFile(tempBlob, "jar");
@@ -50,7 +50,7 @@ public class AttributesParserManifestTest extends TestSupport {
     }
 
     @Test
-    public void getVersionFromSourceJar() throws InvalidMetadataException {
+    public void getVersionFromSourceJar() throws AttributeParsingExceptionException {
         when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_SOURCES_NAME));
         P2Attributes attributesFromJarFile = getAttributesFromJarFile(tempBlob, "jar");
         assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_SOURCES_COMPONENT_VERSION)));
@@ -58,18 +58,18 @@ public class AttributesParserManifestTest extends TestSupport {
     }
 
     @Test
-    public void getEmptyAttributesFromJarInputStream() throws InvalidMetadataException {
+    public void getEmptyAttributesFromJarInputStream() throws AttributeParsingExceptionException {
         when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_SOURCES_XML_NAME));
         assertThat(underTest.getAttributesFromBlob(tempBlob, "jar").isPresent(), is(false));
     }
 
-    @Test (expected = InvalidMetadataException.class)
-    public void getNoneP2FileFromJarInputStream() throws InvalidMetadataException {
+    @Test (expected = AttributeParsingExceptionException.class)
+    public void getNoneP2FileFromJarInputStream() throws AttributeParsingExceptionException {
         when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(NON_P2_JAR));
         underTest.getAttributesFromBlob(tempBlob, "zip");
     }
 
-    private P2Attributes getAttributesFromJarFile(final TempBlob tempBlob, final String jar) throws InvalidMetadataException
+    private P2Attributes getAttributesFromJarFile(final TempBlob tempBlob, final String jar) throws AttributeParsingExceptionException
     {
         return underTest.getAttributesFromBlob(tempBlob, jar).orElseThrow(() -> new AssertionError("No Attributes found to use"));
     }

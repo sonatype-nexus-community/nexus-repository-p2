@@ -12,7 +12,7 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingExceptionException;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
 import javax.annotation.Nullable;
@@ -36,7 +36,7 @@ public abstract class JarExtractor<T>
   protected Optional<T> getSpecificEntity(
       final TempBlob tempBlob,
       final String extension,
-      @Nullable final String startNameForSearch) throws InvalidMetadataException
+      @Nullable final String startNameForSearch) throws AttributeParsingExceptionException
   {
     try (JarInputStream jis = getJarStreamFromBlob(tempBlob, extension)) {
       JarEntry jarEntry;
@@ -47,13 +47,13 @@ public abstract class JarExtractor<T>
       }
     }
     catch (IOException e) {
-      throw new InvalidMetadataException(e);
+      throw new AttributeParsingExceptionException(e);
     }
 
     return Optional.empty();
   }
 
-  protected abstract T createSpecificEntity(final JarInputStream jis, final JarEntry jarEntry) throws InvalidMetadataException;
+  protected abstract T createSpecificEntity(final JarInputStream jis, final JarEntry jarEntry) throws AttributeParsingExceptionException;
 
   private JarInputStream getJarStreamFromBlob(final TempBlob tempBlob, final String extension) throws IOException {
     if (extension.equals("jar")) {

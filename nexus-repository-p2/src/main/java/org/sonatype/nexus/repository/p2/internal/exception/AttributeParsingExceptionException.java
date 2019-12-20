@@ -15,15 +15,15 @@ package org.sonatype.nexus.repository.p2.internal.exception;
 /**
  * @since 0.next
  */
-public class InvalidMetadataException extends Exception
+public class AttributeParsingExceptionException extends Exception
 {
   private static final String EXCEPTION_MESSAGE = "Could not get attributes from jar";
 
-  public InvalidMetadataException() {
+  public AttributeParsingExceptionException() {
     super(EXCEPTION_MESSAGE);
   }
 
-  public InvalidMetadataException(Exception ex) {
+  public AttributeParsingExceptionException(Exception ex) {
     super(EXCEPTION_MESSAGE + " due to " + ex.getMessage());
   }
 }

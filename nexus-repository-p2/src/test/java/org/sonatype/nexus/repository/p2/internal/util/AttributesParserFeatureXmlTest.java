@@ -13,7 +13,7 @@
 package org.sonatype.nexus.repository.p2.internal.util;
 
 import org.sonatype.goodies.testsupport.TestSupport;
-import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingExceptionException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
@@ -60,7 +60,7 @@ public class AttributesParserFeatureXmlTest
   }
 
   @Test
-  public void getVersionFromJarInputStream() throws InvalidMetadataException {
+  public void getVersionFromJarInputStream() throws AttributeParsingExceptionException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
 
     P2Attributes attributesFromJarFile = underTest.getAttributesFromBlob(tempBlob, "jar").get();
@@ -69,18 +69,18 @@ public class AttributesParserFeatureXmlTest
   }
 
   @Test
-  public void getEmptyAttributesFromJarInputStream() throws InvalidMetadataException {
+  public void getEmptyAttributesFromJarInputStream() throws AttributeParsingExceptionException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME_WITH_MANIFEST));
     assertThat(underTest.getAttributesFromBlob(tempBlob, "jar").isPresent(), is(false));
   }
 
-  @Test (expected = InvalidMetadataException.class)
-  public void getNoneP2FileFromJarInputStream() throws InvalidMetadataException {
+  @Test (expected = AttributeParsingExceptionException.class)
+  public void getNoneP2FileFromJarInputStream() throws AttributeParsingExceptionException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(NON_P2_JAR));
     underTest.getAttributesFromBlob(tempBlob, "zip");
   }
 
-  private P2Attributes getAttributesFromJarFile(final TempBlob tempBlob, final String jar) throws InvalidMetadataException
+  private P2Attributes getAttributesFromJarFile(final TempBlob tempBlob, final String jar) throws AttributeParsingExceptionException
   {
     return underTest.getAttributesFromBlob(tempBlob, jar).orElseThrow(() -> new AssertionError("No Attributes found to use"));
   }
