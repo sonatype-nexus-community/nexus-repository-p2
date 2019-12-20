@@ -56,7 +56,7 @@ public class P2DataAccess
    * @return found component of null if not found
    */
   @Nullable
-  public Component findComponent(final StorageTx tx,
+  public static Component findComponent(final StorageTx tx,
                                  final Repository repository,
                                  final String name,
                                  final String version)
@@ -80,7 +80,7 @@ public class P2DataAccess
    * @return found asset or null if not found
    */
   @Nullable
-  public Asset findAsset(final StorageTx tx, final Bucket bucket, final String assetName) {
+  public static Asset findAsset(final StorageTx tx, final Bucket bucket, final String assetName) {
     return tx.findAssetWithProperty(MetadataNodeEntityAdapter.P_NAME, assetName, bucket);
   }
 
@@ -89,7 +89,7 @@ public class P2DataAccess
    *
    * @return blob content
    */
-  public Content saveAsset(final StorageTx tx,
+  public static Content saveAsset(final StorageTx tx,
                            final Asset asset,
                            final Supplier<InputStream> contentSupplier,
                            final Payload payload) throws IOException
@@ -108,7 +108,7 @@ public class P2DataAccess
    *
    * @return blob content
    */
-  public Content saveAsset(final StorageTx tx,
+  public static Content saveAsset(final StorageTx tx,
                            final Asset asset,
                            final Supplier<InputStream> contentSupplier,
                            final String contentType,
@@ -128,7 +128,7 @@ public class P2DataAccess
    *
    * @return content of asset blob
    */
-  public Content toContent(final Asset asset, final Blob blob) {
+  public static Content toContent(final Asset asset, final Blob blob) {
     Content content = new Content(new BlobPayload(blob, asset.requireContentType()));
     Content.extractFromAsset(asset, HASH_ALGORITHMS, content.getAttributes());
     return content;

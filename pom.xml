@@ -25,13 +25,14 @@
   <artifactId>p2-parent</artifactId>
   <version>0.0.4-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>${project.groupId}:${project.artifactId}-parent</name>
+  <name>${project.groupId}:${project.artifactId}</name>
 
   <inceptionYear>2017</inceptionYear>
 
   <modules>
     <module>nexus-repository-p2</module>
     <module>nexus-repository-p2-it</module>
+    <module>nexus-restore-p2</module>
   </modules>
 
   <scm>
