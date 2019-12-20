@@ -23,6 +23,7 @@ import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
 import javax.annotation.Nullable;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -74,6 +75,7 @@ public class JarParser
 
   private final TempBlobConverter tempBlobConverter;
 
+  @Inject
   public JarParser(final TempBlobConverter tempBlobConverter) throws Exception {
     this.tempBlobConverter = checkNotNull(tempBlobConverter);
     this.factory = DocumentBuilderFactory.newInstance();

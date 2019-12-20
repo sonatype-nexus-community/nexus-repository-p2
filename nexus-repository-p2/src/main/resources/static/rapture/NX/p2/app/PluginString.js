@@ -27,6 +27,8 @@ Ext.define('NX.p2.app.PluginStrings', {
   keys: {
     SearchP2_Text: 'P2',
     SearchP2_Description: 'Search for components in P2 repositories',
+    SearchP2_Group: 'P2 Repositories',
+    SearchP2_PluginName_FieldLabel: 'Plugin name'
   }
 }, function(self) {
   NX.I18n.register(self);

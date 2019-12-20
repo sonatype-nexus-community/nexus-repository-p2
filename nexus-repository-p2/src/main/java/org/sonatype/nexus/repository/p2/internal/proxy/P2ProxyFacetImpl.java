@@ -14,7 +14,6 @@ package org.sonatype.nexus.repository.p2.internal.proxy;
 
 import java.io.IOException;
 import java.util.Optional;
-import java.util.jar.JarInputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -51,6 +50,7 @@ import com.google.common.annotations.VisibleForTesting;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.binaryPath;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.extension;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.matcherState;
@@ -72,8 +72,6 @@ import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_K
 public class P2ProxyFacetImpl
     extends ProxyFacetSupport
 {
-  private static final String PLUGIN_NAME = "plugin_name";
-
   private static final String COMPOSITE_ARTIFACTS = "compositeArtifacts";
 
   private static final String COMPOSITE_CONTENT = "compositeContent";
@@ -292,7 +290,7 @@ public class P2ProxyFacetImpl
       component = tx.createComponent(bucket, getRepository().getFormat())
           .name(p2Attributes.getComponentName())
           .version(p2Attributes.getComponentVersion());
-      //add human readable plugin name as in Eclipse
+      //add human readable plugin name as in Eclipse for search
       component.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
     }
     tx.saveComponent(component);
@@ -301,6 +299,8 @@ public class P2ProxyFacetImpl
     if (asset == null) {
       asset = tx.createAsset(bucket, component);
       asset.name(p2Attributes.getPath());
+      //add human readable plugin or feature name in asset attributes
+      asset.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
       asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
     }
     return p2DataAccess.saveAsset(tx, asset, componentContent, payload);

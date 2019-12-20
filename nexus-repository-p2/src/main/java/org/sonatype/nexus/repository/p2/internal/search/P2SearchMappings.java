@@ -10,15 +10,35 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.internal.util;
+package org.sonatype.nexus.repository.p2.internal.search;
 
+import java.util.List;
+
+import javax.inject.Named;
+import javax.inject.Singleton;
+
+import org.sonatype.goodies.common.ComponentSupport;
+import org.sonatype.nexus.repository.p2.internal.P2Format;
+import org.sonatype.nexus.repository.rest.SearchMapping;
+import org.sonatype.nexus.repository.rest.SearchMappings;
+
+import com.google.common.collect.ImmutableList;
 /**
- * A BiFunction which can throw Exceptions.
- *
  * @since 0.next
+ *
  */
-@FunctionalInterface
-public interface ThrowingBiFunction<T, U, R>
+@Named(P2Format.NAME)
+@Singleton
+public class P2SearchMappings
+    extends ComponentSupport
+    implements SearchMappings
 {
-  R apply(T t, U u) throws Exception;
+  private static final List<SearchMapping> MAPPINGS = ImmutableList.of(
+      new SearchMapping("p2.pluginName", "attributes.p2.pluginName", "p2 plugin name")
+  );
+
+  @Override
+  public Iterable<SearchMapping> get() {
+    return MAPPINGS;
+  }
 }

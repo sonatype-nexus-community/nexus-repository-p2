@@ -33,6 +33,8 @@ public class P2PathUtils
 {
   public final static String DIVIDER = "/";
 
+  public static final String PLUGIN_NAME = "pluginName";
+
   private final static String NAME_VERSION_SPLITTER = "_";
 
   public static final String HTTP_NXRM_PREFIX = "http/";

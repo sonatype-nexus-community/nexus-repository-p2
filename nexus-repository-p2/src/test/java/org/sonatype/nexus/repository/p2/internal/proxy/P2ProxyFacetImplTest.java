@@ -12,7 +12,6 @@
  */
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
-import java.io.IOException;
 import java.util.Optional;
 import java.util.jar.JarInputStream;
 
@@ -24,9 +23,12 @@ import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
 import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 
 import static java.util.Optional.of;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -35,6 +37,7 @@ import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 public class P2ProxyFacetImplTest
@@ -51,10 +54,10 @@ public class P2ProxyFacetImplTest
   private ArtifactsXmlAbsoluteUrlRemover artifactsXmlAbsoluteUrlRemover;
 
   @Mock
-  private JarParser jarParser;
-
-  @Mock
   private TempBlobConverter tempBlobConverter;
+
+  @Spy @InjectMocks
+  private JarParser jarParser;
 
   @Mock
   private TempBlob tempBlob;
@@ -69,8 +72,7 @@ public class P2ProxyFacetImplTest
   @Test
   public void getVersion() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    when(jarParser.getAttributesFromFeatureXML(any(), any()))
-        .thenReturn(of(buildWithVersionAndExtension()));
+    doReturn(of(buildWithVersionAndExtension())).when(jarParser).getAttributesFromFeatureXML(any(), any());
 
     P2Attributes p2Attributes = underTest
         .mergeAttributesFromTempBlob(tempBlob, buildWithVersionAndExtension());
@@ -78,18 +80,18 @@ public class P2ProxyFacetImplTest
     assertThat(p2Attributes.getComponentVersion(), is(equalTo(FAKE_VERSION)));
   }
 
-  @Test(expected = IOException.class)
+  @Test
   public void getUnknownVersion() throws Exception {
-    when(jarParser.getAttributesFromFeatureXML(any(), anyString())).thenReturn(Optional.empty());
+    doReturn(Optional.empty()).when(jarParser).getAttributesFromFeatureXML(any(), anyString());
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
     P2Attributes p2Attributes = buildWithVersionAndExtension();
-    underTest.mergeAttributesFromTempBlob(tempBlob, p2Attributes);
+    Assert.assertEquals(p2Attributes, underTest.mergeAttributesFromTempBlob(tempBlob, p2Attributes));;
   }
 
   @Test
   public void getJarWithJarFile() throws Exception {
-    when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
+    when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
     assertThat(jarParser.getJarStreamFromBlob(tempBlob, EXTENSION), is(instanceOf(JarInputStream.class)));
   }
 
