@@ -42,7 +42,7 @@ public abstract class AbstractAttributesParser
     return jarExtractor.getSpecificEntity(tempBlob, extension, startNameForSearch);
   }
 
-  protected String extractValueFromProperty(String value, Optional<PropertyResourceBundle> propertyResourceBundleOpt) {
+  protected String extractValueFromProperty(final String value, final Optional<PropertyResourceBundle> propertyResourceBundleOpt) {
     if (!propertyResourceBundleOpt.isPresent() || value == null ||
         !propertyResourceBundleOpt.get().containsKey(value.substring(1))) {
       return value;

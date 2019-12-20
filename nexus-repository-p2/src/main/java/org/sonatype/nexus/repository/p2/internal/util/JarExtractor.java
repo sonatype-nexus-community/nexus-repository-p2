@@ -28,8 +28,8 @@ import java.util.jar.JarInputStream;
  */
 public abstract class JarExtractor<T>
 {
-  TempBlobConverter tempBlobConverter;
-  public JarExtractor(TempBlobConverter tempBlobConverter){
+  private TempBlobConverter tempBlobConverter;
+  public JarExtractor(final TempBlobConverter tempBlobConverter){
     this.tempBlobConverter = tempBlobConverter;
   }
 

@@ -27,7 +27,7 @@ public class AttributesParserManifest
   private JarExtractor<Manifest> manifestJarExtractor;
 
   @Inject
-  public AttributesParserManifest(TempBlobConverter tempBlobConverter) {
+  public AttributesParserManifest(final TempBlobConverter tempBlobConverter) {
     super(tempBlobConverter);
     manifestJarExtractor = new JarExtractor<Manifest>(tempBlobConverter) {
       @Override
