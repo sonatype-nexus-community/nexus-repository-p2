@@ -12,16 +12,15 @@
  */
 package org.sonatype.nexus.repository.p2.rest;
 
-import javax.validation.Valid;
-import javax.validation.constraints.NotNull;
 import javax.ws.rs.core.Response;
+
+import org.sonatype.nexus.repository.p2.api.P2ProxyRepositoryApiRequest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.sonatype.nexus.repository.p2.api.P2ProxyRepositoryApiRequest;
 
 import static org.sonatype.nexus.rest.ApiDocConstants.API_REPOSITORY_MANAGEMENT;
 import static org.sonatype.nexus.rest.ApiDocConstants.AUTHENTICATION_REQUIRED;
@@ -38,7 +37,7 @@ public interface P2ProxyRepositoriesApiResourceDoc
       @ApiResponse(code = 401, message = AUTHENTICATION_REQUIRED),
       @ApiResponse(code = 403, message = INSUFFICIENT_PERMISSIONS)
   })
-  Response createRepository(@Valid @NotNull final P2ProxyRepositoryApiRequest request);
+  Response createRepository(final P2ProxyRepositoryApiRequest request);
 
   @ApiOperation("Update P2 proxy repository")
   @ApiResponses(value = {
@@ -47,6 +46,6 @@ public interface P2ProxyRepositoriesApiResourceDoc
       @ApiResponse(code = 403, message = INSUFFICIENT_PERMISSIONS)
   })
   Response updateRepository(
-      @Valid @NotNull final P2ProxyRepositoryApiRequest request,
+      final P2ProxyRepositoryApiRequest request,
       @ApiParam(value = "Name of the repository to update") final String repositoryName);
 }
