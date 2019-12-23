@@ -1,6 +1,5 @@
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.PropertyResourceBundle;
@@ -14,10 +13,10 @@ import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingExcep
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
-import org.apache.commons.io.IOUtils;
-
 public abstract class AbstractAttributesParser
 {
+  private static final String PROPERTY_RESOURCE_BUNDLE_EXTENSION = ".properties";
+
   protected final TempBlobConverter tempBlobConverter;
 
   public AbstractAttributesParser(final TempBlobConverter tempBlobConverter) {
@@ -32,14 +31,14 @@ public abstract class AbstractAttributesParser
       @Override
       protected PropertyResourceBundle createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws AttributeParsingException {
         try {
-          return new PropertyResourceBundle(new ByteArrayInputStream(IOUtils.toByteArray(jis)));
+          return new PropertyResourceBundle(jis);
         } catch (IOException e) {
           throw new AttributeParsingException(e);
         }
       }
     };
 
-    return jarExtractor.getSpecificEntity(tempBlob, extension, startNameForSearch);
+    return jarExtractor.getSpecificEntity(tempBlob, extension, startNameForSearch + PROPERTY_RESOURCE_BUNDLE_EXTENSION);
   }
 
   protected String extractValueFromProperty(final String value, final Optional<PropertyResourceBundle> propertyResourceBundleOpt) {

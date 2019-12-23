@@ -38,21 +38,11 @@ public class AttributesParserFeatureXmlTest
 
   private static final String JAR_NAME_WITH_MANIFEST = "org.tigris.subversion.clientadapter.svnkit_1.7.5.jar";
 
-  private static final String JAR_SOURCES_NAME = "org.eclipse.e4.tools.emf.editor3x.source_4.7.0.v20170712-1432.jar";
-
   private static final String NON_P2_JAR = "org.apache.karaf.http.core-3.0.0.rc1.jar.zip";
 
   private static final String JAR_XML_COMPONENT_VERSION = "1.2.100.v20170912-1859";
 
-  private static final String JAR_MANIFEST_COMPONENT_VERSION = "1.7.5";
-
-  private static final String JAR_SOURCES_COMPONENT_VERSION = "4.7.0.v20170712-1432";
-
   private static final String XML_PLUGIN_NAME = "Eclipse Core Runtime Infrastructure";
-
-  private static final String MANIFEST_PLUGIN_NAME = "SVNKit Client Adapter";
-
-  private static final String SOURCES_PLUGIN_NAME = "Editor3x Source";
 
   @Before
   public void setUp() throws Exception {
@@ -78,10 +68,5 @@ public class AttributesParserFeatureXmlTest
   public void getNoneP2FileFromJarInputStream() throws AttributeParsingException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(NON_P2_JAR));
     underTest.getAttributesFromBlob(tempBlob, "zip");
-  }
-
-  private P2Attributes getAttributesFromJarFile(final TempBlob tempBlob, final String jar) throws AttributeParsingException
-  {
-    return underTest.getAttributesFromBlob(tempBlob, jar).orElseThrow(() -> new AssertionError("No Attributes found to use"));
   }
 }

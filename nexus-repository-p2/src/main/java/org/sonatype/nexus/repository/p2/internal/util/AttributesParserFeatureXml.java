@@ -42,7 +42,7 @@ public class AttributesParserFeatureXml
 
   private static final String XML_FILE_NAME = "feature.xml";
 
-  private static final String FEATURE_PROPERTIES = "feature.properties";
+  private static final String FEATURE_PROPERTIES = "feature";
 
   private JarExtractor<Document> documentJarExtractor;
 

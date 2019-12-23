@@ -363,7 +363,7 @@ public class P2ProxyFacetImpl
 
       // second try Manifest
       if (!p2Attributes.isPresent()) {
-        p2Attributes = featureXmlParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
+        p2Attributes = manifestParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
       }
     }
     catch (AttributeParsingException ex) {
