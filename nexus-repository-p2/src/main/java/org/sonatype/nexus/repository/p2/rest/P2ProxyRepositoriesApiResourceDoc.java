@@ -38,7 +38,7 @@ public interface P2ProxyRepositoriesApiResourceDoc
       @ApiResponse(code = 401, message = AUTHENTICATION_REQUIRED),
       @ApiResponse(code = 403, message = INSUFFICIENT_PERMISSIONS)
   })
-  Response createRepository(@Valid @NotNull final P2ProxyRepositoryApiRequest request);
+  Response createRepository(final P2ProxyRepositoryApiRequest request);
 
   @ApiOperation("Update P2 proxy repository")
   @ApiResponses(value = {
@@ -47,6 +47,6 @@ public interface P2ProxyRepositoriesApiResourceDoc
       @ApiResponse(code = 403, message = INSUFFICIENT_PERMISSIONS)
   })
   Response updateRepository(
-      @Valid @NotNull final P2ProxyRepositoryApiRequest request,
+      final P2ProxyRepositoryApiRequest request,
       @ApiParam(value = "Name of the repository to update") final String repositoryName);
 }
