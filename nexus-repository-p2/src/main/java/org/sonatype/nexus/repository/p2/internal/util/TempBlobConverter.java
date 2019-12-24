@@ -23,6 +23,7 @@ import java.util.jar.Pack200.Unpacker;
 import java.util.zip.GZIPInputStream;
 
 import javax.inject.Named;
+import javax.inject.Singleton;
 
 import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.repository.storage.TempBlob;
@@ -35,6 +36,7 @@ import static java.nio.file.Files.newOutputStream;
  * Utility methods for turning a TempBlob into thing(s)
  */
 @Named
+@Singleton
 public class TempBlobConverter
     extends ComponentSupport
 {

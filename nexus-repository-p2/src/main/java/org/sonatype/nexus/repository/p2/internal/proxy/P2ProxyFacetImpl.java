@@ -14,7 +14,6 @@ package org.sonatype.nexus.repository.p2.internal.proxy;
 
 import java.io.IOException;
 import java.util.Optional;
-import java.util.jar.JarInputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -24,13 +23,12 @@ import javax.inject.Named;
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
 import org.sonatype.nexus.repository.p2.internal.AssetKind;
-import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.util.JarParser;
+import org.sonatype.nexus.repository.p2.internal.util.AttributesParserFeatureXml;
+import org.sonatype.nexus.repository.p2.internal.util.AttributesParserManifest;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
-import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
-import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
 import org.sonatype.nexus.repository.proxy.ProxyFacet;
 import org.sonatype.nexus.repository.proxy.ProxyFacetSupport;
 import org.sonatype.nexus.repository.storage.Asset;
@@ -53,6 +51,7 @@ import com.google.common.annotations.VisibleForTesting;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.binaryPath;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.extension;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.matcherState;
@@ -74,27 +73,25 @@ import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_K
 public class P2ProxyFacetImpl
     extends ProxyFacetSupport
 {
-  private static final String PLUGIN_NAME = "plugin_name";
-
   private static final String COMPOSITE_ARTIFACTS = "compositeArtifacts";
 
   private static final String COMPOSITE_CONTENT = "compositeContent";
 
   private final P2DataAccess p2DataAccess;
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
-  private final JarParser jarParser;
-  private final TempBlobConverter tempBlobConverter;
+  private final AttributesParserFeatureXml featureXmlParser;
+  private final AttributesParserManifest manifestParser;
 
   @Inject
   public P2ProxyFacetImpl(final P2DataAccess p2DataAccess,
                           final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
-                          final JarParser jarParser,
-                          final TempBlobConverter tempBlobConverter)
+                          final AttributesParserFeatureXml featureXmlParser,
+                          final AttributesParserManifest manifestParser)
   {
     this.p2DataAccess = checkNotNull(p2DataAccess);
     this.xmlRewriter = checkNotNull(xmlRewriter);
-    this.jarParser = checkNotNull(jarParser);
-    this.tempBlobConverter = checkNotNull(tempBlobConverter);
+    this.featureXmlParser = checkNotNull(featureXmlParser);
+    this.manifestParser = checkNotNull(manifestParser);
   }
 
   // HACK: Workaround for known CGLIB issue, forces an Import-Package for org.sonatype.nexus.repository.config
@@ -297,7 +294,7 @@ public class P2ProxyFacetImpl
       component = tx.createComponent(bucket, getRepository().getFormat())
           .name(p2Attributes.getComponentName())
           .version(p2Attributes.getComponentVersion());
-      //add human readable plugin name as in Eclipse
+      //add human readable plugin name as in Eclipse for search
       component.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
     }
     tx.saveComponent(component);
@@ -306,6 +303,8 @@ public class P2ProxyFacetImpl
     if (asset == null) {
       asset = tx.createAsset(bucket, component);
       asset.name(p2Attributes.getPath());
+      //add human readable plugin or feature name in asset attributes
+      asset.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
       asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
     }
     return p2DataAccess.saveAsset(tx, asset, componentContent, payload);
@@ -354,40 +353,27 @@ public class P2ProxyFacetImpl
   }
 
   @VisibleForTesting
-  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes sourceP2Attributes) throws IOException {
+  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes sourceP2Attributes)
+      throws IOException
+  {
     checkNotNull(sourceP2Attributes.getExtension());
+    P2Attributes p2Attributes = null;
+    try {
+      // first try Features XML
+      p2Attributes = featureXmlParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
 
-    Optional<P2Attributes> p2Attributes = Optional.empty();
-    // first try Features XML
-    try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-      p2Attributes = jarParser.getAttributesFromFeatureXML(jis);
+      // second try Manifest
+      if (p2Attributes.isEmpty()) {
+        p2Attributes = manifestParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
+      }
     }
-    catch (InvalidMetadataException ex) {
+    catch (AttributeParsingException ex) {
       log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
     }
 
-    // second try Manifest
-    if (!p2Attributes.isPresent()) {
-      try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-        p2Attributes = jarParser.getAttributesFromManifest(jis);
-      }
-      catch (InvalidMetadataException ex) {
-        log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());
-      }
-    }
-
-    return p2Attributes
-          .map(jarP2Attributes -> P2Attributes.builder().merge(sourceP2Attributes, jarP2Attributes).build())
-          .orElse(sourceP2Attributes);
-  }
-
-  @VisibleForTesting
-  protected JarInputStream getJar(final TempBlob tempBlob, final String extension) throws IOException {
-    if (extension.equals("jar")) {
-      return new JarInputStream(tempBlob.get());
-    }
-    else {
-      return new JarInputStream(tempBlobConverter.getJarFromPackGz(tempBlob));
-    }
+    return Optional.ofNullable(p2Attributes)
+        .filter(jarP2Attributes-> !jarP2Attributes.isEmpty())
+        .map(jarP2Attributes -> P2Attributes.builder().merge(sourceP2Attributes, jarP2Attributes).build())
+        .orElse(sourceP2Attributes);
   }
 }

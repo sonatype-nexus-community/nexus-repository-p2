@@ -14,11 +14,14 @@ package org.sonatype.nexus.repository.p2.internal.metadata;
 
 import javax.annotation.Nullable;
 
+import groovy.transform.EqualsAndHashCode;
+
 import static java.util.Optional.ofNullable;
 
 /**
  * Shared attributes of P2 metadata files.
  */
+@EqualsAndHashCode
 public class P2Attributes
 {
   private String pluginName;
@@ -44,6 +47,17 @@ public class P2Attributes
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  public boolean isEmpty() {
+
+    String[] mainP2Properties = [pluginName, componentName, componentVersion, path, fileName, extension];
+    for (String a : mainP2Properties) {
+      if (a != null) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public static class Builder
