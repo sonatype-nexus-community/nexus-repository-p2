@@ -51,17 +51,13 @@ public class AttributesParserManifest
     manifestJarExtractor = new JarExtractor<Manifest>(tempBlobConverter)
     {
       @Override
-      protected Manifest createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws AttributeParsingException {
+      protected Manifest createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws IOException
+      {
         Manifest manifest = jis.getManifest();
         if (manifest != null) {
           return manifest;
         }
-        try {
-          return new Manifest(jis);
-        }
-        catch (IOException e) {
-          throw new AttributeParsingException(e);
-        }
+        return new Manifest(jis);
       }
     };
   }
