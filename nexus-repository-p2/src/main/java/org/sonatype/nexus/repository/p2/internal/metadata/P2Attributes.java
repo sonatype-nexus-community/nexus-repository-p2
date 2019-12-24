@@ -94,7 +94,7 @@ public class P2Attributes
     }
 
     public P2Attributes build() {
-      if (isNull(pluginName, componentName, componentVersion, path, fileName, extension, null)) {
+      if (isNull(pluginName, componentName, componentVersion, path, fileName, extension)) {
         return null;
       }
       return new P2Attributes(this);
