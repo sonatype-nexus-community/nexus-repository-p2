@@ -7,7 +7,7 @@
     <property name='p2.atomic.composite.loading' value='true'/>
   </properties>
   <children size='2'>
-    <child location='/repository/dummyRepoName/http/test/technology/epp/packages/2019-09/'/>
-    <child location='/repository/dummyRepoName/http/test/test/test/201909181001' />
+    <child location='http/test/technology/epp/packages/2019-09/'/>
+    <child location='http/test/test/test/201909181001' />
   </children>
 </repository>

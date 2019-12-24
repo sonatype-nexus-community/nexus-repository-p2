@@ -43,8 +43,7 @@ public class P2RoutingRuleITSupport extends P2ITSupport
   public RoutingRuleRule routingRules = new RoutingRuleRule(() -> ruleStore);
 
   protected EntityId createBlockedRoutingRule(final String name, final String matcher) {
-    RoutingRule rule = routingRules.create(name, matcher);
-    return EntityHelper.id(rule);
+    return routingRules.create(name, matcher).id();
   }
 
   protected void attachRuleToRepository(final Repository repository, final EntityId routingRuleId) throws Exception {
