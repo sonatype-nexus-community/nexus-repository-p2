@@ -57,11 +57,8 @@ public class P2ProxyFacetImplTest
   @Mock
   private TempBlob tempBlob;
 
-  private P2ProxyFacetImpl underTest;
-
   @Before
-  public void setUp() throws Exception {
-    underTest = new P2ProxyFacetImpl(p2DataAccess, artifactsXmlAbsoluteUrlRemover);
+  public void setUp() {
     p2DataAccess = new P2DataAccess(jarParser, tempBlobConverter);
   }
 

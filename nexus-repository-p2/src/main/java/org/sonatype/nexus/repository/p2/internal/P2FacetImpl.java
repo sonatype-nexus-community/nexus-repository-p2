@@ -1,3 +1,15 @@
+/*
+ * Sonatype Nexus (TM) Open Source Version
+ * Copyright (c) 2017-present Sonatype, Inc.
+ * All rights reserved. Includes the third-party code listed at http://links.sonatype.com/products/nexus/oss/attributions.
+ *
+ * This program and the accompanying materials are made available under the terms of the Eclipse Public License Version 1.0,
+ * which accompanies this distribution and is available at http://www.eclipse.org/legal/epl-v10.html.
+ *
+ * Sonatype Nexus (TM) Professional Version is available from Sonatype, Inc. "Sonatype" and "Sonatype Nexus" are trademarks
+ * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
+ * Eclipse Foundation. All other trademarks are the property of their respective owners.
+ */
 package org.sonatype.nexus.repository.p2.internal;
 
 import java.util.Map;
@@ -10,10 +22,6 @@ import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Bucket;
 import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.StorageTx;
-import org.sonatype.nexus.repository.view.ConfigurableViewFacet;
-import org.sonatype.nexus.repository.view.Matcher;
-import org.sonatype.nexus.repository.view.matchers.token.PatternParser;
-import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML;
@@ -36,10 +44,8 @@ import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.CONT
 import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.JAR_EXTENSION;
 import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.XML_EXTENSION;
 import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.XML_XZ_EXTENSION;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.buildSimpleMatcher;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.findAsset;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.findComponent;
-import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
 import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_NAME;
@@ -123,34 +129,34 @@ public class P2FacetImpl
     else if (path.matches(".*plugins\\/.*")) {
       assetKind = COMPONENT_PLUGINS;
     }
-    else if (isPathMatch( path, COMPOSITE_ARTIFACTS, JAR_EXTENSION)) {
+    else if (isPathMatch(path, COMPOSITE_ARTIFACTS, JAR_EXTENSION)) {
       assetKind = COMPOSITE_ARTIFACTS_JAR;
     }
-    else if (isPathMatch( path,COMPOSITE_ARTIFACTS, XML_EXTENSION)) {
+    else if (isPathMatch(path, COMPOSITE_ARTIFACTS, XML_EXTENSION)) {
       assetKind = COMPOSITE_ARTIFACTS_XML;
     }
-    else if (isPathMatch( path, COMPOSITE_CONTENT, JAR_EXTENSION)) {
+    else if (isPathMatch(path, COMPOSITE_CONTENT, JAR_EXTENSION)) {
       assetKind = COMPOSITE_CONTENT_JAR;
     }
-    else if (isPathMatch( path, COMPOSITE_CONTENT, XML_EXTENSION)) {
+    else if (isPathMatch(path, COMPOSITE_CONTENT, XML_EXTENSION)) {
       assetKind = COMPOSITE_CONTENT_XML;
     }
-    else if (isPathMatch( path, CONTENT_NAME, JAR_EXTENSION)) {
+    else if (isPathMatch(path, CONTENT_NAME, JAR_EXTENSION)) {
       assetKind = CONTENT_JAR;
     }
-    else if (isPathMatch( path, CONTENT_NAME, XML_EXTENSION)) {
+    else if (isPathMatch(path, CONTENT_NAME, XML_EXTENSION)) {
       assetKind = CONTENT_XML;
     }
-    else if (isPathMatch( path, CONTENT_NAME, XML_XZ_EXTENSION)) {
+    else if (isPathMatch(path, CONTENT_NAME, XML_XZ_EXTENSION)) {
       assetKind = CONTENT_XML_XZ;
     }
-    else if (isPathMatch( path, ARTIFACTS_NAME, JAR_EXTENSION)) {
+    else if (isPathMatch(path, ARTIFACTS_NAME, JAR_EXTENSION)) {
       assetKind = ARTIFACT_JAR;
     }
-    else if (isPathMatch( path, ARTIFACTS_NAME, XML_EXTENSION)) {
+    else if (isPathMatch(path, ARTIFACTS_NAME, XML_EXTENSION)) {
       assetKind = ARTIFACT_XML;
     }
-    else if (isPathMatch( path, ARTIFACTS_NAME, XML_XZ_EXTENSION)) {
+    else if (isPathMatch(path, ARTIFACTS_NAME, XML_XZ_EXTENSION)) {
       assetKind = ARTIFACT_XML_XZ;
     }
     else {

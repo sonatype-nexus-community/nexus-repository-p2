@@ -1,3 +1,15 @@
+/*
+ * Sonatype Nexus (TM) Open Source Version
+ * Copyright (c) 2017-present Sonatype, Inc.
+ * All rights reserved. Includes the third-party code listed at http://links.sonatype.com/products/nexus/oss/attributions.
+ *
+ * This program and the accompanying materials are made available under the terms of the Eclipse Public License Version 1.0,
+ * which accompanies this distribution and is available at http://www.eclipse.org/legal/epl-v10.html.
+ *
+ * Sonatype Nexus (TM) Professional Version is available from Sonatype, Inc. "Sonatype" and "Sonatype Nexus" are trademarks
+ * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
+ * Eclipse Foundation. All other trademarks are the property of their respective owners.
+ */
 package org.sonatype.nexus.repository.p2.internal;
 
 import java.io.IOException;
@@ -18,7 +30,6 @@ import org.sonatype.nexus.repository.cache.CacheControllerHolder;
 import org.sonatype.nexus.repository.p2.P2Facet;
 import org.sonatype.nexus.repository.p2.P2RestoreFacet;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyFacetImpl;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetBlob;
@@ -31,11 +42,6 @@ import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.ARTIFACTS_NAME;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.COMPOSITE_ARTIFACTS;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.COMPOSITE_CONTENT;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.CONTENT_NAME;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.INDEX_EXTENSION;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
 import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_NAME;
@@ -65,29 +71,24 @@ public class P2RestoreFacetImpl
     P2Facet facet = facet(P2Facet.class);
 
     Asset asset;
-    AssetKind assetKind = facet(P2Facet.class).getAssetKind(path);
     if (componentRequired(path)) {
-      Map<String, String> assetAttributes = new HashMap<>();
       Map<String, String> componentAttributes = new HashMap<>();
-      assetAttributes.put(P_ASSET_KIND, assetKind.name());
-      componentAttributes.put(P_ASSET_KIND, assetKind.name());
-      assetAttributes.put(P_NAME, path);
-      if (CacheControllerHolder.CONTENT.equals(assetKind.getCacheType())) {
-        componentAttributes.put(P_VERSION, path.replaceFirst(path.split("_\\d+.+")[0], "")
-            .replaceFirst("_", "")
-            .split("\\D+$")[0]);
-
-        String[] namePaths = path.split("/");
-        String componentName = namePaths[namePaths.length - 1].replace(componentAttributes.get(P_VERSION), "");
-        componentAttributes.put(P_NAME, componentName);
+      try {
+        componentAttributes
+            .putAll(getComponentAttributes(assetBlob.getBlob(), path, assetBlob.getBlobRef().getStore()));
       }
+      catch (IOException e) {
+        log.error("Exception of extracting components attributes from blob {}", assetBlob);
+      }
+
+      Map<String, String> assetAttributes = new HashMap<>();
+      assetAttributes.put(P_NAME, path);
 
       Component component = facet.findOrCreateComponent(tx, path, componentAttributes);
       asset = facet.findOrCreateAsset(tx, component, path, assetAttributes);
     }
     else {
       asset = facet.findOrCreateAsset(tx, path);
-      asset.attributes().set(P_ASSET_KIND, assetKind.name());
     }
     tx.attachBlob(asset, assetBlob);
 
@@ -107,9 +108,6 @@ public class P2RestoreFacetImpl
     AssetKind assetKind = facet(P2Facet.class).getAssetKind(name);
 
     return CacheControllerHolder.CONTENT.equals(assetKind.getCacheType());
-
-    //return !(componentName.startsWith(CONTENT_NAME) || componentName.startsWith(ARTIFACTS_NAME) || componentName.startsWith(COMPOSITE_ARTIFACTS) ||
-    //    componentName.startsWith(COMPOSITE_CONTENT) || componentName.matches(INDEX_EXTENSION) || componentName.startsWith("site."));
   }
 
   @Override
@@ -122,13 +120,17 @@ public class P2RestoreFacetImpl
         .and(P_VERSION).eq(attributes.get(P_VERSION)).build();
   }
 
-  private Map<String, String> getComponentAttributes(final Blob blob, final String blobName, final String blobStoreName)
-      throws IOException
-  {
+  private TempBlob getTempBlob(final Blob blob, final String blobStoreName) {
     BlobStore blobStore = checkNotNull(blobStoreManager.get(blobStoreName));
     InputStream inputStream = blob.getInputStream();
     MultiHashingInputStream hashingStream = new MultiHashingInputStream(P2DataAccess.HASH_ALGORITHMS, inputStream);
-    TempBlob tempBlob = new TempBlob(blob, hashingStream.hashes(), true, blobStore);
+    return new TempBlob(blob, hashingStream.hashes(), true, blobStore);
+  }
+
+  private Map<String, String> getComponentAttributes(final Blob blob, final String blobName, final String blobStoreName)
+      throws IOException
+  {
+    TempBlob tempBlob = getTempBlob(blob, blobStoreName);
 
     Map<String, String> attributes = new HashMap<>();
     AssetKind assetKind = facet(P2Facet.class).getAssetKind(blobName);
@@ -144,14 +146,14 @@ public class P2RestoreFacetImpl
     }
     else {
       String[] paths = blobName.split("\\.");
-
       P2Attributes p2Attributes = P2Attributes.builder().extension(paths[paths.length - 1]).build();
-
       P2Attributes mergedAttributes = p2DataAccess.mergeAttributesFromTempBlob(tempBlob, p2Attributes);
 
       attributes.put(P_NAME, mergedAttributes.getComponentName());
       attributes.put(P_VERSION, mergedAttributes.getComponentVersion());
     }
+
+    attributes.put(P_ASSET_KIND, assetKind.name());
 
     return attributes;
   }
