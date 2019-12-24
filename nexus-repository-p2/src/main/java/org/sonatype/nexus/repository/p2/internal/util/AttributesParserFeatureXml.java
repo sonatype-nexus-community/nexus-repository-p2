@@ -30,6 +30,7 @@ import javax.xml.xpath.XPathFactory;
 
 import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes.Builder;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
 import org.w3c.dom.Document;
@@ -40,13 +41,12 @@ import static javax.xml.xpath.XPathConstants.NODE;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
 
 /**
- *
  * @since 0.next
  */
 @Named
 @Singleton
 public class AttributesParserFeatureXml
-    extends AbstractAttributesParser
+    implements AttributesParser
 {
   private static final String XML_VERSION_PATH = "feature/@version";
 
@@ -62,54 +62,56 @@ public class AttributesParserFeatureXml
 
   private JarExtractor<Document> documentJarExtractor;
 
+  private PropertyParser propertyParser;
+
   @Inject
-  public AttributesParserFeatureXml(final TempBlobConverter tempBlobConverter) {
-      super(tempBlobConverter);
-      documentJarExtractor = new JarExtractor<Document>(tempBlobConverter) {
-          @Override
-          protected Document createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws AttributeParsingException {
-              DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-              factory.setValidating(false);
-              try {
-                  factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
-                  factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-                  return factory.newDocumentBuilder().parse(jis);
-              } catch (ParserConfigurationException | SAXException | IOException e) {
-                  throw new AttributeParsingException(e);
-              }
-          }
-      };
+  public AttributesParserFeatureXml(final TempBlobConverter tempBlobConverter, final PropertyParser propertyParser) {
+    this.propertyParser = propertyParser;
+    documentJarExtractor = new JarExtractor<Document>(tempBlobConverter)
+    {
+      @Override
+      protected Document createSpecificEntity(JarInputStream jis, JarEntry jarEntry)
+          throws IOException, AttributeParsingException
+      {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setValidating(false);
+        try {
+          factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
+          factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+          return factory.newDocumentBuilder().parse(jis);
+        }
+        catch (ParserConfigurationException | SAXException e) {
+          throw new AttributeParsingException(e);
+        }
+      }
+    };
   }
 
   @Override
-  public Optional<P2Attributes> getAttributesFromBlob(final TempBlob tempBlob, final String extension)
-      throws AttributeParsingException
+  public P2Attributes getAttributesFromBlob(final TempBlob tempBlob, final String extension)
+      throws IOException, AttributeParsingException
   {
-    P2Attributes p2Attributes;
+    Builder p2AttributesBuilder = P2Attributes.builder();
     Optional<Document> featureXmlOpt = documentJarExtractor.getSpecificEntity(tempBlob, extension, XML_FILE_NAME);
-
-    if (!featureXmlOpt.isPresent()) {
-      return Optional.empty();
-    }
-
     Optional<PropertyResourceBundle> propertiesOpt =
-        getBundleProperties(tempBlob, extension, FEATURE_PROPERTIES);
+        propertyParser.getBundleProperties(tempBlob, extension, FEATURE_PROPERTIES);
 
-    Document document = featureXmlOpt.get();
+    if (featureXmlOpt.isPresent()) {
+      Document document = featureXmlOpt.get();
+      String pluginId = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
+      if (pluginId == null) {
+        pluginId = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
+      }
 
-    String pluginId = extractValueFromDocument(XML_PLUGIN_NAME_PATH, document);
-    if (pluginId == null) {
-      pluginId = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
+      String componentName = normalizeComponentName(propertyParser.extractValueFromProperty(pluginId, propertiesOpt));
+      p2AttributesBuilder
+          .componentName(componentName)
+          .pluginName(
+              propertyParser.extractValueFromProperty(extractValueFromDocument(XML_NAME_PATH, document), propertiesOpt))
+          .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document));
     }
 
-    String componentName = normalizeComponentName(extractValueFromProperty(pluginId, propertiesOpt));
-    p2Attributes = P2Attributes.builder()
-        .componentName(componentName)
-        .pluginName(extractValueFromProperty(extractValueFromDocument(XML_NAME_PATH, document), propertiesOpt))
-        .componentVersion(extractValueFromDocument(XML_VERSION_PATH, document))
-        .build();
-
-    return Optional.ofNullable(p2Attributes);
+    return p2AttributesBuilder.build();
   }
 
   @Nullable

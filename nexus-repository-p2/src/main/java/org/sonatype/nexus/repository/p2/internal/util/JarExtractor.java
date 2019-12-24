@@ -36,7 +36,7 @@ public abstract class JarExtractor<T>
   protected Optional<T> getSpecificEntity(
       final TempBlob tempBlob,
       final String extension,
-      @Nullable final String startNameForSearch) throws AttributeParsingException
+      @Nullable final String startNameForSearch) throws IOException, AttributeParsingException
   {
     try (JarInputStream jis = getJarStreamFromBlob(tempBlob, extension)) {
       JarEntry jarEntry;
@@ -46,14 +46,11 @@ public abstract class JarExtractor<T>
         }
       }
     }
-    catch (IOException e) {
-      throw new AttributeParsingException(e);
-    }
 
     return Optional.empty();
   }
 
-  protected abstract T createSpecificEntity(final JarInputStream jis, final JarEntry jarEntry) throws AttributeParsingException;
+  protected abstract T createSpecificEntity(final JarInputStream jis, final JarEntry jarEntry) throws IOException, AttributeParsingException;
 
   private JarInputStream getJarStreamFromBlob(final TempBlob tempBlob, final String extension) throws IOException {
     if (extension.equals("jar")) {

@@ -19,45 +19,45 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
 import javax.annotation.Nullable;
-import javax.xml.xpath.XPathExpressionException;
+import javax.inject.Inject;
 
 import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
-import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
 /**
- *
  * @since 0.next
  */
-public abstract class AbstractAttributesParser
+public class PropertyParser
 {
   private static final String PROPERTY_RESOURCE_BUNDLE_EXTENSION = ".properties";
 
-  protected final TempBlobConverter tempBlobConverter;
+  private JarExtractor<PropertyResourceBundle> jarExtractor;
 
-  public AbstractAttributesParser(final TempBlobConverter tempBlobConverter) {
-    this.tempBlobConverter = tempBlobConverter;
+  @Inject
+  public PropertyParser(final TempBlobConverter tempBlobConverter) {
+    jarExtractor = new JarExtractor<PropertyResourceBundle>(tempBlobConverter)
+    {
+      @Override
+      protected PropertyResourceBundle createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws IOException
+      {
+          return new PropertyResourceBundle(jis);
+      }
+    };
   }
 
   protected Optional<PropertyResourceBundle> getBundleProperties(
-          final TempBlob tempBlob,
-          final String extension,
-          @Nullable final String startNameForSearch) throws AttributeParsingException {
-    JarExtractor<PropertyResourceBundle> jarExtractor = new JarExtractor<PropertyResourceBundle>(tempBlobConverter) {
-      @Override
-      protected PropertyResourceBundle createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws AttributeParsingException {
-        try {
-          return new PropertyResourceBundle(jis);
-        } catch (IOException e) {
-          throw new AttributeParsingException(e);
-        }
-      }
-    };
+      final TempBlob tempBlob,
+      final String extension,
+      @Nullable final String startNameForSearch) throws IOException, AttributeParsingException
+  {
 
     return jarExtractor.getSpecificEntity(tempBlob, extension, startNameForSearch + PROPERTY_RESOURCE_BUNDLE_EXTENSION);
   }
 
-  protected String extractValueFromProperty(final String value, final Optional<PropertyResourceBundle> propertyResourceBundleOpt) {
+  protected String extractValueFromProperty(
+      final String value,
+      final Optional<PropertyResourceBundle> propertyResourceBundleOpt)
+  {
     if (!propertyResourceBundleOpt.isPresent() || value == null ||
         !propertyResourceBundleOpt.get().containsKey(value.substring(1))) {
       return value;
@@ -66,7 +66,4 @@ public abstract class AbstractAttributesParser
     // get property key for bundle name without '%' character in start
     return propertyResourceBundleOpt.get().getString(value.substring(1));
   }
-
-  public abstract Optional<P2Attributes> getAttributesFromBlob(final TempBlob tempBlob, final String extension)
-      throws AttributeParsingException, XPathExpressionException;
 }

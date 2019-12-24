@@ -12,6 +12,8 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
+import java.io.IOException;
+
 import org.sonatype.goodies.testsupport.TestSupport;
 import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
@@ -45,27 +47,28 @@ public class AttributesParserFeatureXmlTest
   private static final String XML_PLUGIN_NAME = "Eclipse Core Runtime Infrastructure";
 
   @Before
-  public void setUp() throws Exception {
-    underTest = new AttributesParserFeatureXml(new TempBlobConverter());
+  public void setUp() {
+    TempBlobConverter tempBlobConverter = new TempBlobConverter();
+    underTest = new AttributesParserFeatureXml(tempBlobConverter, new PropertyParser(tempBlobConverter));
   }
 
   @Test
-  public void getVersionFromJarInputStream() throws AttributeParsingException {
+  public void getVersionFromJarInputStream() throws AttributeParsingException, IOException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
 
-    P2Attributes attributesFromJarFile = underTest.getAttributesFromBlob(tempBlob, "jar").get();
+    P2Attributes attributesFromJarFile = underTest.getAttributesFromBlob(tempBlob, "jar");
     assertThat(attributesFromJarFile.getComponentVersion(), is(equalTo(JAR_XML_COMPONENT_VERSION)));
     assertThat(attributesFromJarFile.getPluginName(), is(equalTo(XML_PLUGIN_NAME)));
   }
 
   @Test
-  public void getEmptyAttributesFromJarInputStream() throws AttributeParsingException {
+  public void getEmptyAttributesFromJarInputStream() throws AttributeParsingException, IOException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME_WITH_MANIFEST));
-    assertThat(underTest.getAttributesFromBlob(tempBlob, "jar").isPresent(), is(false));
+    assertThat(underTest.getAttributesFromBlob(tempBlob, "jar").isEmpty(), is(true));
   }
 
-  @Test (expected = AttributeParsingException.class)
-  public void getNoneP2FileFromJarInputStream() throws AttributeParsingException {
+  @Test (expected = IOException.class)
+  public void getNoneP2FileFromJarInputStream() throws AttributeParsingException, IOException {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(NON_P2_JAR));
     underTest.getAttributesFromBlob(tempBlob, "zip");
   }

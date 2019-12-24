@@ -354,15 +354,16 @@ public class P2ProxyFacetImpl
 
   @VisibleForTesting
   protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes sourceP2Attributes)
+      throws IOException
   {
     checkNotNull(sourceP2Attributes.getExtension());
-    Optional<P2Attributes> p2Attributes = Optional.empty();
+    P2Attributes p2Attributes = null;
     try {
       // first try Features XML
       p2Attributes = featureXmlParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
 
       // second try Manifest
-      if (!p2Attributes.isPresent()) {
+      if (p2Attributes.isEmpty()) {
         p2Attributes = manifestParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
       }
     }
@@ -370,7 +371,8 @@ public class P2ProxyFacetImpl
       log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
     }
 
-    return p2Attributes
+    return Optional.ofNullable(p2Attributes)
+        .filter(jarP2Attributes-> !jarP2Attributes.isEmpty())
         .map(jarP2Attributes -> P2Attributes.builder().merge(sourceP2Attributes, jarP2Attributes).build())
         .orElse(sourceP2Attributes);
   }

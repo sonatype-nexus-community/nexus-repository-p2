@@ -12,24 +12,26 @@
  */
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
+import java.io.IOException;
+
+import org.sonatype.goodies.testsupport.TestSupport;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
+import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.p2.internal.util.AttributesParserFeatureXml;
+import org.sonatype.nexus.repository.p2.internal.util.AttributesParserManifest;
+import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
+import org.sonatype.nexus.repository.p2.internal.util.PropertyParser;
+import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
+import org.sonatype.nexus.repository.storage.TempBlob;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.sonatype.goodies.testsupport.TestSupport;
-import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
-import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.util.AttributesParserFeatureXml;
-import org.sonatype.nexus.repository.p2.internal.util.AttributesParserManifest;
-import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
-import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
-import org.sonatype.nexus.repository.storage.TempBlob;
 
-import java.util.Optional;
-
-import static java.util.Optional.of;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -42,7 +44,7 @@ public class P2ProxyFacetImplTest
     extends TestSupport
 {
   private static final String EXTENSION = "jar";
-  private static final String FAKE_VERSION = "1.2.3-56";
+  private static final String FAKE_VERSION = "1.2.100.v20170912-1859";
   private static final String JAR_NAME = "org.eclipse.core.runtime.feature_1.2.100.v20170912-1859.jar";
 
   @Mock
@@ -53,6 +55,9 @@ public class P2ProxyFacetImplTest
 
   @Mock
   private TempBlobConverter tempBlobConverter;
+
+  @Mock
+  private PropertyParser propertyParser;
 
   @Spy @InjectMocks
   private AttributesParserFeatureXml xmlParser;
@@ -66,14 +71,14 @@ public class P2ProxyFacetImplTest
   private P2ProxyFacetImpl underTest;
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     underTest = new P2ProxyFacetImpl(p2DataAccess, artifactsXmlAbsoluteUrlRemover, xmlParser, jarParser);
   }
 
   @Test
   public void getVersion() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    doReturn(of(buildWithVersionAndExtension())).when(jarParser).getAttributesFromBlob(any(), any());
+    doReturn(buildWithVersionAndExtension()).when(jarParser).getAttributesFromBlob(any(), any());
 
     P2Attributes p2Attributes = underTest
         .mergeAttributesFromTempBlob(tempBlob, buildWithVersionAndExtension());
@@ -82,18 +87,19 @@ public class P2ProxyFacetImplTest
   }
 
   @Test
-  public void getUnknownVersion() throws Exception {
-    doReturn(Optional.empty()).when(jarParser).getAttributesFromBlob(any(), anyString());
+  public void getUnknownVersion() throws IOException, AttributeParsingException {
+    P2Attributes p2Attributes = buildWithExtension();
+    doReturn(p2Attributes).when(jarParser).getAttributesFromBlob(any(), anyString());
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
-    P2Attributes p2Attributes = buildWithVersionAndExtension();
-    Assert.assertEquals(p2Attributes, underTest.mergeAttributesFromTempBlob(tempBlob, p2Attributes));;
+    P2Attributes actual = underTest.mergeAttributesFromTempBlob(tempBlob, p2Attributes);
+    Assert.assertEquals(buildWithVersionAndExtension(), actual);;
   }
 
   @Test
   public void getJarWithJarFile() throws Exception {
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
-    assertThat(xmlParser.getAttributesFromBlob(tempBlob, EXTENSION).isPresent(), is(true));
+    assertThat(xmlParser.getAttributesFromBlob(tempBlob, EXTENSION).isEmpty(), is(false));
   }
 
   @Test
@@ -101,12 +107,17 @@ public class P2ProxyFacetImplTest
     when(tempBlobConverter.getJarFromPackGz(tempBlob)).thenReturn(getClass().getResourceAsStream(JAR_NAME));
     when(tempBlob.get()).thenAnswer((a) -> getClass().getResourceAsStream(JAR_NAME));
 
-    assertThat(xmlParser.getAttributesFromBlob(tempBlob, EXTENSION).isPresent(), is(true));
+    assertThat(xmlParser.getAttributesFromBlob(tempBlob, EXTENSION).isEmpty(), is(false));
   }
 
   private P2Attributes buildWithVersionAndExtension() {
     return P2Attributes.builder()
         .componentVersion(FAKE_VERSION)
+        .extension(EXTENSION).build();
+  }
+
+  private P2Attributes buildWithExtension() {
+    return P2Attributes.builder()
         .extension(EXTENSION).build();
   }
 }
