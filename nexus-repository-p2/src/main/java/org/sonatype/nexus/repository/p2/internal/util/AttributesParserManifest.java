@@ -41,6 +41,8 @@ public class AttributesParserManifest
 {
   private static final String MANIFEST_FILE_PREFIX = "META-INF/";
 
+  private static final String BUNDLE_PROPERTIES = "OSGI-INF/l10n/bundle";
+
   private JarExtractor<Manifest> manifestJarExtractor;
 
   private PropertyParser propertyParser;
@@ -73,7 +75,8 @@ public class AttributesParserManifest
       Attributes mainManifestAttributes = manifestJarEntity.get().getMainAttributes();
       String bundleLocalizationValue = mainManifestAttributes.getValue("Bundle-Localization");
       Optional<PropertyResourceBundle> propertiesOpt =
-          propertyParser.getBundleProperties(tempBlob, extension, bundleLocalizationValue);
+          propertyParser.getBundleProperties(tempBlob, extension,
+              bundleLocalizationValue == null ? BUNDLE_PROPERTIES : bundleLocalizationValue);
 
       p2AttributesBuilder
           .componentName(normalizeName(propertyParser
@@ -81,7 +84,8 @@ public class AttributesParserManifest
           .pluginName(
               propertyParser.extractValueFromProperty(mainManifestAttributes.getValue("Bundle-Name"), propertiesOpt))
           .componentVersion(
-              propertyParser.extractValueFromProperty(mainManifestAttributes.getValue("Bundle-Version"), propertiesOpt));
+              propertyParser
+                  .extractValueFromProperty(mainManifestAttributes.getValue("Bundle-Version"), propertiesOpt));
     }
 
     return p2AttributesBuilder.build();
