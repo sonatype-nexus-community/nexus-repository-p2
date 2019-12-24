@@ -43,7 +43,6 @@ public class P2ProxyFacetImplTest
   private static final String FAKE_VERSION = "1.2.3-56";
   private static final String JAR_NAME = "org.eclipse.core.runtime.feature_1.2.100.v20170912-1859.jar";
 
-  @Mock
   private P2DataAccess p2DataAccess;
 
   @Mock
@@ -62,7 +61,8 @@ public class P2ProxyFacetImplTest
 
   @Before
   public void setUp() throws Exception {
-    underTest = new P2ProxyFacetImpl(p2DataAccess, artifactsXmlAbsoluteUrlRemover, jarParser, tempBlobConverter);
+    underTest = new P2ProxyFacetImpl(p2DataAccess, artifactsXmlAbsoluteUrlRemover);
+    p2DataAccess = new P2DataAccess(jarParser, tempBlobConverter);
   }
 
   @Test
@@ -71,7 +71,7 @@ public class P2ProxyFacetImplTest
     when(jarParser.getAttributesFromFeatureXML(any()))
         .thenReturn(of(buildWithVersionAndExtension()));
 
-    P2Attributes p2Attributes = underTest
+    P2Attributes p2Attributes = p2DataAccess
         .mergeAttributesFromTempBlob(tempBlob, buildWithVersionAndExtension());
 
     assertThat(p2Attributes.getComponentVersion(), is(equalTo(FAKE_VERSION)));
@@ -83,13 +83,13 @@ public class P2ProxyFacetImplTest
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
     P2Attributes p2Attributes = buildWithVersionAndExtension();
-    underTest.mergeAttributesFromTempBlob(tempBlob, p2Attributes);
+    p2DataAccess.mergeAttributesFromTempBlob(tempBlob, p2Attributes);
   }
 
   @Test
   public void getJarWithJarFile() throws Exception {
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
-    assertThat(underTest.getJar(tempBlob, EXTENSION), is(instanceOf(JarInputStream.class)));
+    assertThat(p2DataAccess.getJar(tempBlob, EXTENSION), is(instanceOf(JarInputStream.class)));
   }
 
   @Test
@@ -97,7 +97,7 @@ public class P2ProxyFacetImplTest
     when(tempBlobConverter.getJarFromPackGz(tempBlob)).thenReturn(getClass().getResourceAsStream(JAR_NAME));
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
-    assertThat(underTest.getJar(tempBlob, "pack.gz"), is(instanceOf(JarInputStream.class)));
+    assertThat(p2DataAccess.getJar(tempBlob, "pack.gz"), is(instanceOf(JarInputStream.class)));
   }
 
   private P2Attributes buildWithVersionAndExtension() {

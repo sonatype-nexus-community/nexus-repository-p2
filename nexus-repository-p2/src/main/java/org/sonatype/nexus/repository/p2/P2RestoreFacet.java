@@ -1,8 +1,8 @@
 package org.sonatype.nexus.repository.p2;
 
 import java.io.IOException;
-import java.util.Map;
 
+import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.repository.Facet;
 import org.sonatype.nexus.repository.storage.AssetBlob;
 import org.sonatype.nexus.repository.storage.Query;
@@ -18,7 +18,7 @@ public interface P2RestoreFacet
 
   boolean assetExists(final String path);
 
-  Query getComponentQuery(final Map<String, String> attributes);
+  Query getComponentQuery(final Blob blob, final String blobName, final String blobStoreName) throws IOException;
 
   boolean componentRequired(final String name);
 }

@@ -18,7 +18,9 @@ import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML_XZ;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_FEATURES;
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_PLUGINS;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_JAR;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_XML;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_JAR;
@@ -109,17 +111,17 @@ public class P2FacetImpl
   @Override
   public AssetKind getAssetKind(final String path) {
     AssetKind assetKind;
-    if (path.matches("p2.index")) {
+    if (path.matches(".*p2.index$")) {
       assetKind = P2_INDEX;
     }
     else if (path.matches(".*features\\/.*")) {
       assetKind = COMPONENT_FEATURES;
     }
     else if (path.matches(".*binary\\/.*")) {
-      assetKind = COMPONENT_FEATURES;
+      assetKind = COMPONENT_BINARY;
     }
     else if (path.matches(".*plugins\\/.*")) {
-      assetKind = COMPONENT_FEATURES;
+      assetKind = COMPONENT_PLUGINS;
     }
     else if (isPathMatch( path, COMPOSITE_ARTIFACTS, JAR_EXTENSION)) {
       assetKind = COMPOSITE_ARTIFACTS_JAR;
@@ -159,6 +161,6 @@ public class P2FacetImpl
   }
 
   private boolean isPathMatch(final String path, final String patternName, final String patternExtension) {
-    return path.matches(patternName + "\\." + patternExtension);
+    return path.matches(".*" + patternName + "\\." + patternExtension + "$");
   }
 }

@@ -1,10 +1,7 @@
 package org.sonatype.nexus.blobstore.restore.p2.internal;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import javax.annotation.Nonnull;
@@ -94,15 +91,20 @@ public class P2RestoreBlobStrategy
   }
 
   @Override
-    protected Query getComponentQuery(final P2RestoreBlobData data) throws IOException {
+  protected Query getComponentQuery(final P2RestoreBlobData data) throws IOException {
     P2RestoreFacet facet = getRestoreFacet(data);
     RestoreBlobData blobData = data.getBlobData();
-    Map<String, String> attributes = new HashMap<>();
-    try (InputStream inputStream = blobData.getBlob().getInputStream()) {
-      //attributes = facet.extractComponentAttributesFromArchive(blobData.getBlobName(), inputStream);
-    }
+    //Map<String, String> attributes = new HashMap<>();
 
-    return facet.getComponentQuery(attributes);
+    //attributes.put(P_NAME, blobData.getBlobName());
+    //String[] pathParts = blobData.getBlobName().split("/");
+    //String name = pathParts[pathParts.length - 1];
+    //
+    //String version = name.replaceFirst(name.split("_\\d+.+")[0], "")
+    //    .replaceFirst("_", "")
+    //    .split("\\D+$")[0];
+    //attributes.put(P_VERSION, version);
+    return facet.getComponentQuery(blobData.getBlob(), blobData.getBlobName(), blobData.getBlobStoreName());
   }
 
   @Override

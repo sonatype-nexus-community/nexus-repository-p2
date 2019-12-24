@@ -82,11 +82,17 @@ public class P2DataAccessTest
   @Mock
   AssetBlob assetBlob;
 
+  @Mock
+  private JarParser jarParser;
+
+  @Mock
+  private TempBlobConverter tempBlobConverter;
+
   P2DataAccess underTest;
 
   @Before
   public void setUp() throws Exception {
-    underTest = new P2DataAccess();
+    underTest = new P2DataAccess(jarParser, tempBlobConverter);
 
     when(asset.attributes()).thenReturn(nestedAttributesMap);
     when(nestedAttributesMap.child("content")).thenReturn(nestedAttributesMap);

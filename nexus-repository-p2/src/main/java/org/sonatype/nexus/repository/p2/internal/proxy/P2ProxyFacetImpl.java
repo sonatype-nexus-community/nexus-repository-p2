@@ -13,8 +13,6 @@
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
 import java.io.IOException;
-import java.util.Optional;
-import java.util.jar.JarInputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -24,13 +22,9 @@ import javax.inject.Named;
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
 import org.sonatype.nexus.repository.p2.internal.AssetKind;
-import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.util.JarParser;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
-import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
-import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
 import org.sonatype.nexus.repository.proxy.ProxyFacet;
 import org.sonatype.nexus.repository.proxy.ProxyFacetSupport;
 import org.sonatype.nexus.repository.storage.Asset;
@@ -47,8 +41,6 @@ import org.sonatype.nexus.repository.view.Context;
 import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 import org.sonatype.nexus.transaction.UnitOfWork;
-
-import com.google.common.annotations.VisibleForTesting;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
@@ -82,19 +74,13 @@ public class P2ProxyFacetImpl
 
   private final P2DataAccess p2DataAccess;
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
-  private final JarParser jarParser;
-  private final TempBlobConverter tempBlobConverter;
 
   @Inject
   public P2ProxyFacetImpl(final P2DataAccess p2DataAccess,
-                          final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
-                          final JarParser jarParser,
-                          final TempBlobConverter tempBlobConverter)
+                          final ArtifactsXmlAbsoluteUrlRemover xmlRewriter)
   {
     this.p2DataAccess = checkNotNull(p2DataAccess);
     this.xmlRewriter = checkNotNull(xmlRewriter);
-    this.jarParser = checkNotNull(jarParser);
-    this.tempBlobConverter = checkNotNull(tempBlobConverter);
   }
 
   // HACK: Workaround for known CGLIB issue, forces an Import-Package for org.sonatype.nexus.repository.config
@@ -105,7 +91,7 @@ public class P2ProxyFacetImpl
 
   @Nullable
   @Override
-  protected Content getCachedContent(final Context context) throws IOException {
+  protected Content getCachedContent(final Context context) {
     AssetKind assetKind = context.getAttributes().require(AssetKind.class);
     TokenMatcher.State matcherState = matcherState(context);
     switch(assetKind) {
@@ -274,7 +260,7 @@ public class P2ProxyFacetImpl
                                    final TempBlob componentContent,
                                    final Payload payload,
                                    final AssetKind assetKind) throws IOException {
-    p2Attributes = mergeAttributesFromTempBlob(componentContent, p2Attributes);
+    p2Attributes = p2DataAccess.mergeAttributesFromTempBlob(componentContent, p2Attributes);
 
     return doCreateOrSaveComponent(p2Attributes, componentContent, payload, assetKind);
   }
@@ -319,7 +305,7 @@ public class P2ProxyFacetImpl
   }
 
   @TransactionalTouchMetadata
-  public void setCacheInfo(final Content content, final CacheInfo cacheInfo) throws IOException {
+  public void setCacheInfo(final Content content, final CacheInfo cacheInfo) {
     StorageTx tx = UnitOfWork.currentTx();
     Asset asset = Content.findAsset(tx, tx.findBucket(getRepository()), content);
     if (asset == null) {
@@ -351,43 +337,5 @@ public class P2ProxyFacetImpl
   protected String getUrl(@Nonnull final Context context) {
     String path = context.getRequest().getPath().substring(1);
     return unescapePathToUri(path);
-  }
-
-  @VisibleForTesting
-  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes sourceP2Attributes) throws IOException {
-    checkNotNull(sourceP2Attributes.getExtension());
-
-    Optional<P2Attributes> p2Attributes = Optional.empty();
-    // first try Features XML
-    try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-      p2Attributes = jarParser.getAttributesFromFeatureXML(jis);
-    }
-    catch (InvalidMetadataException ex) {
-      log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
-    }
-
-    // second try Manifest
-    if (!p2Attributes.isPresent()) {
-      try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-        p2Attributes = jarParser.getAttributesFromManifest(jis);
-      }
-      catch (InvalidMetadataException ex) {
-        log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());
-      }
-    }
-
-    return p2Attributes
-          .map(jarP2Attributes -> P2Attributes.builder().merge(sourceP2Attributes, jarP2Attributes).build())
-          .orElse(sourceP2Attributes);
-  }
-
-  @VisibleForTesting
-  protected JarInputStream getJar(final TempBlob tempBlob, final String extension) throws IOException {
-    if (extension.equals("jar")) {
-      return new JarInputStream(tempBlob.get());
-    }
-    else {
-      return new JarInputStream(tempBlobConverter.getJarFromPackGz(tempBlob));
-    }
   }
 }
