@@ -10,26 +10,20 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-
-/*global Ext, NX*/
+package org.sonatype.nexus.repository.p2.internal.exception;
 
 /**
- * P2 plugin strings.
+ * @since 0.next
  */
-Ext.define('NX.p2.app.PluginStrings', {
-  '@aggregate_priority': 90,
+public class AttributeParsingException extends Exception
+{
+  private static final String EXCEPTION_MESSAGE = "Could not get attributes from jar";
 
-  singleton: true,
-  requires: [
-    'NX.I18n'
-  ],
-
-  keys: {
-    SearchP2_Text: 'P2',
-    SearchP2_Description: 'Search for components in P2 repositories',
-    SearchP2_Group: 'P2 Repositories',
-    SearchP2_PluginName_FieldLabel: 'Plugin name'
+  public AttributeParsingException() {
+    super(EXCEPTION_MESSAGE);
   }
-}, function(self) {
-  NX.I18n.register(self);
-});
+
+  public AttributeParsingException(final Exception ex) {
+    super(EXCEPTION_MESSAGE + " due to " + ex.getMessage());
+  }
+}

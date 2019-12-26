@@ -91,7 +91,7 @@ public class P2ProxyFacetImpl
 
   @Nullable
   @Override
-  protected Content getCachedContent(final Context context) {
+  protected Content getCachedContent(final Context context) throws IOException {
     AssetKind assetKind = context.getAttributes().require(AssetKind.class);
     TokenMatcher.State matcherState = matcherState(context);
     switch(assetKind) {
@@ -283,7 +283,7 @@ public class P2ProxyFacetImpl
       component = tx.createComponent(bucket, getRepository().getFormat())
           .name(p2Attributes.getComponentName())
           .version(p2Attributes.getComponentVersion());
-      //add human readable plugin name as in Eclipse
+      //add human readable plugin name as in Eclipse for search
       component.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
     }
     tx.saveComponent(component);
@@ -292,6 +292,8 @@ public class P2ProxyFacetImpl
     if (asset == null) {
       asset = tx.createAsset(bucket, component);
       asset.name(p2Attributes.getPath());
+      //add human readable plugin or feature name in asset attributes
+      asset.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
       asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
     }
     return p2DataAccess.saveAsset(tx, asset, componentContent, payload);
@@ -305,7 +307,7 @@ public class P2ProxyFacetImpl
   }
 
   @TransactionalTouchMetadata
-  public void setCacheInfo(final Content content, final CacheInfo cacheInfo) {
+  public void setCacheInfo(final Content content, final CacheInfo cacheInfo) throws IOException {
     StorageTx tx = UnitOfWork.currentTx();
     Asset asset = Content.findAsset(tx, tx.findBucket(getRepository()), content);
     if (asset == null) {

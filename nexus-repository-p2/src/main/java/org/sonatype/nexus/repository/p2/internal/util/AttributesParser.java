@@ -10,14 +10,19 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.internal.exception;
+package org.sonatype.nexus.repository.p2.internal.util;
+
+import java.io.IOException;
+
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.storage.TempBlob;
 
 /**
  * @since 0.next
  */
-public class InvalidMetadataException extends Exception
+public interface AttributesParser
 {
-  public InvalidMetadataException() {
-    super("Could not get attributes from jar");
-  }
+  P2Attributes getAttributesFromBlob(final TempBlob tempBlob, final String extension)
+      throws IOException, AttributeParsingException;
 }
