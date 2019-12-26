@@ -42,6 +42,7 @@ import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sonatype.nexus.repository.p2.internal.P2FacetImpl.HASH_ALGORITHMS;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
@@ -123,7 +124,7 @@ public class P2RestoreFacetImpl
   private TempBlob getTempBlob(final Blob blob, final String blobStoreName) {
     BlobStore blobStore = checkNotNull(blobStoreManager.get(blobStoreName));
     InputStream inputStream = blob.getInputStream();
-    MultiHashingInputStream hashingStream = new MultiHashingInputStream(P2DataAccess.HASH_ALGORITHMS, inputStream);
+    MultiHashingInputStream hashingStream = new MultiHashingInputStream(HASH_ALGORITHMS, inputStream);
     return new TempBlob(blob, hashingStream.hashes(), true, blobStore);
   }
 

@@ -10,7 +10,7 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.internal.util;
+package org.sonatype.nexus.repository.p2.internal;
 
 import java.io.InputStream;
 import java.util.Date;
@@ -20,6 +20,8 @@ import org.sonatype.goodies.testsupport.TestSupport;
 import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.common.collect.NestedAttributesMap;
 import org.sonatype.nexus.repository.Repository;
+import org.sonatype.nexus.repository.p2.internal.P2FacetImpl;
+import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetBlob;
 import org.sonatype.nexus.repository.storage.Bucket;
@@ -44,11 +46,12 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sonatype.nexus.common.hash.HashAlgorithm.SHA1;
+import static org.sonatype.nexus.repository.p2.internal.P2FacetImpl.HASH_ALGORITHMS;
 
 /**
  * Test for {@link P2DataAccess}
  */
-public class P2DataAccessTest
+public class P2FacetTest
     extends TestSupport
 {
   private final String assetName = "test";
@@ -82,17 +85,11 @@ public class P2DataAccessTest
   @Mock
   AssetBlob assetBlob;
 
-  @Mock
-  private AttributesParserFeatureXml featureXmlParser;
-
-  @Mock
-  private AttributesParserManifest manifestParser;
-
-  P2DataAccess underTest;
+  P2FacetImpl underTest;
 
   @Before
   public void setUp() throws Exception {
-    underTest = new P2DataAccess(featureXmlParser, manifestParser);
+    underTest = new P2FacetImpl();
 
     when(asset.attributes()).thenReturn(nestedAttributesMap);
     when(nestedAttributesMap.child("content")).thenReturn(nestedAttributesMap);
@@ -104,11 +101,11 @@ public class P2DataAccessTest
 
   @Test
   public void immutableListIsSha1() {
-    assertThat(P2DataAccess.HASH_ALGORITHMS, is(equalTo(ImmutableList.of(SHA1))));
+    assertThat(HASH_ALGORITHMS, is(equalTo(ImmutableList.of(SHA1))));
   }
 
   @Test
-  public void findComponent() throws Exception {
+  public void findComponent() {
     List<Component> list = ImmutableList.of(component);
     when(tx.findComponents(any(), any()))
         .thenReturn(list);
@@ -117,7 +114,7 @@ public class P2DataAccessTest
   }
 
   @Test
-  public void findAsset() throws Exception {
+  public void findAsset() {
     when(tx.findAssetWithProperty(any(), any(), any(Bucket.class)))
         .thenReturn(asset);
 
@@ -148,7 +145,7 @@ public class P2DataAccessTest
   }
 
   @Test
-  public void toContent() throws Exception {
+  public void toContent() {
     Content content = underTest.toContent(asset, blob);
     assertThat(content.getAttributes().get("lastModified"), is(notNullValue()));
   }

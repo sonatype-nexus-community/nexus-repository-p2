@@ -22,6 +22,7 @@ import javax.inject.Named;
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
 import org.sonatype.nexus.repository.p2.internal.AssetKind;
+import org.sonatype.nexus.repository.p2.internal.P2FacetImpl;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
@@ -44,7 +45,7 @@ import org.sonatype.nexus.transaction.UnitOfWork;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
-import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.P2FacetImpl.HASH_ALGORITHMS;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.binaryPath;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.extension;
@@ -75,12 +76,16 @@ public class P2ProxyFacetImpl
 
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
 
+  private final P2FacetImpl p2Facet;
+
   @Inject
   public P2ProxyFacetImpl(final P2DataAccess p2DataAccess,
-                          final ArtifactsXmlAbsoluteUrlRemover xmlRewriter)
+                          final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
+                          final P2FacetImpl p2Facet)
   {
     this.p2DataAccess = checkNotNull(p2DataAccess);
     this.xmlRewriter = checkNotNull(xmlRewriter);
+    this.p2Facet = checkNotNull(p2Facet);
   }
 
   // HACK: Workaround for known CGLIB issue, forces an Import-Package for org.sonatype.nexus.repository.config
@@ -224,14 +229,14 @@ public class P2ProxyFacetImpl
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
 
-    Asset asset = P2DataAccess.findAsset(tx, bucket, assetPath);
+    Asset asset = p2Facet.findAsset(tx, bucket, assetPath);
     if (asset == null) {
       asset = tx.createAsset(bucket, getRepository().getFormat());
       asset.name(assetPath);
       asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
     }
 
-    return P2DataAccess.saveAsset(tx, asset, metadataContent, payload);
+    return p2Facet.saveAsset(tx, asset, metadataContent, payload);
   }
 
   private Content putBinary(final P2Attributes p2attributes,
@@ -279,7 +284,7 @@ public class P2ProxyFacetImpl
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
 
-    Component component = P2DataAccess.findComponent(tx,
+    Component component = p2Facet.findComponent(tx,
         getRepository(),
         p2Attributes.getComponentName(),
         p2Attributes.getComponentVersion());
@@ -293,7 +298,7 @@ public class P2ProxyFacetImpl
     }
     tx.saveComponent(component);
 
-    Asset asset = P2DataAccess.findAsset(tx, bucket, p2Attributes.getPath());
+    Asset asset = p2Facet.findAsset(tx, bucket, p2Attributes.getPath());
     if (asset == null) {
       asset = tx.createAsset(bucket, component);
       asset.name(p2Attributes.getPath());
@@ -301,7 +306,7 @@ public class P2ProxyFacetImpl
       asset.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
       asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
     }
-    return P2DataAccess.saveAsset(tx, asset, componentContent, payload);
+    return p2Facet.saveAsset(tx, asset, componentContent, payload);
   }
 
   @Override
@@ -329,14 +334,14 @@ public class P2ProxyFacetImpl
   protected Content getAsset(final String name) {
     StorageTx tx = UnitOfWork.currentTx();
 
-    Asset asset = P2DataAccess.findAsset(tx, tx.findBucket(getRepository()), name);
+    Asset asset = p2Facet.findAsset(tx, tx.findBucket(getRepository()), name);
     if (asset == null) {
       return null;
     }
     if (asset.markAsDownloaded()) {
       tx.saveAsset(asset);
     }
-    return P2DataAccess.toContent(asset, tx.requireBlob(asset.requireBlobRef()));
+    return p2Facet.toContent(asset, tx.requireBlob(asset.requireBlobRef()));
   }
 
   @Override
