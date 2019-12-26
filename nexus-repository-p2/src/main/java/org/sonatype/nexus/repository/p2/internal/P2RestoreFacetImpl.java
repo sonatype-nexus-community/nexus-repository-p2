@@ -42,6 +42,7 @@ import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
 import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_NAME;
@@ -73,16 +74,15 @@ public class P2RestoreFacetImpl
     Asset asset;
     if (componentRequired(path)) {
       Map<String, String> componentAttributes = new HashMap<>();
+      Map<String, String> assetAttributes = new HashMap<>();
       try {
         componentAttributes
             .putAll(getComponentAttributes(assetBlob.getBlob(), path, assetBlob.getBlobRef().getStore()));
+        assetAttributes.put(PLUGIN_NAME, componentAttributes.get(PLUGIN_NAME));
       }
       catch (IOException e) {
         log.error("Exception of extracting components attributes from blob {}", assetBlob);
       }
-
-      Map<String, String> assetAttributes = new HashMap<>();
-      assetAttributes.put(P_NAME, path);
 
       Component component = facet.findOrCreateComponent(tx, path, componentAttributes);
       asset = facet.findOrCreateAsset(tx, component, path, assetAttributes);
@@ -143,6 +143,7 @@ public class P2RestoreFacetImpl
 
       attributes.put(P_NAME, name);
       attributes.put(P_VERSION, version);
+      attributes.put(PLUGIN_NAME, name);
     }
     else {
       String[] paths = blobName.split("\\.");
@@ -151,6 +152,7 @@ public class P2RestoreFacetImpl
 
       attributes.put(P_NAME, mergedAttributes.getComponentName());
       attributes.put(P_VERSION, mergedAttributes.getComponentVersion());
+      attributes.put(PLUGIN_NAME, mergedAttributes.getPluginName());
     }
 
     attributes.put(P_ASSET_KIND, assetKind.name());

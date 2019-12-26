@@ -46,6 +46,7 @@ import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.XML_
 import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.XML_XZ_EXTENSION;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.findAsset;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.findComponent;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
 import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_NAME;
@@ -71,6 +72,14 @@ public class P2FacetImpl
       component = tx.createComponent(bucket, getRepository().getFormat())
           .name(name)
           .version(version);
+      if (attributes.containsKey(PLUGIN_NAME)) {
+        component.formatAttributes().set(PLUGIN_NAME, attributes.get(PLUGIN_NAME));
+      }
+
+      if (attributes.containsKey(P_ASSET_KIND)) {
+        component.formatAttributes().set(P_ASSET_KIND, attributes.get(P_ASSET_KIND));
+      }
+
       tx.saveComponent(component);
     }
 

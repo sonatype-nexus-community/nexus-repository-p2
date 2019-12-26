@@ -45,6 +45,7 @@ import org.sonatype.nexus.transaction.UnitOfWork;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
 import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.binaryPath;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.extension;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.matcherState;
@@ -66,13 +67,12 @@ import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_K
 public class P2ProxyFacetImpl
     extends ProxyFacetSupport
 {
-  private static final String PLUGIN_NAME = "plugin_name";
-
   private static final String COMPOSITE_ARTIFACTS = "compositeArtifacts";
 
   private static final String COMPOSITE_CONTENT = "compositeContent";
 
   private final P2DataAccess p2DataAccess;
+
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
 
   @Inject
@@ -91,10 +91,10 @@ public class P2ProxyFacetImpl
 
   @Nullable
   @Override
-  protected Content getCachedContent(final Context context) throws IOException {
+  protected Content getCachedContent(final Context context) {
     AssetKind assetKind = context.getAttributes().require(AssetKind.class);
     TokenMatcher.State matcherState = matcherState(context);
-    switch(assetKind) {
+    switch (assetKind) {
       case ARTIFACT_JAR:
       case ARTIFACT_XML:
       case ARTIFACT_XML_XZ:
@@ -121,7 +121,7 @@ public class P2ProxyFacetImpl
   protected Content store(final Context context, final Content content) throws IOException {
     AssetKind assetKind = context.getAttributes().require(AssetKind.class);
     TokenMatcher.State matcherState = matcherState(context);
-    switch(assetKind) {
+    switch (assetKind) {
       case ARTIFACT_JAR:
       case ARTIFACT_XML:
       case ARTIFACT_XML_XZ:
@@ -154,9 +154,10 @@ public class P2ProxyFacetImpl
   }
 
   private Content removeMirrorUrlFromArtifactsAndSaveMetadataAsAsset(final String path,
-                                  final TempBlob metadataContent,
-                                  final Payload payload,
-                                  final AssetKind assetKind) throws IOException {
+                                                                     final TempBlob metadataContent,
+                                                                     final Payload payload,
+                                                                     final AssetKind assetKind) throws IOException
+  {
 
     Content resultContent;
     switch (assetKind) {
@@ -223,18 +224,19 @@ public class P2ProxyFacetImpl
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
 
-    Asset asset = p2DataAccess.findAsset(tx, bucket, assetPath);
+    Asset asset = P2DataAccess.findAsset(tx, bucket, assetPath);
     if (asset == null) {
       asset = tx.createAsset(bucket, getRepository().getFormat());
       asset.name(assetPath);
       asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
     }
 
-    return p2DataAccess.saveAsset(tx, asset, metadataContent, payload);
+    return P2DataAccess.saveAsset(tx, asset, metadataContent, payload);
   }
 
   private Content putBinary(final P2Attributes p2attributes,
-                               final Content content) throws IOException {
+                            final Content content) throws IOException
+  {
     StorageFacet storageFacet = facet(StorageFacet.class);
     try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), HASH_ALGORITHMS)) {
       return doPutBinary(p2attributes, tempBlob, content);
@@ -242,14 +244,16 @@ public class P2ProxyFacetImpl
   }
 
   private Content doPutBinary(final P2Attributes p2Attributes,
-                               final TempBlob componentContent,
-                               final Payload payload) throws IOException {
+                              final TempBlob componentContent,
+                              final Payload payload) throws IOException
+  {
     return doCreateOrSaveComponent(p2Attributes, componentContent, payload, COMPONENT_BINARY);
   }
 
   private Content putComponent(final P2Attributes p2Attributes,
                                final Content content,
-                               final AssetKind assetKind) throws IOException {
+                               final AssetKind assetKind) throws IOException
+  {
     StorageFacet storageFacet = facet(StorageFacet.class);
     try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), HASH_ALGORITHMS)) {
       return doPutComponent(p2Attributes, tempBlob, content, assetKind);
@@ -257,9 +261,10 @@ public class P2ProxyFacetImpl
   }
 
   private Content doPutComponent(P2Attributes p2Attributes,
-                                   final TempBlob componentContent,
-                                   final Payload payload,
-                                   final AssetKind assetKind) throws IOException {
+                                 final TempBlob componentContent,
+                                 final Payload payload,
+                                 final AssetKind assetKind) throws IOException
+  {
     p2Attributes = p2DataAccess.mergeAttributesFromTempBlob(componentContent, p2Attributes);
 
     return doCreateOrSaveComponent(p2Attributes, componentContent, payload, assetKind);
@@ -267,14 +272,14 @@ public class P2ProxyFacetImpl
 
   @TransactionalStoreBlob
   protected Content doCreateOrSaveComponent(final P2Attributes p2Attributes,
-                                          final TempBlob componentContent,
-                                          final Payload payload,
-                                          final AssetKind assetKind) throws IOException
+                                            final TempBlob componentContent,
+                                            final Payload payload,
+                                            final AssetKind assetKind) throws IOException
   {
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
 
-    Component component = p2DataAccess.findComponent(tx,
+    Component component = P2DataAccess.findComponent(tx,
         getRepository(),
         p2Attributes.getComponentName(),
         p2Attributes.getComponentVersion());
@@ -288,7 +293,7 @@ public class P2ProxyFacetImpl
     }
     tx.saveComponent(component);
 
-    Asset asset = p2DataAccess.findAsset(tx, bucket, p2Attributes.getPath());
+    Asset asset = P2DataAccess.findAsset(tx, bucket, p2Attributes.getPath());
     if (asset == null) {
       asset = tx.createAsset(bucket, component);
       asset.name(p2Attributes.getPath());
@@ -296,18 +301,17 @@ public class P2ProxyFacetImpl
       asset.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
       asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
     }
-    return p2DataAccess.saveAsset(tx, asset, componentContent, payload);
+    return P2DataAccess.saveAsset(tx, asset, componentContent, payload);
   }
 
   @Override
   protected void indicateVerified(final Context context, final Content content, final CacheInfo cacheInfo)
-      throws IOException
   {
     setCacheInfo(content, cacheInfo);
   }
 
   @TransactionalTouchMetadata
-  public void setCacheInfo(final Content content, final CacheInfo cacheInfo) throws IOException {
+  public void setCacheInfo(final Content content, final CacheInfo cacheInfo) {
     StorageTx tx = UnitOfWork.currentTx();
     Asset asset = Content.findAsset(tx, tx.findBucket(getRepository()), content);
     if (asset == null) {
@@ -325,14 +329,14 @@ public class P2ProxyFacetImpl
   protected Content getAsset(final String name) {
     StorageTx tx = UnitOfWork.currentTx();
 
-    Asset asset = p2DataAccess.findAsset(tx, tx.findBucket(getRepository()), name);
+    Asset asset = P2DataAccess.findAsset(tx, tx.findBucket(getRepository()), name);
     if (asset == null) {
       return null;
     }
     if (asset.markAsDownloaded()) {
       tx.saveAsset(asset);
     }
-    return p2DataAccess.toContent(asset, tx.requireBlob(asset.requireBlobRef()));
+    return P2DataAccess.toContent(asset, tx.requireBlob(asset.requireBlobRef()));
   }
 
   @Override

@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
-import java.util.jar.JarInputStream;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -29,7 +28,7 @@ import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.common.collect.AttributesMap;
 import org.sonatype.nexus.common.hash.HashAlgorithm;
 import org.sonatype.nexus.repository.Repository;
-import org.sonatype.nexus.repository.p2.internal.exception.InvalidMetadataException;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetBlob;
@@ -61,13 +60,13 @@ public class P2DataAccess
   final Logger log = Loggers.getLogger(this);
   public static final List<HashAlgorithm> HASH_ALGORITHMS = ImmutableList.of(SHA1);
 
-  private final JarParser jarParser;
-  private final TempBlobConverter tempBlobConverter;
+  private final AttributesParserFeatureXml featureXmlParser;
+  private final AttributesParserManifest manifestParser;
 
   @Inject
-  public P2DataAccess(final JarParser jarParser, final TempBlobConverter tempBlobConverter) {
-    this.jarParser = checkNotNull(jarParser);
-    this.tempBlobConverter = checkNotNull(tempBlobConverter);
+  public P2DataAccess(final AttributesParserFeatureXml featureXmlParser, final AttributesParserManifest manifestParser) {
+    this.featureXmlParser = checkNotNull(featureXmlParser);
+    this.manifestParser = checkNotNull(manifestParser);
   }
 
   /**
@@ -155,40 +154,27 @@ public class P2DataAccess
   }
 
   @VisibleForTesting
-  public P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes sourceP2Attributes) throws IOException {
+  public P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes sourceP2Attributes)
+      throws IOException
+  {
     checkNotNull(sourceP2Attributes.getExtension());
+    P2Attributes p2Attributes = null;
+    try {
+      // first try Features XML
+      p2Attributes = featureXmlParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
 
-    Optional<P2Attributes> p2Attributes = Optional.empty();
-    // first try Features XML
-    try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-      p2Attributes = jarParser.getAttributesFromFeatureXML(jis);
+      // second try Manifest
+      if (p2Attributes.isEmpty()) {
+        p2Attributes = manifestParser.getAttributesFromBlob(tempBlob, sourceP2Attributes.getExtension());
+      }
     }
-    catch (InvalidMetadataException ex) {
+    catch (AttributeParsingException ex) {
       log.warn("Could not get attributes from feature.xml due to following exception: {}", ex.getMessage());
     }
 
-    // second try Manifest
-    if (!p2Attributes.isPresent()) {
-      try (JarInputStream jis = getJar(tempBlob, sourceP2Attributes.getExtension())) {
-        p2Attributes = jarParser.getAttributesFromManifest(jis);
-      }
-      catch (InvalidMetadataException ex) {
-        log.warn("Could not get attributes from manifest due to following exception: {}", ex.getMessage());
-      }
-    }
-
-    return p2Attributes
+    return Optional.ofNullable(p2Attributes)
+        .filter(jarP2Attributes-> !jarP2Attributes.isEmpty())
         .map(jarP2Attributes -> P2Attributes.builder().merge(sourceP2Attributes, jarP2Attributes).build())
         .orElse(sourceP2Attributes);
-  }
-
-  @VisibleForTesting
-  public JarInputStream getJar(final TempBlob tempBlob, final String extension) throws IOException {
-    if (extension.equals("jar")) {
-      return new JarInputStream(tempBlob.get());
-    }
-    else {
-      return new JarInputStream(tempBlobConverter.getJarFromPackGz(tempBlob));
-    }
   }
 }
