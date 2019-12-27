@@ -69,7 +69,7 @@ public class P2RestoreBlobStrategy
     Optional<P2RestoreFacet> p2RestoreFacetFacet = repository.optionalFacet(P2RestoreFacet.class);
 
     if (!p2RestoreFacetFacet.isPresent()) {
-      log.warn("Skipping as R Restore Facet not found on repository: {}", repository.getName());
+      log.warn("Skipping as P2 Restore Facet not found on repository: {}", repository.getName());
       return false;
     }
     return true;

@@ -25,7 +25,7 @@ import org.sonatype.nexus.repository.p2.internal.AssetKind;
 import org.sonatype.nexus.repository.p2.internal.P2FacetImpl;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
+import org.sonatype.nexus.repository.p2.internal.util.P2TempBlobUtils;
 import org.sonatype.nexus.repository.proxy.ProxyFacet;
 import org.sonatype.nexus.repository.proxy.ProxyFacetSupport;
 import org.sonatype.nexus.repository.storage.Asset;
@@ -72,18 +72,18 @@ public class P2ProxyFacetImpl
 
   private static final String COMPOSITE_CONTENT = "compositeContent";
 
-  private final P2DataAccess p2DataAccess;
+  private final P2TempBlobUtils p2TempBlobUtils;
 
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
 
   private final P2FacetImpl p2Facet;
 
   @Inject
-  public P2ProxyFacetImpl(final P2DataAccess p2DataAccess,
+  public P2ProxyFacetImpl(final P2TempBlobUtils p2TempBlobUtils,
                           final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
                           final P2FacetImpl p2Facet)
   {
-    this.p2DataAccess = checkNotNull(p2DataAccess);
+    this.p2TempBlobUtils = checkNotNull(p2TempBlobUtils);
     this.xmlRewriter = checkNotNull(xmlRewriter);
     this.p2Facet = checkNotNull(p2Facet);
   }
@@ -270,7 +270,7 @@ public class P2ProxyFacetImpl
                                  final Payload payload,
                                  final AssetKind assetKind) throws IOException
   {
-    p2Attributes = p2DataAccess.mergeAttributesFromTempBlob(componentContent, p2Attributes);
+    p2Attributes = p2TempBlobUtils.mergeAttributesFromTempBlob(componentContent, p2Attributes);
 
     return doCreateOrSaveComponent(p2Attributes, componentContent, payload, assetKind);
   }

@@ -35,7 +35,6 @@ public interface P2Facet
    * @return Component
    */
   Component findOrCreateComponent(final StorageTx tx,
-                                  final String path,
                                   final Map<String, String> attributes);
 
   /**

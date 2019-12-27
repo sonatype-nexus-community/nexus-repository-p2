@@ -10,7 +10,7 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.internal.proxy;
+package org.sonatype.nexus.repository.p2.internal.util;
 
 import java.io.IOException;
 
@@ -24,11 +24,6 @@ import org.sonatype.goodies.testsupport.TestSupport;
 import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.util.AttributesParserFeatureXml;
-import org.sonatype.nexus.repository.p2.internal.util.AttributesParserManifest;
-import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
-import org.sonatype.nexus.repository.p2.internal.util.PropertyParser;
-import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,7 +34,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
-public class P2ProxyFacetImplTest
+public class P2TempBlobUtilsTest
     extends TestSupport
 {
   private static final String EXTENSION = "jar";
@@ -48,7 +43,7 @@ public class P2ProxyFacetImplTest
 
   private static final String JAR_NAME = "org.eclipse.core.runtime.feature_1.2.100.v20170912-1859.jar";
 
-  private P2DataAccess p2DataAccess;
+  private P2TempBlobUtils p2TempBlobUtils;
 
   @Mock
   private ArtifactsXmlAbsoluteUrlRemover artifactsXmlAbsoluteUrlRemover;
@@ -72,7 +67,7 @@ public class P2ProxyFacetImplTest
 
   @Before
   public void setUp() {
-    p2DataAccess = new P2DataAccess(xmlParser, manifestParser);
+    p2TempBlobUtils = new P2TempBlobUtils(xmlParser, manifestParser);
   }
 
   @Test
@@ -80,7 +75,7 @@ public class P2ProxyFacetImplTest
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
     doReturn(buildWithVersionAndExtension()).when(manifestParser).getAttributesFromBlob(any(), any());
 
-    P2Attributes p2Attributes = p2DataAccess
+    P2Attributes p2Attributes = p2TempBlobUtils
         .mergeAttributesFromTempBlob(tempBlob, buildWithVersionAndExtension());
 
     assertThat(p2Attributes.getComponentVersion(), is(equalTo(FAKE_VERSION)));
@@ -92,7 +87,7 @@ public class P2ProxyFacetImplTest
     doReturn(p2Attributes).when(manifestParser).getAttributesFromBlob(any(), anyString());
     when(tempBlob.get()).thenReturn(getClass().getResourceAsStream(JAR_NAME));
 
-    P2Attributes actual = p2DataAccess.mergeAttributesFromTempBlob(tempBlob, p2Attributes);
+    P2Attributes actual = p2TempBlobUtils.mergeAttributesFromTempBlob(tempBlob, p2Attributes);
     Assert.assertEquals(buildWithVersionAndExtension(), actual);
   }
 

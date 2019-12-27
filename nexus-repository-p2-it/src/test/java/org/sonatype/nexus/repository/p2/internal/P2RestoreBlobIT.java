@@ -32,6 +32,7 @@ import org.sonatype.nexus.common.app.BaseUrlHolder;
 import org.sonatype.nexus.pax.exam.NexusPaxExamSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.http.HttpStatus;
+import org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetEntityAdapter;
 import org.sonatype.nexus.repository.storage.StorageTx;
@@ -52,10 +53,8 @@ public class P2RestoreBlobIT
   private BlobstoreRestoreTestHelper testHelper;
 
   @Inject
-  @Named("p2")
+  @Named(P2Format.NAME)
   private RestoreBlobStrategy p2RestoreBlobStrategy;
-
-  private static final String PROXY_REPO_NAME = "p2-proxy";
 
   private Server proxyServer;
 
@@ -81,7 +80,7 @@ public class P2RestoreBlobIT
         .withBehaviours(Behaviours.file(testData.resolveFile(PACKAGE_NAME)))
         .start();
 
-    proxyRepository = repos.createP2Proxy(PROXY_REPO_NAME, "http://localhost:" + proxyServer.getPort() + "/");
+    proxyRepository = repos.createP2Proxy(P2ProxyRecipe.NAME, "http://localhost:" + proxyServer.getPort() + "/");
     proxyClient = p2Client(proxyRepository);
 
     assertThat(proxyClient.get(VALID_PACKAGE_URL).getStatusLine().getStatusCode(), is(HttpStatus.OK));

@@ -80,7 +80,7 @@ public class P2FacetImpl
   public static final List<HashAlgorithm> HASH_ALGORITHMS = ImmutableList.of(SHA1);
 
   @Override
-  public Component findOrCreateComponent(final StorageTx tx, final String path, final Map<String, String> attributes) {
+  public Component findOrCreateComponent(final StorageTx tx, final Map<String, String> attributes) {
     String name = attributes.get(P_NAME);
     String version = attributes.get(P_VERSION);
 

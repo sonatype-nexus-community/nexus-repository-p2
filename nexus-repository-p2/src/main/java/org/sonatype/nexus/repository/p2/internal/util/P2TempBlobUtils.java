@@ -19,8 +19,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.sonatype.goodies.common.Loggers;
+import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.TempBlob;
@@ -29,19 +28,20 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Shared code between P2 facets.
+ *
+ * @since 0.next
  */
 @Named
-public class P2DataAccess
+public class P2TempBlobUtils
+    extends ComponentSupport
 {
-  final Logger log = Loggers.getLogger(this);
-
   private final AttributesParserFeatureXml featureXmlParser;
 
   private final AttributesParserManifest manifestParser;
 
   @Inject
-  public P2DataAccess(final AttributesParserFeatureXml featureXmlParser,
-                      final AttributesParserManifest manifestParser)
+  public P2TempBlobUtils(final AttributesParserFeatureXml featureXmlParser,
+                         final AttributesParserManifest manifestParser)
   {
     this.featureXmlParser = checkNotNull(featureXmlParser);
     this.manifestParser = checkNotNull(manifestParser);
