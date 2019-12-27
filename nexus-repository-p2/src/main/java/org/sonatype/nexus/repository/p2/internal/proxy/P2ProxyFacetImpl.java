@@ -47,6 +47,10 @@ import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.HttpClients;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
@@ -375,5 +379,13 @@ public class P2ProxyFacetImpl
         .filter(jarP2Attributes-> !jarP2Attributes.isEmpty())
         .map(jarP2Attributes -> P2Attributes.builder().merge(sourceP2Attributes, jarP2Attributes).build())
         .orElse(sourceP2Attributes);
+  }
+
+  @Override
+  protected HttpResponse execute(final Context context, final HttpClient client, final HttpRequestBase request)
+      throws IOException
+  {
+    HttpClient httpClient = HttpClients.createDefault();
+    return httpClient.execute(request);
   }
 }
