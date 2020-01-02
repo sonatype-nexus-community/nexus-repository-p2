@@ -15,7 +15,6 @@ package org.sonatype.nexus.repository.p2.internal;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.inject.Named;
@@ -28,6 +27,7 @@ import org.sonatype.nexus.common.hash.HashAlgorithm;
 import org.sonatype.nexus.repository.FacetSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.p2.P2Facet;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetBlob;
 import org.sonatype.nexus.repository.storage.Bucket;
@@ -80,9 +80,9 @@ public class P2FacetImpl
   public static final List<HashAlgorithm> HASH_ALGORITHMS = ImmutableList.of(SHA1);
 
   @Override
-  public Component findOrCreateComponent(final StorageTx tx, final Map<String, String> attributes) {
-    String name = attributes.get(P_NAME);
-    String version = attributes.get(P_VERSION);
+  public Component findOrCreateComponent(final StorageTx tx, final P2Attributes attributes) {
+    String name = attributes.getComponentName();
+    String version = attributes.getComponentVersion();
 
     Component component = findComponent(tx, getRepository(), name, version);
     if (component == null) {
@@ -90,12 +90,8 @@ public class P2FacetImpl
       component = tx.createComponent(bucket, getRepository().getFormat())
           .name(name)
           .version(version);
-      if (attributes.containsKey(PLUGIN_NAME)) {
-        component.formatAttributes().set(PLUGIN_NAME, attributes.get(PLUGIN_NAME));
-      }
-
-      if (attributes.containsKey(P_ASSET_KIND)) {
-        component.formatAttributes().set(P_ASSET_KIND, attributes.get(P_ASSET_KIND));
+      if (attributes.getPluginName() != null) {
+        component.formatAttributes().set(PLUGIN_NAME, attributes.getPluginName());
       }
 
       tx.saveComponent(component);
@@ -108,7 +104,7 @@ public class P2FacetImpl
   public Asset findOrCreateAsset(final StorageTx tx,
                                  final Component component,
                                  final String path,
-                                 final Map<String, String> attributes)
+                                 final P2Attributes attributes)
   {
     Bucket bucket = tx.findBucket(getRepository());
     Asset asset = findAsset(tx, bucket, path);
@@ -116,11 +112,8 @@ public class P2FacetImpl
       asset = tx.createAsset(bucket, component);
       asset.name(path);
 
-      // TODO: Make this a bit more robust (could be problematic if keys are removed in later versions, or if keys clash)
-      for (Map.Entry<String, String> attribute : attributes.entrySet()) {
-        asset.formatAttributes().set(attribute.getKey(), attribute.getValue());
-      }
-      asset.formatAttributes().set(P_ASSET_KIND, getAssetKind(path).name());
+      asset.formatAttributes().set(PLUGIN_NAME, attributes.getPluginName());
+      asset.formatAttributes().set(P_ASSET_KIND, attributes.getAssetKind());
       tx.saveAsset(asset);
     }
 

@@ -12,10 +12,9 @@
  */
 package org.sonatype.nexus.repository.p2;
 
-import java.util.Map;
-
 import org.sonatype.nexus.repository.Facet;
 import org.sonatype.nexus.repository.p2.internal.AssetKind;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.StorageTx;
@@ -35,7 +34,7 @@ public interface P2Facet
    * @return Component
    */
   Component findOrCreateComponent(final StorageTx tx,
-                                  final Map<String, String> attributes);
+                                  final P2Attributes attributes);
 
   /**
    * Find or Create Asset
@@ -45,7 +44,7 @@ public interface P2Facet
   Asset findOrCreateAsset(final StorageTx tx,
                           final Component component,
                           final String path,
-                          final Map<String, String> attributes);
+                          final P2Attributes attributes);
 
   /**
    * Find or Create Asset without Component

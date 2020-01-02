@@ -13,18 +13,12 @@
 package org.sonatype.nexus.repository.p2.internal;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 
 import org.sonatype.nexus.blobstore.api.Blob;
-import org.sonatype.nexus.blobstore.api.BlobStore;
-import org.sonatype.nexus.blobstore.api.BlobStoreManager;
 import org.sonatype.nexus.common.collect.AttributesMap;
-import org.sonatype.nexus.common.hash.MultiHashingInputStream;
 import org.sonatype.nexus.repository.FacetSupport;
 import org.sonatype.nexus.repository.cache.CacheControllerHolder;
 import org.sonatype.nexus.repository.p2.P2Facet;
@@ -42,11 +36,8 @@ import org.sonatype.nexus.repository.transaction.TransactionalTouchBlob;
 import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.P2FacetImpl.HASH_ALGORITHMS;
-import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.*;
-import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
-import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
 import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_NAME;
 
@@ -58,14 +49,11 @@ public class P2RestoreFacetImpl
     extends FacetSupport
     implements P2RestoreFacet
 {
-  private final BlobStoreManager blobStoreManager;
-
   private final P2TempBlobUtils p2TempBlobUtils;
 
   @Inject
-  public P2RestoreFacetImpl(final P2TempBlobUtils p2TempBlobUtils, final BlobStoreManager blobStoreManager) {
+  public P2RestoreFacetImpl(final P2TempBlobUtils p2TempBlobUtils) {
     this.p2TempBlobUtils = p2TempBlobUtils;
-    this.blobStoreManager = blobStoreManager;
   }
 
   @Override
@@ -76,19 +64,16 @@ public class P2RestoreFacetImpl
 
     Asset asset;
     if (componentRequired(path)) {
-      Map<String, String> componentAttributes = new HashMap<>();
-      Map<String, String> assetAttributes = new HashMap<>();
+      P2Attributes attributes = P2Attributes.builder().build();
       try {
-        componentAttributes
-            .putAll(getComponentAttributes(assetBlob.getBlob(), path, assetBlob.getBlobRef().getStore()));
-        assetAttributes.put(PLUGIN_NAME, componentAttributes.get(PLUGIN_NAME));
+        attributes = getComponentAttributes(assetBlob.getBlob(), path, assetBlob.getBlobRef().getStore());
       }
       catch (IOException e) {
         log.error("Exception of extracting components attributes from blob {}", assetBlob);
       }
 
-      Component component = facet.findOrCreateComponent(tx, componentAttributes);
-      asset = facet.findOrCreateAsset(tx, component, path, assetAttributes);
+      Component component = facet.findOrCreateComponent(tx, attributes);
+      asset = facet.findOrCreateAsset(tx, component, path, attributes);
     }
     else {
       asset = facet.findOrCreateAsset(tx, path);
@@ -117,16 +102,16 @@ public class P2RestoreFacetImpl
   public Query getComponentQuery(final Blob blob, final String blobName, final String blobStoreName)
       throws IOException
   {
-    Map<String, String> attributes = getComponentAttributes(blob, blobName, blobStoreName);
+    P2Attributes attributes = getComponentAttributes(blob, blobName, blobStoreName);
 
-    return Query.builder().where(P_NAME).eq(attributes.get(P_NAME))
-        .and(P_VERSION).eq(attributes.get(P_VERSION)).build();
+    return Query.builder().where(P_NAME).eq(attributes.getComponentName())
+        .and(P_VERSION).eq(attributes.getComponentVersion()).build();
   }
 
-  private Map<String, String> getComponentAttributes(final Blob blob, final String blobName, final String blobStoreName)
+  private P2Attributes getComponentAttributes(final Blob blob, final String blobName, final String blobStoreName)
       throws IOException
   {
-    Map<String, String> attributes = new HashMap<>();
+    P2Attributes.Builder attributes = P2Attributes.builder();
     AssetKind assetKind = facet(P2Facet.class).getAssetKind(blobName);
     if (AssetKind.COMPONENT_BINARY == assetKind) {
       //https/download.eclipse.org/technology/epp/packages/2019-12/binary/epp.package.java.executable.cocoa.macosx.x86_64_4.14.0.20191212-1200
@@ -135,9 +120,9 @@ public class P2RestoreFacetImpl
       String[] namePaths = blobName.split(DIVIDER);
       String name = namePaths[namePaths.length - 1].replace("_" + version, "");
 
-      attributes.put(P_NAME, name);
-      attributes.put(P_VERSION, version);
-      attributes.put(PLUGIN_NAME, name);
+      attributes.componentName(name);
+      attributes.componentVersion(version);
+      attributes.pluginName(name);
     }
     else {
       StorageFacet storageFacet = facet(StorageFacet.class);
@@ -146,14 +131,14 @@ public class P2RestoreFacetImpl
         P2Attributes p2Attributes = P2Attributes.builder().extension(paths[paths.length - 1]).build();
         P2Attributes mergedAttributes = p2TempBlobUtils.mergeAttributesFromTempBlob(tempBlob, p2Attributes);
 
-        attributes.put(P_NAME, mergedAttributes.getComponentName());
-        attributes.put(P_VERSION, mergedAttributes.getComponentVersion());
-        attributes.put(PLUGIN_NAME, mergedAttributes.getPluginName());
+        attributes.componentName(mergedAttributes.getComponentName());
+        attributes.componentVersion(mergedAttributes.getComponentVersion());
+        attributes.pluginName(mergedAttributes.getPluginName());
       }
     }
 
-    attributes.put(P_ASSET_KIND, assetKind.name());
+    attributes.assetKind(assetKind);
 
-    return attributes;
+    return attributes.build();
   }
 }

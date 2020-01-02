@@ -10,145 +10,162 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.internal.metadata;
+package org.sonatype.nexus.repository.p2.internal.metadata
 
-import javax.annotation.Nullable;
+import javax.annotation.Nullable
 
-import groovy.transform.EqualsAndHashCode;
+import org.sonatype.nexus.repository.p2.internal.AssetKind
 
-import static java.util.Optional.ofNullable;
+import groovy.transform.EqualsAndHashCode
+
+import static java.util.Optional.ofNullable
 
 /**
  * Shared attributes of P2 metadata files.
  */
 @EqualsAndHashCode
-public class P2Attributes
+class P2Attributes
 {
-  private String pluginName;
+  private String pluginName
 
-  private String componentName;
+  private String componentName
 
-  private String componentVersion;
+  private String componentVersion
 
-  private String path;
+  private String path
 
-  private String fileName;
+  private String fileName
 
-  private String extension;
+  private String extension
+
+  private AssetKind assetKind
 
   private P2Attributes(final Builder builder) {
-    this.pluginName = builder.pluginName;
-    this.componentName = builder.componentName;
-    this.componentVersion = builder.componentVersion;
-    this.path = builder.path;
-    this.fileName = builder.fileName;
-    this.extension = builder.extension;
+    this.pluginName = builder.pluginName
+    this.componentName = builder.componentName
+    this.componentVersion = builder.componentVersion
+    this.path = builder.path
+    this.fileName = builder.fileName
+    this.extension = builder.extension
+    this.assetKind = builder.assetKind
   }
 
-  public static Builder builder() {
-    return new Builder();
+  static Builder builder() {
+    return new Builder()
   }
 
-  public boolean isEmpty() {
-
-    String[] mainP2Properties = [pluginName, componentName, componentVersion, path, fileName, extension];
+  boolean isEmpty() {
+    String[] mainP2Properties = [pluginName, componentName, componentVersion, path, fileName, extension, assetKind]
     for (String a : mainP2Properties) {
       if (a != null) {
-        return false;
+        return false
       }
     }
-    return true;
+    return true
   }
 
-  public static class Builder
+  static class Builder
   {
-    private String pluginName;
+    private String pluginName
 
-    private String componentName;
+    private String componentName
 
-    private String componentVersion;
+    private String componentVersion
 
-    private String path;
+    private String path
 
-    private String fileName;
+    private String fileName
 
-    private String extension;
+    private String extension
+
+    private AssetKind assetKind
 
     private Builder() {
     }
 
-    public Builder pluginName(final String groupName) {
-      this.pluginName = groupName;
-      return this;
+    Builder pluginName(final String groupName) {
+      this.pluginName = groupName
+      return this
     }
 
-    public Builder componentName(final String componentName) {
-      this.componentName = componentName;
-      return this;
+    Builder componentName(final String componentName) {
+      this.componentName = componentName
+      return this
     }
 
-    public Builder componentVersion(final String componentVersion) {
-      this.componentVersion = componentVersion;
-      return this;
+    Builder componentVersion(final String componentVersion) {
+      this.componentVersion = componentVersion
+      return this
     }
 
-    public Builder path(final String path) {
-      this.path = path;
-      return this;
+    Builder path(final String path) {
+      this.path = path
+      return this
     }
 
-    public Builder fileName(final String fileName) {
-      this.fileName = fileName;
-      return this;
+    Builder fileName(final String fileName) {
+      this.fileName = fileName
+      return this
     }
 
-    public Builder extension(final String extension) {
-      this.extension = extension;
-      return this;
+    Builder extension(final String extension) {
+      this.extension = extension
+      return this
     }
 
-    public P2Attributes build() {
-      return new P2Attributes(this);
+    Builder assetKind(final AssetKind assetKind) {
+      this.assetKind = assetKind
+      return this
     }
 
-    public Builder merge(final P2Attributes one, P2Attributes two) {
-      componentVersion(ofNullable(two.getComponentVersion()).orElse(one.getComponentVersion()));
-      componentName(ofNullable(two.getComponentName()).orElse(one.getComponentName()));
-      pluginName(ofNullable(two.getPluginName()).orElse(one.getPluginName()));
-      path(ofNullable(two.getPath()).orElse(one.getPath()));
-      fileName(ofNullable(two.getFileName()).orElse(one.getFileName()));
-      extension(ofNullable(two.getExtension()).orElse(one.getExtension()));
-      return this;
+    P2Attributes build() {
+      return new P2Attributes(this)
+    }
+
+    Builder merge(final P2Attributes one, P2Attributes two) {
+      componentVersion(ofNullable(two.getComponentVersion()).orElse(one.getComponentVersion()))
+      componentName(ofNullable(two.getComponentName()).orElse(one.getComponentName()))
+      pluginName(ofNullable(two.getPluginName()).orElse(one.getPluginName()))
+      path(ofNullable(two.getPath()).orElse(one.getPath()))
+      fileName(ofNullable(two.getFileName()).orElse(one.getFileName()))
+      extension(ofNullable(two.getExtension()).orElse(one.getExtension()))
+      assetKind(ofNullable(two.getAssetKind()).orElse(one.getAssetKind()))
+      return this
     }
   }
 
   @Nullable
-  public String getPluginName() {
-    return pluginName;
+  String getPluginName() {
+    return pluginName
   }
 
   @Nullable
-  public String getComponentName() {
-    return componentName;
+  String getComponentName() {
+    return componentName
   }
 
   @Nullable
-  public String getComponentVersion() {
-    return componentVersion;
+  String getComponentVersion() {
+    return componentVersion
   }
 
   @Nullable
-  public String getPath() {
-    return path;
+  String getPath() {
+    return path
   }
 
   @Nullable
-  public String getFileName() {
-    return fileName;
+  String getFileName() {
+    return fileName
   }
 
   @Nullable
-  public String getExtension() {
-    return extension;
+  String getExtension() {
+    return extension
+  }
+
+  @Nullable
+  AssetKind getAssetKind() {
+    return assetKind
   }
 }
