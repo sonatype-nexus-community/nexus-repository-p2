@@ -39,5 +39,6 @@ Ext.define('NX.p2.view.repository.recipe.P2Proxy', {
       {xtype: 'nx-coreui-repository-cleanup-policy-facet'}
      ];
     me.callParent();
+    Ext.ComponentQuery.query('checkbox[name=attributes.httpclient.autoBlock]')[0].setValue(false);
   }
 });
