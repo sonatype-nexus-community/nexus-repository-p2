@@ -39,7 +39,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.sonatype.nexus.repository.http.HttpStatus.OK;
 import static org.sonatype.nexus.repository.p2.internal.P2ITSupport.PACKAGE_NAME;
-import static org.sonatype.nexus.repository.p2.internal.P2ITSupport.HELP_COMPONENT_NAME;
 import static org.sonatype.nexus.repository.p2.internal.P2ITSupport.HELP_PACKAGE_NAME;
 import static org.sonatype.nexus.repository.p2.internal.P2ITSupport.VALID_HELP_PACKAGE_URL;
 import static org.sonatype.nexus.repository.p2.internal.P2ITSupport.VALID_PACKAGE_URL;

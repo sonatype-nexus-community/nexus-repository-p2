@@ -43,13 +43,12 @@ import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
+import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 import org.sonatype.goodies.common.ComponentSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.TempBlob;
-
-import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
-import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
 
 import static java.nio.file.Files.createTempFile;
 import static java.nio.file.Files.delete;
@@ -57,7 +56,7 @@ import static java.nio.file.Files.newInputStream;
 import static java.nio.file.Files.newOutputStream;
 import static javax.xml.stream.XMLStreamConstants.END_ELEMENT;
 import static javax.xml.stream.XMLStreamConstants.START_ELEMENT;
-import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.P2FacetImpl.HASH_ALGORITHMS;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.escapeUriToPath;
 
 /**

@@ -28,6 +28,8 @@ import org.sonatype.nexus.repository.cache.NegativeCacheHandler
 import org.sonatype.nexus.repository.http.HttpHandlers
 import org.sonatype.nexus.repository.http.PartialFetchHandler
 import org.sonatype.nexus.repository.httpclient.HttpClientFacet
+import org.sonatype.nexus.repository.p2.P2Facet
+import org.sonatype.nexus.repository.p2.P2RestoreFacet
 import org.sonatype.nexus.repository.p2.internal.AssetKind
 import org.sonatype.nexus.repository.p2.internal.P2ComponentMaintenance
 import org.sonatype.nexus.repository.p2.internal.P2Format
@@ -45,6 +47,7 @@ import org.sonatype.nexus.repository.view.Context
 import org.sonatype.nexus.repository.view.Matcher
 import org.sonatype.nexus.repository.view.Route
 import org.sonatype.nexus.repository.view.Router
+import org.sonatype.nexus.repository.view.Router.Builder
 import org.sonatype.nexus.repository.view.ViewFacet
 import org.sonatype.nexus.repository.view.handlers.BrowseUnsupportedHandler
 import org.sonatype.nexus.repository.view.handlers.ConditionalRequestHandler
@@ -87,21 +90,21 @@ class P2ProxyRecipe
 {
   public static final String NAME = 'p2-proxy'
 
-  private static final CONTENT_NAME = "content"
+  public  static final String CONTENT_NAME = "content"
 
-  private static final ARTIFACTS_NAME = "artifacts"
+  public static final String ARTIFACTS_NAME = "artifacts"
 
-  private static final COMPOSITE_ARTIFACTS = "compositeArtifacts"
+  public static final String COMPOSITE_ARTIFACTS = "compositeArtifacts"
 
-  private static final COMPOSITE_CONTENT = "compositeContent"
+  public static final String COMPOSITE_CONTENT = "compositeContent"
 
-  private static final XML_EXTENSION = ".*[xX][mM][lL]"
+  public static final String XML_EXTENSION = ".*[xX][mM][lL]"
 
-  private static final XML_XZ_EXTENSION = "${XML_EXTENSION}\\.[xX][zZ]"
+  public static final String XML_XZ_EXTENSION = "${XML_EXTENSION}\\.[xX][zZ]"
 
-  private static final JAR_EXTENSION = ".*[jJ][aA][rR]"
+  public static final String JAR_EXTENSION = ".*[jJ][aA][rR]"
 
-  private static final INDEX_EXTENSION = ".*[iI][nN][dD][eE][xX]"
+  public static final String INDEX_EXTENSION = ".*[iI][nN][dD][eE][xX]"
 
   @Inject
   Provider<P2SecurityFacet> securityFacet
@@ -176,6 +179,12 @@ class P2ProxyRecipe
   HighAvailabilitySupportChecker highAvailabilitySupportChecker
 
   @Inject
+  Provider<P2RestoreFacet> p2RestoreFacet
+
+  @Inject
+  Provider<P2Facet> p2Facet
+
+  @Inject
   P2ProxyRecipe(@Named(ProxyType.NAME) final Type type,
                 @Named(P2Format.NAME) final Format format) {
     super(type, format)
@@ -193,6 +202,8 @@ class P2ProxyRecipe
     repository.attach(searchFacet.get())
     repository.attach(purgeUnusedFacet.get())
     repository.attach(attributesFacet.get())
+    repository.attach(p2Facet.get())
+    repository.attach(p2RestoreFacet.get())
   }
 
   static Matcher pluginBinaryAndFeaturesMatcher(final String pattern,
@@ -260,7 +271,7 @@ class P2ProxyRecipe
    * Configure {@link ViewFacet}.
    */
   private ViewFacet configure(final ConfigurableViewFacet facet) {
-    Router.Builder builder = new Router.Builder()
+    Builder builder = new Builder()
 
     [buildSimpleMatcher('.*', 'p2', 'index', P2_INDEX),
      buildSimpleMatcherAtRoot('p2', 'index', P2_INDEX),

@@ -10,7 +10,7 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.internal.util;
+package org.sonatype.nexus.repository.p2.internal;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,10 +19,16 @@ import java.util.List;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.common.collect.AttributesMap;
 import org.sonatype.nexus.common.hash.HashAlgorithm;
+import org.sonatype.nexus.repository.FacetSupport;
 import org.sonatype.nexus.repository.Repository;
+import org.sonatype.nexus.repository.p2.P2Facet;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetBlob;
 import org.sonatype.nexus.repository.storage.Bucket;
@@ -30,25 +36,109 @@ import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter;
 import org.sonatype.nexus.repository.storage.Query;
 import org.sonatype.nexus.repository.storage.StorageTx;
+import org.sonatype.nexus.repository.storage.TempBlob;
+import org.sonatype.nexus.repository.transaction.TransactionalStoreBlob;
 import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.payloads.BlobPayload;
-
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
+import org.sonatype.nexus.transaction.UnitOfWork;
 
 import static java.util.Collections.singletonList;
 import static org.sonatype.nexus.common.hash.HashAlgorithm.SHA1;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
+import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
 import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_NAME;
 
 /**
- * Shared code between P2 facets.
+ * {@link P2Facet} implementation
+ *
+ * @since 0.next
  */
 @Named
-public class P2DataAccess
+public class P2FacetImpl
+    extends FacetSupport
+    implements P2Facet
 {
   public static final List<HashAlgorithm> HASH_ALGORITHMS = ImmutableList.of(SHA1);
+
+  @Override
+  public Component findOrCreateComponent(final StorageTx tx, final P2Attributes attributes) {
+    String name = attributes.getComponentName();
+    String version = attributes.getComponentVersion();
+
+    Component component = findComponent(tx, getRepository(), name, version);
+    if (component == null) {
+      Bucket bucket = tx.findBucket(getRepository());
+      component = tx.createComponent(bucket, getRepository().getFormat())
+          .name(name)
+          .version(version);
+      if (attributes.getPluginName() != null) {
+        component.formatAttributes().set(PLUGIN_NAME, attributes.getPluginName());
+      }
+
+      tx.saveComponent(component);
+    }
+
+    return component;
+  }
+
+  @TransactionalStoreBlob
+  @Override
+  public Content doCreateOrSaveComponent(final P2Attributes p2Attributes,
+                                         final TempBlob componentContent,
+                                         final Payload payload,
+                                         final AssetKind assetKind) throws IOException
+  {
+    StorageTx tx = UnitOfWork.currentTx();
+    Bucket bucket = tx.findBucket(getRepository());
+
+    Component component = findOrCreateComponent(tx, p2Attributes);
+
+    Asset asset = findAsset(tx, bucket, p2Attributes.getPath());
+    if (asset == null) {
+      asset = tx.createAsset(bucket, component);
+      asset.name(p2Attributes.getPath());
+      //add human readable plugin or feature name in asset attributes
+      asset.formatAttributes().set(PLUGIN_NAME,  p2Attributes.getPluginName());
+      asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
+    }
+    return saveAsset(tx, asset, componentContent, payload);
+  }
+
+  @Override
+  public Asset findOrCreateAsset(final StorageTx tx,
+                                 final Component component,
+                                 final String path,
+                                 final P2Attributes attributes)
+  {
+    Bucket bucket = tx.findBucket(getRepository());
+    Asset asset = findAsset(tx, bucket, path);
+    if (asset == null) {
+      asset = tx.createAsset(bucket, component);
+      asset.name(path);
+
+      asset.formatAttributes().set(PLUGIN_NAME, attributes.getPluginName());
+      asset.formatAttributes().set(P_ASSET_KIND, attributes.getAssetKind());
+      tx.saveAsset(asset);
+    }
+
+    return asset;
+  }
+
+  @Override
+  public Asset findOrCreateAsset(final StorageTx tx, final String path) {
+    Bucket bucket = tx.findBucket(getRepository());
+    Asset asset = findAsset(tx, bucket, path);
+    if (asset == null) {
+      asset = tx.createAsset(bucket, getRepository().getFormat());
+      asset.name(path);
+      asset.formatAttributes().set(P_ASSET_KIND, getAssetKind(path).name());
+      tx.saveAsset(asset);
+    }
+
+    return asset;
+  }
 
   /**
    * Find a component by its name and tag (version)
@@ -80,6 +170,7 @@ public class P2DataAccess
    * @return found asset or null if not found
    */
   @Nullable
+  @Override
   public Asset findAsset(final StorageTx tx, final Bucket bucket, final String assetName) {
     return tx.findAssetWithProperty(MetadataNodeEntityAdapter.P_NAME, assetName, bucket);
   }
@@ -89,6 +180,7 @@ public class P2DataAccess
    *
    * @return blob content
    */
+  @Override
   public Content saveAsset(final StorageTx tx,
                            final Asset asset,
                            final Supplier<InputStream> contentSupplier,
@@ -128,9 +220,15 @@ public class P2DataAccess
    *
    * @return content of asset blob
    */
+  @Override
   public Content toContent(final Asset asset, final Blob blob) {
     Content content = new Content(new BlobPayload(blob, asset.requireContentType()));
     Content.extractFromAsset(asset, HASH_ALGORITHMS, content.getAttributes());
     return content;
+  }
+
+  @Override
+  public AssetKind getAssetKind(final String path) {
+    return P2PathUtils.getAssetKind(path);
   }
 }
