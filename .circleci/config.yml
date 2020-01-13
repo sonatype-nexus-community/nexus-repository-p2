@@ -12,6 +12,7 @@ workflows:
           mvn-collect-artifacts-command: |
             mkdir -p ~/project/artifacts/junit/
             find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/project/artifacts/junit/ \;
+            cp ~/project/nexus-repository-p2-it/target/failsafe-reports/*.xml ~/project/artifacts/junit/
   run-release:
     jobs:
       - approve-release:
