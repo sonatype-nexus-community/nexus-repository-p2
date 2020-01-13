@@ -28,6 +28,7 @@ import org.sonatype.nexus.repository.FacetSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.p2.P2Facet;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetBlob;
 import org.sonatype.nexus.repository.storage.Bucket;
@@ -35,33 +36,15 @@ import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter;
 import org.sonatype.nexus.repository.storage.Query;
 import org.sonatype.nexus.repository.storage.StorageTx;
+import org.sonatype.nexus.repository.storage.TempBlob;
+import org.sonatype.nexus.repository.transaction.TransactionalStoreBlob;
 import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.payloads.BlobPayload;
+import org.sonatype.nexus.transaction.UnitOfWork;
 
 import static java.util.Collections.singletonList;
 import static org.sonatype.nexus.common.hash.HashAlgorithm.SHA1;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML_XZ;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_FEATURES;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_PLUGINS;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_JAR;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_XML;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_JAR;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_XML;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_JAR;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML_XZ;
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.P2_INDEX;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.ARTIFACTS_NAME;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.COMPOSITE_ARTIFACTS;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.COMPOSITE_CONTENT;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.CONTENT_NAME;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.JAR_EXTENSION;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.XML_EXTENSION;
-import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.XML_XZ_EXTENSION;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
@@ -98,6 +81,29 @@ public class P2FacetImpl
     }
 
     return component;
+  }
+
+  @TransactionalStoreBlob
+  @Override
+  public Content doCreateOrSaveComponent(final P2Attributes p2Attributes,
+                                         final TempBlob componentContent,
+                                         final Payload payload,
+                                         final AssetKind assetKind) throws IOException
+  {
+    StorageTx tx = UnitOfWork.currentTx();
+    Bucket bucket = tx.findBucket(getRepository());
+
+    Component component = findOrCreateComponent(tx, p2Attributes);
+
+    Asset asset = findAsset(tx, bucket, p2Attributes.getPath());
+    if (asset == null) {
+      asset = tx.createAsset(bucket, component);
+      asset.name(p2Attributes.getPath());
+      //add human readable plugin or feature name in asset attributes
+      asset.formatAttributes().set(PLUGIN_NAME,  p2Attributes.getPluginName());
+      asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
+    }
+    return saveAsset(tx, asset, componentContent, payload);
   }
 
   @Override
@@ -141,9 +147,9 @@ public class P2FacetImpl
    */
   @Nullable
   public Component findComponent(final StorageTx tx,
-                                        final Repository repository,
-                                        final String name,
-                                        final String version)
+                                 final Repository repository,
+                                 final String name,
+                                 final String version)
   {
     Iterable<Component> components = tx.findComponents(
         Query.builder()
@@ -164,6 +170,7 @@ public class P2FacetImpl
    * @return found asset or null if not found
    */
   @Nullable
+  @Override
   public Asset findAsset(final StorageTx tx, final Bucket bucket, final String assetName) {
     return tx.findAssetWithProperty(MetadataNodeEntityAdapter.P_NAME, assetName, bucket);
   }
@@ -173,10 +180,11 @@ public class P2FacetImpl
    *
    * @return blob content
    */
+  @Override
   public Content saveAsset(final StorageTx tx,
-                                  final Asset asset,
-                                  final Supplier<InputStream> contentSupplier,
-                                  final Payload payload) throws IOException
+                           final Asset asset,
+                           final Supplier<InputStream> contentSupplier,
+                           final Payload payload) throws IOException
   {
     AttributesMap contentAttributes = null;
     String contentType = null;
@@ -193,10 +201,10 @@ public class P2FacetImpl
    * @return blob content
    */
   public Content saveAsset(final StorageTx tx,
-                                  final Asset asset,
-                                  final Supplier<InputStream> contentSupplier,
-                                  final String contentType,
-                                  @Nullable final AttributesMap contentAttributes) throws IOException
+                           final Asset asset,
+                           final Supplier<InputStream> contentSupplier,
+                           final String contentType,
+                           @Nullable final AttributesMap contentAttributes) throws IOException
   {
     Content.applyToAsset(asset, Content.maintainLastModified(asset, contentAttributes));
     AssetBlob assetBlob = tx.setBlob(
@@ -212,6 +220,7 @@ public class P2FacetImpl
    *
    * @return content of asset blob
    */
+  @Override
   public Content toContent(final Asset asset, final Blob blob) {
     Content content = new Content(new BlobPayload(blob, asset.requireContentType()));
     Content.extractFromAsset(asset, HASH_ALGORITHMS, content.getAttributes());
@@ -220,57 +229,6 @@ public class P2FacetImpl
 
   @Override
   public AssetKind getAssetKind(final String path) {
-    AssetKind assetKind;
-    if (path.matches(".*p2.index$")) {
-      assetKind = P2_INDEX;
-    }
-    else if (path.matches(".*features\\/.*")) {
-      assetKind = COMPONENT_FEATURES;
-    }
-    else if (path.matches(".*binary\\/.*")) {
-      assetKind = COMPONENT_BINARY;
-    }
-    else if (path.matches(".*plugins\\/.*")) {
-      assetKind = COMPONENT_PLUGINS;
-    }
-    else if (isPathMatch(path, COMPOSITE_ARTIFACTS, JAR_EXTENSION)) {
-      assetKind = COMPOSITE_ARTIFACTS_JAR;
-    }
-    else if (isPathMatch(path, COMPOSITE_ARTIFACTS, XML_EXTENSION)) {
-      assetKind = COMPOSITE_ARTIFACTS_XML;
-    }
-    else if (isPathMatch(path, COMPOSITE_CONTENT, JAR_EXTENSION)) {
-      assetKind = COMPOSITE_CONTENT_JAR;
-    }
-    else if (isPathMatch(path, COMPOSITE_CONTENT, XML_EXTENSION)) {
-      assetKind = COMPOSITE_CONTENT_XML;
-    }
-    else if (isPathMatch(path, CONTENT_NAME, JAR_EXTENSION)) {
-      assetKind = CONTENT_JAR;
-    }
-    else if (isPathMatch(path, CONTENT_NAME, XML_EXTENSION)) {
-      assetKind = CONTENT_XML;
-    }
-    else if (isPathMatch(path, CONTENT_NAME, XML_XZ_EXTENSION)) {
-      assetKind = CONTENT_XML_XZ;
-    }
-    else if (isPathMatch(path, ARTIFACTS_NAME, JAR_EXTENSION)) {
-      assetKind = ARTIFACT_JAR;
-    }
-    else if (isPathMatch(path, ARTIFACTS_NAME, XML_EXTENSION)) {
-      assetKind = ARTIFACT_XML;
-    }
-    else if (isPathMatch(path, ARTIFACTS_NAME, XML_XZ_EXTENSION)) {
-      assetKind = ARTIFACT_XML_XZ;
-    }
-    else {
-      throw new RuntimeException("Asset path has not supported asset kind");
-    }
-
-    return assetKind;
-  }
-
-  private boolean isPathMatch(final String path, final String patternName, final String patternExtension) {
-    return path.matches(".*" + patternName + "\\." + patternExtension + "$");
+    return P2PathUtils.getAssetKind(path);
   }
 }

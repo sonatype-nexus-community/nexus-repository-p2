@@ -21,8 +21,8 @@ import javax.inject.Named;
 
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
+import org.sonatype.nexus.repository.p2.P2Facet;
 import org.sonatype.nexus.repository.p2.internal.AssetKind;
-import org.sonatype.nexus.repository.p2.internal.P2FacetImpl;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.p2.internal.util.P2TempBlobUtils;
@@ -30,7 +30,6 @@ import org.sonatype.nexus.repository.proxy.ProxyFacet;
 import org.sonatype.nexus.repository.proxy.ProxyFacetSupport;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Bucket;
-import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.StorageTx;
 import org.sonatype.nexus.repository.storage.TempBlob;
@@ -46,7 +45,6 @@ import org.sonatype.nexus.transaction.UnitOfWork;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
 import static org.sonatype.nexus.repository.p2.internal.P2FacetImpl.HASH_ALGORITHMS;
-import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.binaryPath;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.extension;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.matcherState;
@@ -76,16 +74,12 @@ public class P2ProxyFacetImpl
 
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
 
-  private final P2FacetImpl p2Facet;
-
   @Inject
   public P2ProxyFacetImpl(final P2TempBlobUtils p2TempBlobUtils,
-                          final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
-                          final P2FacetImpl p2Facet)
+                          final ArtifactsXmlAbsoluteUrlRemover xmlRewriter)
   {
     this.p2TempBlobUtils = checkNotNull(p2TempBlobUtils);
     this.xmlRewriter = checkNotNull(xmlRewriter);
-    this.p2Facet = checkNotNull(p2Facet);
   }
 
   // HACK: Workaround for known CGLIB issue, forces an Import-Package for org.sonatype.nexus.repository.config
@@ -229,14 +223,14 @@ public class P2ProxyFacetImpl
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
 
-    Asset asset = p2Facet.findAsset(tx, bucket, assetPath);
+    Asset asset = facet(P2Facet.class).findAsset(tx, bucket, assetPath);
     if (asset == null) {
       asset = tx.createAsset(bucket, getRepository().getFormat());
       asset.name(assetPath);
       asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
     }
 
-    return p2Facet.saveAsset(tx, asset, metadataContent, payload);
+    return facet(P2Facet.class).saveAsset(tx, asset, metadataContent, payload);
   }
 
   private Content putBinary(final P2Attributes p2attributes,
@@ -248,13 +242,15 @@ public class P2ProxyFacetImpl
     }
   }
 
+  @TransactionalStoreBlob
   private Content doPutBinary(final P2Attributes p2Attributes,
                               final TempBlob componentContent,
                               final Payload payload) throws IOException
   {
-    return doCreateOrSaveComponent(p2Attributes, componentContent, payload, COMPONENT_BINARY);
+    return facet(P2Facet.class).doCreateOrSaveComponent(p2Attributes, componentContent, payload, COMPONENT_BINARY);
   }
 
+  @TransactionalStoreBlob
   private Content putComponent(final P2Attributes p2Attributes,
                                final Content content,
                                final AssetKind assetKind) throws IOException
@@ -272,41 +268,7 @@ public class P2ProxyFacetImpl
   {
     p2Attributes = p2TempBlobUtils.mergeAttributesFromTempBlob(componentContent, p2Attributes);
 
-    return doCreateOrSaveComponent(p2Attributes, componentContent, payload, assetKind);
-  }
-
-  @TransactionalStoreBlob
-  protected Content doCreateOrSaveComponent(final P2Attributes p2Attributes,
-                                            final TempBlob componentContent,
-                                            final Payload payload,
-                                            final AssetKind assetKind) throws IOException
-  {
-    StorageTx tx = UnitOfWork.currentTx();
-    Bucket bucket = tx.findBucket(getRepository());
-
-    Component component = p2Facet.findComponent(tx,
-        getRepository(),
-        p2Attributes.getComponentName(),
-        p2Attributes.getComponentVersion());
-
-    if (component == null) {
-      component = tx.createComponent(bucket, getRepository().getFormat())
-          .name(p2Attributes.getComponentName())
-          .version(p2Attributes.getComponentVersion());
-      //add human readable plugin name as in Eclipse for search
-      component.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
-    }
-    tx.saveComponent(component);
-
-    Asset asset = p2Facet.findAsset(tx, bucket, p2Attributes.getPath());
-    if (asset == null) {
-      asset = tx.createAsset(bucket, component);
-      asset.name(p2Attributes.getPath());
-      //add human readable plugin or feature name in asset attributes
-      asset.formatAttributes().set(PLUGIN_NAME, p2Attributes.getPluginName());
-      asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
-    }
-    return p2Facet.saveAsset(tx, asset, componentContent, payload);
+    return facet(P2Facet.class).doCreateOrSaveComponent(p2Attributes, componentContent, payload, assetKind);
   }
 
   @Override
@@ -334,14 +296,14 @@ public class P2ProxyFacetImpl
   protected Content getAsset(final String name) {
     StorageTx tx = UnitOfWork.currentTx();
 
-    Asset asset = p2Facet.findAsset(tx, tx.findBucket(getRepository()), name);
+    Asset asset = facet(P2Facet.class).findAsset(tx, tx.findBucket(getRepository()), name);
     if (asset == null) {
       return null;
     }
     if (asset.markAsDownloaded()) {
       tx.saveAsset(asset);
     }
-    return p2Facet.toContent(asset, tx.requireBlob(asset.requireBlobRef()));
+    return facet(P2Facet.class).toContent(asset, tx.requireBlob(asset.requireBlobRef()));
   }
 
   @Override

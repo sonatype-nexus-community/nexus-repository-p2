@@ -24,6 +24,7 @@ import org.sonatype.nexus.repository.cache.CacheControllerHolder;
 import org.sonatype.nexus.repository.p2.P2Facet;
 import org.sonatype.nexus.repository.p2.P2RestoreFacet;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
 import org.sonatype.nexus.repository.p2.internal.util.P2TempBlobUtils;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetBlob;
@@ -31,13 +32,10 @@ import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.Query;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.StorageTx;
-import org.sonatype.nexus.repository.storage.TempBlob;
 import org.sonatype.nexus.repository.transaction.TransactionalTouchBlob;
 import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
-import static org.sonatype.nexus.repository.p2.internal.P2FacetImpl.HASH_ALGORITHMS;
-import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
 import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_NAME;
 
@@ -66,7 +64,7 @@ public class P2RestoreFacetImpl
     if (componentRequired(path)) {
       P2Attributes attributes = P2Attributes.builder().build();
       try {
-        attributes = getComponentAttributes(assetBlob.getBlob(), path, assetBlob.getBlobRef().getStore());
+        attributes = getComponentAttributes(assetBlob.getBlob(), path);
       }
       catch (IOException e) {
         log.error("Exception of extracting components attributes from blob {}", assetBlob);
@@ -102,43 +100,25 @@ public class P2RestoreFacetImpl
   public Query getComponentQuery(final Blob blob, final String blobName, final String blobStoreName)
       throws IOException
   {
-    P2Attributes attributes = getComponentAttributes(blob, blobName, blobStoreName);
+    P2Attributes attributes = getComponentAttributes(blob, blobName);
 
     return Query.builder().where(P_NAME).eq(attributes.getComponentName())
         .and(P_VERSION).eq(attributes.getComponentVersion()).build();
   }
 
-  private P2Attributes getComponentAttributes(final Blob blob, final String blobName, final String blobStoreName)
+  private P2Attributes getComponentAttributes(final Blob blob, final String blobName)
       throws IOException
   {
-    P2Attributes.Builder attributes = P2Attributes.builder();
-    AssetKind assetKind = facet(P2Facet.class).getAssetKind(blobName);
+    P2Attributes attributes;
+    AssetKind assetKind = P2PathUtils.getAssetKind(blobName);
     if (AssetKind.COMPONENT_BINARY == assetKind) {
-      //https/download.eclipse.org/technology/epp/packages/2019-12/binary/epp.package.java.executable.cocoa.macosx.x86_64_4.14.0.20191212-1200
-      String[] versionPaths = blobName.split("_");
-      String version = versionPaths[versionPaths.length - 1];
-      String[] namePaths = blobName.split(DIVIDER);
-      String name = namePaths[namePaths.length - 1].replace("_" + version, "");
-
-      attributes.componentName(name);
-      attributes.componentVersion(version);
-      attributes.pluginName(name);
+      attributes = P2PathUtils.getBinaryAttributesFromBlobName(blobName);
     }
     else {
       StorageFacet storageFacet = facet(StorageFacet.class);
-      try (TempBlob tempBlob = storageFacet.createTempBlob(blob.getInputStream(), HASH_ALGORITHMS)) {
-        String[] paths = blobName.split("\\.");
-        P2Attributes p2Attributes = P2Attributes.builder().extension(paths[paths.length - 1]).build();
-        P2Attributes mergedAttributes = p2TempBlobUtils.mergeAttributesFromTempBlob(tempBlob, p2Attributes);
-
-        attributes.componentName(mergedAttributes.getComponentName());
-        attributes.componentVersion(mergedAttributes.getComponentVersion());
-        attributes.pluginName(mergedAttributes.getPluginName());
-      }
+      attributes = P2PathUtils.getPackageAttributesFromBlob(storageFacet, p2TempBlobUtils, blob, blobName);
     }
 
-    attributes.assetKind(assetKind);
-
-    return attributes.build();
+    return attributes;
   }
 }

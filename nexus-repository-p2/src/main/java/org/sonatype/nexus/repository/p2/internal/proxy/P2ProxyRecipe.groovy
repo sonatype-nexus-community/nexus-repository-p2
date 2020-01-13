@@ -182,7 +182,7 @@ class P2ProxyRecipe
   Provider<P2RestoreFacet> p2RestoreFacet
 
   @Inject
-  Provider<P2Facet> p2Facet;
+  Provider<P2Facet> p2Facet
 
   @Inject
   P2ProxyRecipe(@Named(ProxyType.NAME) final Type type,
