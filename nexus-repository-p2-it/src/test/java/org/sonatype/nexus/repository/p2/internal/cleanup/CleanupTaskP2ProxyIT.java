@@ -88,6 +88,7 @@ public class CleanupTaskP2ProxyIT
   }
 
   @Test
+  @Category(Unstable.class)
   public void cleanupByLastBlobUpdated() throws Exception {
     assertLastBlobUpdatedComponentsCleanedUp(proxyRepo, 1,
         () -> deployArtifacts(VALID_PACKAGE_URL), 1L);

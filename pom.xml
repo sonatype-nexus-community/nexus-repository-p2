@@ -23,7 +23,7 @@
   </parent>
 
   <artifactId>p2-parent</artifactId>
-  <version>0.0.4-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>${project.groupId}:${project.artifactId}</name>
 
