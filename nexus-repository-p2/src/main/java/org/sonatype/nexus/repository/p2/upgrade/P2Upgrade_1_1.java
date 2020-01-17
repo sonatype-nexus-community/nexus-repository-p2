@@ -25,11 +25,13 @@ import org.sonatype.nexus.common.upgrade.Upgrades;
 import org.sonatype.nexus.orient.DatabaseInstance;
 import org.sonatype.nexus.orient.DatabaseInstanceNames;
 import org.sonatype.nexus.orient.DatabaseUpgradeSupport;
+import org.sonatype.nexus.orient.OClassNameBuilder;
 import org.sonatype.nexus.orient.OIndexNameBuilder;
 
 import com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx;
 import com.orientechnologies.orient.core.db.record.OIdentifiable;
 import com.orientechnologies.orient.core.index.OIndex;
+import com.orientechnologies.orient.core.metadata.schema.OSchemaProxy;
 import com.orientechnologies.orient.core.record.impl.ODocument;
 import com.orientechnologies.orient.core.sql.OCommandSQL;
 import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery;
@@ -57,6 +59,13 @@ public class P2Upgrade_1_1
 
   private static final String P_REPOSITORY_NAME = "repository_name";
 
+  private static final String C_BROWSE_NODE = "browse_node";
+
+  private static final String BROWSE_NODE_CLASS = new OClassNameBuilder().type(C_BROWSE_NODE).build();
+
+  private static final String DELETE_BROWSE_NODE_FROM_REPOSITORIES = String
+      .format("delete from %s where repository_name in ?", BROWSE_NODE_CLASS);
+
   private static final String I_REPOSITORY_NAME = new OIndexNameBuilder()
       .type("bucket")
       .property(P_REPOSITORY_NAME)
@@ -79,11 +88,11 @@ public class P2Upgrade_1_1
   public void apply() {
     if (hasSchemaClass(configDatabaseInstance, "repository") &&
         hasSchemaClass(componentDatabaseInstance, "asset")) {
-      updateP2AssetNames();
+      updateP2Repositories();
     }
   }
 
-  private void updateP2AssetNames() {
+  private void updateP2Repositories() {
     List<String> p2RepositoryNames;
     try (ODatabaseDocumentTx db = configDatabaseInstance.get().connect()) {
       p2RepositoryNames = db.<List<ODocument>>query(new OSQLSynchQuery<ODocument>(SELECT_P2_REPOSITORIES)).stream()
@@ -91,21 +100,37 @@ public class P2Upgrade_1_1
           .collect(Collectors.toList());
     }
     if (!p2RepositoryNames.isEmpty()) {
-      OCommandSQL updateAssetCommand = new OCommandSQL(REMOVE_UNNECESSARY_SLASH_FROM_ASSET_NAME);
-      try (ODatabaseDocumentTx db = componentDatabaseInstance.get().connect()) {
-        OIndex<?> bucketIdx = db.getMetadata().getIndexManager().getIndex(I_REPOSITORY_NAME);
-        p2RepositoryNames.forEach(repositoryName -> {
-          OIdentifiable bucket = (OIdentifiable) bucketIdx.get(repositoryName);
-          if (bucket == null) {
-            log.warn("Unable to find bucket for {}", repositoryName);
+      updateP2AssetNames(p2RepositoryNames);
+      updateP2BrowseNodes(p2RepositoryNames);
+    }
+  }
+
+  private void updateP2AssetNames(final List<String> p2RepositoryNames) {
+    OCommandSQL updateAssetCommand = new OCommandSQL(REMOVE_UNNECESSARY_SLASH_FROM_ASSET_NAME);
+    try (ODatabaseDocumentTx db = componentDatabaseInstance.get().connect()) {
+      OIndex<?> bucketIdx = db.getMetadata().getIndexManager().getIndex(I_REPOSITORY_NAME);
+      p2RepositoryNames.forEach(repositoryName -> {
+        OIdentifiable bucket = (OIdentifiable) bucketIdx.get(repositoryName);
+        if (bucket == null) {
+          log.warn("Unable to find bucket for {}", repositoryName);
+        }
+        else {
+          int updates = db.command(updateAssetCommand).execute(bucket.getIdentity());
+          if (updates > 0) {
+            log.info("Updated {} p2 asset(s) names in repository {}: ", updates, repositoryName);
           }
-          else {
-            int updates = db.command(updateAssetCommand).execute(bucket.getIdentity());
-            if (updates > 0) {
-              log.info("Updated {} p2 asset(s) names in repository {}: ", updates, repositoryName);
-            }
-          }
-        });
+        }
+      });
+    }
+  }
+
+  private void updateP2BrowseNodes(final List<String> p2RepositoryNames) {
+    log.info("Deleting browse_node data from p2 repositories to be rebuilt ({}).", p2RepositoryNames);
+
+    try (ODatabaseDocumentTx componentDb = componentDatabaseInstance.get().connect()) {
+      OSchemaProxy schema = componentDb.getMetadata().getSchema();
+      if (schema.existsClass(C_BROWSE_NODE)) {
+        componentDb.command(new OCommandSQL(DELETE_BROWSE_NODE_FROM_REPOSITORIES)).execute(p2RepositoryNames);
       }
     }
   }
