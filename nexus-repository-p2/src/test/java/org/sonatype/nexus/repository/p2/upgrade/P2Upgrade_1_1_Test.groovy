@@ -161,20 +161,20 @@ class P2Upgrade_1_1_Test
     }
   }
 
-  private static repository(String name, String recipe) {
+  private static repository(final String name, final String recipe) {
     ODocument repository = new ODocument(REPOSITORY_CLASS)
     repository.field(P_REPOSITORY_NAME, name)
     repository.field(P_RECIPE_NAME, recipe)
     repository.save()
   }
 
-  private static bucket(String name) {
+  private static bucket(final String name) {
     ODocument bucket = new ODocument(BUCKET_CLASS)
     bucket.field(P_REPOSITORY_NAME, name)
     bucket.save()
   }
 
-  private static asset(OIndex bucketIdx, String repositoryName, String name) {
+  private static asset(final OIndex bucketIdx, final String repositoryName, final String name) {
     OIdentifiable idf = bucketIdx.get(repositoryName)
     ODocument asset = new ODocument(ASSET_CLASS)
     asset.field(P_BUCKET, idf)

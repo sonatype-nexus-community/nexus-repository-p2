@@ -18,7 +18,7 @@ package org.sonatype.nexus.repository.p2.upgrade;
  * This model is stored in the 'component' database as attributes in the generic 'component' model.
  * Upgrades should depend on the 'component' model and version at the time the upgrade was written.
  *
- * @since 0.next
+ * @since 1.0.0
  */
 public interface P2Model
 {

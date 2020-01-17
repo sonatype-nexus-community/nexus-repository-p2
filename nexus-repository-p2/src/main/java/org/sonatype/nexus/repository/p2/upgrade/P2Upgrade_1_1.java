@@ -41,7 +41,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Upgrade step to set {@code name} for p2 assets.
  *
- * @since 0.next
+ * @since 1.0.0
  */
 @Named
 @Singleton
