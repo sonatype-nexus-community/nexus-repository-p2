@@ -46,16 +46,16 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Named
 @Singleton
 @Upgrades(model = P2Model.NAME, from = "1.0", to = "1.1")
-@DependsOn(model = DatabaseInstanceNames.COMPONENT, version = "1.0", checkpoint = true)
-@DependsOn(model = DatabaseInstanceNames.CONFIG, version = "1.0")
+@DependsOn(model = DatabaseInstanceNames.COMPONENT, version = "1.14", checkpoint = true)
+@DependsOn(model = DatabaseInstanceNames.CONFIG, version = "1.8", checkpoint = true)
 public class P2Upgrade_1_1
     extends DatabaseUpgradeSupport
 {
   private static final String SELECT_P2_REPOSITORIES =
-      "select from repository where recipe_name in ['p2-proxy']";
+      "select from repository where recipe_name = 'p2-proxy'";
 
   private static final String REMOVE_UNNECESSARY_SLASH_FROM_ASSET_NAME =
-      "update asset set name = name.subString(0, 1).replace('/', '').append(name.subString(1, name.length())) where bucket=?";
+      "update asset set name = name.subString(1) where bucket = ? and name like '/%'";
 
   private static final String P_REPOSITORY_NAME = "repository_name";
 
