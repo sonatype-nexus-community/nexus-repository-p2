@@ -71,6 +71,8 @@ public class P2Upgrade_1_1
       .property(P_REPOSITORY_NAME)
       .build();
 
+  private static final String ASSET_CLASS_NAME = "asset";
+
   private final Provider<DatabaseInstance> configDatabaseInstance;
 
   private final Provider<DatabaseInstance> componentDatabaseInstance;
@@ -87,7 +89,7 @@ public class P2Upgrade_1_1
   @Override
   public void apply() {
     if (hasSchemaClass(configDatabaseInstance, "repository") &&
-        hasSchemaClass(componentDatabaseInstance, "asset")) {
+        hasSchemaClass(componentDatabaseInstance, ASSET_CLASS_NAME)) {
       updateP2Repositories();
     }
   }
@@ -107,7 +109,7 @@ public class P2Upgrade_1_1
 
   private void updateP2AssetNames(final List<String> p2RepositoryNames) {
     OCommandSQL updateAssetCommand = new OCommandSQL(REMOVE_UNNECESSARY_SLASH_FROM_ASSET_NAME);
-    try (ODatabaseDocumentTx db = componentDatabaseInstance.get().connect()) {
+    DatabaseUpgradeSupport.withDatabaseAndClass(componentDatabaseInstance, ASSET_CLASS_NAME, (db, type) -> {
       OIndex<?> bucketIdx = db.getMetadata().getIndexManager().getIndex(I_REPOSITORY_NAME);
       p2RepositoryNames.forEach(repositoryName -> {
         OIdentifiable bucket = (OIdentifiable) bucketIdx.get(repositoryName);
@@ -121,17 +123,17 @@ public class P2Upgrade_1_1
           }
         }
       });
-    }
+    });
   }
 
   private void updateP2BrowseNodes(final List<String> p2RepositoryNames) {
     log.info("Deleting browse_node data from p2 repositories to be rebuilt ({}).", p2RepositoryNames);
 
-    try (ODatabaseDocumentTx componentDb = componentDatabaseInstance.get().connect()) {
-      OSchemaProxy schema = componentDb.getMetadata().getSchema();
+    DatabaseUpgradeSupport.withDatabaseAndClass(componentDatabaseInstance, C_BROWSE_NODE, (db, type) -> {
+      OSchemaProxy schema = db.getMetadata().getSchema();
       if (schema.existsClass(C_BROWSE_NODE)) {
-        componentDb.command(new OCommandSQL(DELETE_BROWSE_NODE_FROM_REPOSITORIES)).execute(p2RepositoryNames);
+        db.command(new OCommandSQL(DELETE_BROWSE_NODE_FROM_REPOSITORIES)).execute(p2RepositoryNames);
       }
-    }
+    });
   }
 }
