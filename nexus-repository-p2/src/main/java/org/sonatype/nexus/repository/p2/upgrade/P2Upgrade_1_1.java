@@ -39,7 +39,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toList;
 
 /**
- * Upgrade step to set {@code name} for p2 assets.
+ * Upgrade step to update {@code name} for p2 assets (remove redundant slash in start) and delete browse_node entries
+ * for p2 repositories forcing them to be rebuilt by {@link org.sonatype.nexus.repository.browse.internal.RebuildBrowseNodesManager}.
  *
  * @since 1.0.0
  */
