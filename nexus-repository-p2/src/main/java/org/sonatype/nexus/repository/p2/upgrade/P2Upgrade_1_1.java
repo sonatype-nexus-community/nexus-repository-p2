@@ -13,7 +13,6 @@
 package org.sonatype.nexus.repository.p2.upgrade;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -37,6 +36,7 @@ import com.orientechnologies.orient.core.sql.OCommandSQL;
 import com.orientechnologies.orient.core.sql.query.OSQLSynchQuery;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Upgrade step to set {@code name} for p2 assets.
@@ -99,7 +99,7 @@ public class P2Upgrade_1_1
     try (ODatabaseDocumentTx db = configDatabaseInstance.get().connect()) {
       p2RepositoryNames = db.<List<ODocument>>query(new OSQLSynchQuery<ODocument>(SELECT_P2_REPOSITORIES)).stream()
           .map(d -> (String) d.field(P_REPOSITORY_NAME))
-          .collect(Collectors.toList());
+          .collect(toList());
     }
     if (!p2RepositoryNames.isEmpty()) {
       updateP2AssetNames(p2RepositoryNames);
