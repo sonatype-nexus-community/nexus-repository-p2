@@ -31,7 +31,7 @@ import org.sonatype.nexus.repository.view.Payload;
 /**
  * General P2 facet
  *
- * @since 0.next
+ * @since 1.0.0
  */
 @Facet.Exposed
 public interface P2Facet

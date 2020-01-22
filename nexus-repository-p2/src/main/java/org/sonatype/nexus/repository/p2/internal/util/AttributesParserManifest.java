@@ -32,7 +32,7 @@ import java.util.jar.Manifest;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
 
 /**
- * @since 0.next
+ * @since 1.0.0
  */
 @Named
 @Singleton

@@ -20,7 +20,7 @@ import org.sonatype.nexus.repository.storage.AssetBlob;
 import org.sonatype.nexus.repository.storage.Query;
 
 /**
- * @since 0.next
+ * @since 1.0.0
  */
 @Facet.Exposed
 public interface P2RestoreFacet

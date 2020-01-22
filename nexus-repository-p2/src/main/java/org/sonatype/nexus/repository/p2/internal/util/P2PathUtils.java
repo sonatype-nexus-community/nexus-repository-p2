@@ -53,7 +53,7 @@ import static org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe.XML_
 /**
  * Utility methods for working with P2 routes and paths.
  *
- * @since 0.next
+ * @since 1.0.0
  */
 public class P2PathUtils
 {

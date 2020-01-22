@@ -24,7 +24,7 @@ import java.util.jar.JarInputStream;
 /**
  * Utility methods for working with Jar (Jar Binks, worst character) files
  *
- * @since 0.next
+ * @since 1.0.0
  */
 public abstract class JarExtractor<T>
 {

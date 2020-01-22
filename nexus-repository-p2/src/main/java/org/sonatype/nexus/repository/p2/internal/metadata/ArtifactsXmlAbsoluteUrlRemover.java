@@ -62,7 +62,7 @@ import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.escapeU
 /**
  * Removes absolute URL entries from artifacts.xml
  *
- * @since 0.next
+ * @since 1.0.0
  */
 @Named
 @Singleton

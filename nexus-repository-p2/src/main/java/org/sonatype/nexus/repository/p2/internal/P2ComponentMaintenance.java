@@ -29,7 +29,7 @@ import static org.sonatype.nexus.common.stateguard.StateGuardLifecycleSupport.St
 /**
  * P2 Component and asset removing implementation
  *
- * @since 0.next
+ * @since 1.0.0
  */
 public class P2ComponentMaintenance
     extends DefaultComponentMaintenanceImpl

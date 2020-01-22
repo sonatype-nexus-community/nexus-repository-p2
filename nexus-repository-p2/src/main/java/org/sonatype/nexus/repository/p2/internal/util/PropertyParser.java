@@ -25,7 +25,7 @@ import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingExcep
 import org.sonatype.nexus.repository.storage.TempBlob;
 
 /**
- * @since 0.next
+ * @since 1.0.0
  */
 public class PropertyParser
 {

@@ -29,7 +29,7 @@ import static org.sonatype.nexus.repository.search.DefaultComponentMetadataProdu
 /**
  * Defines which cleanup policy fields to display for P2.
  *
- * @since 0.next
+ * @since 1.0.0
  */
 @Named(P2Format.NAME)
 @Singleton

@@ -35,7 +35,7 @@ import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.HTTPS_N
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.HTTP_NXRM_PREFIX;
 
 /**
- * @since 0.next
+ * @since 1.0.0
  */
 @Singleton
 @Named(P2Format.NAME)

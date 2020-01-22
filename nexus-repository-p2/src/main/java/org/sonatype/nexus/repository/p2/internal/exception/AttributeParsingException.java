@@ -13,7 +13,7 @@
 package org.sonatype.nexus.repository.p2.internal.exception;
 
 /**
- * @since 0.next
+ * @since 1.0.0
  */
 public class AttributeParsingException extends Exception
 {

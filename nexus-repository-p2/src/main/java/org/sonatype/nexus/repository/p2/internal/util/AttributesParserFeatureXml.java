@@ -41,7 +41,7 @@ import static javax.xml.xpath.XPathConstants.NODE;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
 
 /**
- * @since 0.next
+ * @since 1.0.0
  */
 @Named
 @Singleton
