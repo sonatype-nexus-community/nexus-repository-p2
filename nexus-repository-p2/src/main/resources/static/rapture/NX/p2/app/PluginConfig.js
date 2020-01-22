@@ -14,6 +14,16 @@ Ext.define('NX.p2.app.PluginConfig', {
   '@aggregate_priority': 100,
 
   requires: [
+    'NX.p2.app.PluginStrings',
     'NX.p2.util.P2RepositoryUrls'
+  ],
+
+  controllers:[
+    {
+      id: 'NX.p2.controller.SearchP2',
+      active: function () {
+        return NX.app.Application.bundleActive('org.sonatype.nexus.plugins.nexus-repository-p2');
+      }
+    }
   ]
 });

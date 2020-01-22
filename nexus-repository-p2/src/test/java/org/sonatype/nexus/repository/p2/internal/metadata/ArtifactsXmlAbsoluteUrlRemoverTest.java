@@ -16,7 +16,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.net.URI;
 
 import org.sonatype.goodies.testsupport.TestSupport;
 import org.sonatype.nexus.blobstore.api.Blob;
@@ -24,7 +24,6 @@ import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.TempBlob;
 
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream;
 import org.apache.commons.io.IOUtils;
@@ -70,6 +69,14 @@ public class ArtifactsXmlAbsoluteUrlRemoverTest
     setupRepositoryMock();
     when(artifactsXml.getBlob()).thenReturn(mock(Blob.class)); // Allow exceptions to be logged without npe
     underTest = new ArtifactsXmlAbsoluteUrlRemover();
+  }
+
+  @Test
+  public void testCheckUrl() throws Exception {
+    when(artifactsXml.get()).thenReturn(getClass().getResourceAsStream("compositeArtifacts.xml"));
+    when(repository.getName()).thenReturn("dummyRepoName");
+    TempBlob modified = underTest.editUrlPathForCompositeRepository(artifactsXml, URI.create("http://test/test/test/"), repository, "compositeArtifacts", "xml");
+    assertXmlMatches(modified.get(), "compositeArtifactsWithoutDots.xml");
   }
 
   @Test

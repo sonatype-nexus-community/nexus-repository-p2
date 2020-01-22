@@ -13,6 +13,7 @@
 package org.sonatype.nexus.repository.p2.internal.util;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.sonatype.goodies.testsupport.TestSupport;
@@ -20,7 +21,6 @@ import org.sonatype.nexus.common.collect.AttributesMap;
 import org.sonatype.nexus.repository.view.Context;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
@@ -29,12 +29,13 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.maybePath;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.name;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.path;
 
 public class P2PathUtilsTest
     extends TestSupport
 {
-  P2PathUtils p2PathUtils;
-
   @Mock
   Context context;
 
@@ -45,35 +46,53 @@ public class P2PathUtilsTest
   AttributesMap attributesMap;
 
   private final String fakePath = "fakepath";
-  private final String fakeFileName = "eclipsepackage1-2-3.jar";
-  private final String fakeExtension = "pack.gz";
 
-  @Before
-  public void setUp() throws Exception {
-    p2PathUtils = new P2PathUtils();
-  }
+  private final String fakeComponentName = "eclipsepackage1";
+
+  private final String fakeFileName = fakeComponentName + "_2_3.jar";
+
+  private final String fakeFileNameWithFeature = fakeComponentName + ".feature" + "_2_3.jar";
+
+  private final String fakeExtension = "pack.gz";
 
   @Test
   public void pathWithState() throws Exception {
     final Map<String, String> someMap = Collections.singletonMap("path", fakePath);
     when(state.getTokens())
         .thenReturn(someMap);
-    String path = p2PathUtils.path(state);
+    String path = path(state);
     assertThat(path, is(equalTo(fakePath)));
   }
 
   @Test
   public void pathWithPathAndFileName() throws Exception {
-    String path = p2PathUtils.path(fakePath, fakeFileName);
+    String path = path(fakePath, fakeFileName);
     String expectedResult = fakePath + "/" + fakeFileName;
     assertThat(path, is(equalTo(expectedResult)));
   }
 
   @Test
   public void pathWithNoPathAndFileName() throws Exception {
-    String path = p2PathUtils.path("", fakeFileName);
+    String path = path("", fakeFileName);
     String expectedResult = fakeFileName;
     assertThat(path, is(equalTo(expectedResult)));
+  }
+
+  @Test
+  public void pathTestMaybePath() throws Exception {
+    final Map<String, String> someMap = new HashMap<>();
+    someMap.put("name", fakeFileName);
+    someMap.put("extension", fakeExtension);
+    when(state.getTokens())
+        .thenReturn(someMap);
+    String path = maybePath(state);
+
+    assertThat(path, is(equalTo(fakeFileName + "." + fakeExtension)));
+
+    someMap.put("path", fakePath);
+    path = maybePath(state);
+
+    assertThat(path, is(equalTo(fakePath + "/" + fakeFileName + "." + fakeExtension)));
   }
 
   @Test
@@ -81,13 +100,31 @@ public class P2PathUtilsTest
     final Map<String, String> someMap = Collections.singletonMap("name", fakeFileName);
     when(state.getTokens())
         .thenReturn(someMap);
-    String filename = p2PathUtils.name(state);
+    String filename = name(state);
     assertThat(filename, is(equalTo(fakeFileName)));
   }
 
   @Test
+  public void componentName() throws Exception {
+    final Map<String, String> someMap = Collections.singletonMap("name", fakeFileName);
+    when(state.getTokens())
+        .thenReturn(someMap);
+    String componentName = P2PathUtils.componentName(state);
+    assertThat(componentName, is(equalTo(fakeComponentName)));
+  }
+
+  @Test
+  public void testNormalizeComponentName() throws Exception {
+    final Map<String, String> someMap = Collections.singletonMap("name", fakeFileNameWithFeature);
+    when(state.getTokens())
+        .thenReturn(someMap);
+    String componentName = P2PathUtils.componentName(state);
+    assertThat(componentName, is(equalTo(fakeComponentName)));
+  }
+
+  @Test
   public void pathWithPathAndFilenameAndExtension() throws Exception {
-    String path = p2PathUtils.path(fakePath, fakeFileName, fakeExtension);
+    String path = path(fakePath, fakeFileName, fakeExtension);
     String expectedResult = fakePath + "/" + fakeFileName + "." + fakeExtension;
     assertThat(path, is(equalTo(expectedResult)));
   }
@@ -98,7 +135,7 @@ public class P2PathUtilsTest
         .thenReturn(attributesMap);
     when(attributesMap.require(TokenMatcher.State.class))
         .thenReturn(state);
-    TokenMatcher.State testState = p2PathUtils.matcherState(context);
+    TokenMatcher.State testState = P2PathUtils.matcherState(context);
     assertThat(testState, instanceOf(TokenMatcher.State.class));
   }
 }

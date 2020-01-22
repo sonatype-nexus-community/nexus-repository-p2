@@ -13,7 +13,6 @@
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
 import java.io.IOException;
-import java.util.jar.JarInputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -22,17 +21,15 @@ import javax.inject.Named;
 
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
+import org.sonatype.nexus.repository.p2.P2Facet;
+import org.sonatype.nexus.repository.p2.internal.AssetKind;
 import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.util.JarParser;
-import org.sonatype.nexus.repository.p2.internal.util.P2DataAccess;
-import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
-import org.sonatype.nexus.repository.p2.internal.util.TempBlobConverter;
+import org.sonatype.nexus.repository.p2.internal.util.P2TempBlobUtils;
 import org.sonatype.nexus.repository.proxy.ProxyFacet;
 import org.sonatype.nexus.repository.proxy.ProxyFacetSupport;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Bucket;
-import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.StorageTx;
 import org.sonatype.nexus.repository.storage.TempBlob;
@@ -41,43 +38,48 @@ import org.sonatype.nexus.repository.transaction.TransactionalTouchBlob;
 import org.sonatype.nexus.repository.transaction.TransactionalTouchMetadata;
 import org.sonatype.nexus.repository.view.Content;
 import org.sonatype.nexus.repository.view.Context;
-import org.sonatype.nexus.repository.p2.internal.AssetKind;
 import org.sonatype.nexus.repository.view.Payload;
 import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY;
-import static org.sonatype.nexus.repository.p2.internal.util.P2DataAccess.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.P2FacetImpl.HASH_ALGORITHMS;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.binaryPath;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.extension;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.matcherState;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.maybePath;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.name;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.path;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.toP2Attributes;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.toP2AttributesBinary;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.unescapePathToUri;
+import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.version;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 
 /**
  * P2 {@link ProxyFacet} implementation.
+ *
+ * @since 0.next
  */
 @Named
 public class P2ProxyFacetImpl
     extends ProxyFacetSupport
 {
-  private final P2PathUtils p2PathUtils;
-  private final P2DataAccess p2DataAccess;
+  private static final String COMPOSITE_ARTIFACTS = "compositeArtifacts";
+
+  private static final String COMPOSITE_CONTENT = "compositeContent";
+
+  private final P2TempBlobUtils p2TempBlobUtils;
+
   private final ArtifactsXmlAbsoluteUrlRemover xmlRewriter;
-  private final JarParser jarParser;
-  private final TempBlobConverter tempBlobConverter;
 
   @Inject
-  public P2ProxyFacetImpl(final P2PathUtils p2PathUtils,
-                          final P2DataAccess p2DataAccess,
-                          final ArtifactsXmlAbsoluteUrlRemover xmlRewriter,
-                          final JarParser jarParser,
-                          final TempBlobConverter tempBlobConverter)
+  public P2ProxyFacetImpl(final P2TempBlobUtils p2TempBlobUtils,
+                          final ArtifactsXmlAbsoluteUrlRemover xmlRewriter)
   {
-    this.p2PathUtils = checkNotNull(p2PathUtils);
-    this.p2DataAccess = checkNotNull(p2DataAccess);
+    this.p2TempBlobUtils = checkNotNull(p2TempBlobUtils);
     this.xmlRewriter = checkNotNull(xmlRewriter);
-    this.jarParser = checkNotNull(jarParser);
-    this.tempBlobConverter = checkNotNull(tempBlobConverter);
   }
 
   // HACK: Workaround for known CGLIB issue, forces an Import-Package for org.sonatype.nexus.repository.config
@@ -88,10 +90,10 @@ public class P2ProxyFacetImpl
 
   @Nullable
   @Override
-  protected Content getCachedContent(final Context context) throws IOException {
+  protected Content getCachedContent(final Context context) {
     AssetKind assetKind = context.getAttributes().require(AssetKind.class);
-    TokenMatcher.State matcherState = p2PathUtils.matcherState(context);
-    switch(assetKind) {
+    TokenMatcher.State matcherState = matcherState(context);
+    switch (assetKind) {
       case ARTIFACT_JAR:
       case ARTIFACT_XML:
       case ARTIFACT_XML_XZ:
@@ -103,12 +105,12 @@ public class P2ProxyFacetImpl
       case COMPOSITE_CONTENT_JAR:
       case COMPOSITE_ARTIFACTS_XML:
       case COMPOSITE_CONTENT_XML:
-        return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.filename(matcherState)));
+        return getAsset(maybePath(matcherState));
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
-        return getAsset(p2PathUtils.path(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState)));
+        return getAsset(path(path(matcherState), name(matcherState), extension(matcherState)));
       case COMPONENT_BINARY:
-        return getAsset(p2PathUtils.binaryPath(p2PathUtils.path(matcherState), p2PathUtils.name(matcherState), p2PathUtils.version(matcherState)));
+        return getAsset(binaryPath(path(matcherState), name(matcherState), version(matcherState)));
       default:
         throw new IllegalStateException();
     }
@@ -117,8 +119,8 @@ public class P2ProxyFacetImpl
   @Override
   protected Content store(final Context context, final Content content) throws IOException {
     AssetKind assetKind = context.getAttributes().require(AssetKind.class);
-    TokenMatcher.State matcherState = p2PathUtils.matcherState(context);
-    switch(assetKind) {
+    TokenMatcher.State matcherState = matcherState(context);
+    switch (assetKind) {
       case ARTIFACT_JAR:
       case ARTIFACT_XML:
       case ARTIFACT_XML_XZ:
@@ -130,15 +132,14 @@ public class P2ProxyFacetImpl
       case COMPOSITE_CONTENT_JAR:
       case COMPOSITE_ARTIFACTS_XML:
       case COMPOSITE_CONTENT_XML:
-        return putMetadata(p2PathUtils.path(p2PathUtils.path(matcherState),
-            p2PathUtils.filename(matcherState)),
+        return putMetadata(maybePath(matcherState),
             content,
             assetKind);
       case COMPONENT_PLUGINS:
       case COMPONENT_FEATURES:
-        return putComponent(p2PathUtils.toP2Attributes(matcherState), content, assetKind);
+        return putComponent(toP2Attributes(matcherState), content, assetKind);
       case COMPONENT_BINARY:
-        return putBinary(p2PathUtils.toP2AttributesBinary(matcherState), content);
+        return putBinary(toP2AttributesBinary(matcherState), content);
       default:
         throw new IllegalStateException();
     }
@@ -152,30 +153,65 @@ public class P2ProxyFacetImpl
   }
 
   private Content removeMirrorUrlFromArtifactsAndSaveMetadataAsAsset(final String path,
-                                  final TempBlob metadataContent,
-                                  final Payload payload,
-                                  final AssetKind assetKind) throws IOException {
+                                                                     final TempBlob metadataContent,
+                                                                     final Payload payload,
+                                                                     final AssetKind assetKind) throws IOException
+  {
 
-    String assetPath = path;
+    Content resultContent;
+    switch (assetKind) {
+      case ARTIFACT_XML:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case ARTIFACT_JAR:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "jar")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case ARTIFACT_XML_XZ:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml.xz")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case COMPOSITE_ARTIFACTS_JAR:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_ARTIFACTS,
+                "jar")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case COMPOSITE_CONTENT_JAR:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_CONTENT,
+                "jar")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case COMPOSITE_CONTENT_XML:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_CONTENT,
+                "xml")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      case COMPOSITE_ARTIFACTS_XML:
+        try (TempBlob newMetadataContent = xmlRewriter
+            .editUrlPathForCompositeRepository(metadataContent, getRemoteUrl(), getRepository(), COMPOSITE_ARTIFACTS,
+                "xml")) {
+          resultContent = saveMetadataAsAsset(path, newMetadataContent, payload, assetKind);
+        }
+        break;
+      default:
+        resultContent = saveMetadataAsAsset(path, metadataContent, payload, assetKind);
+        break;
+    }
 
-    if (assetKind.equals(AssetKind.ARTIFACT_XML)) {
-      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else if (assetKind.equals(AssetKind.ARTIFACT_JAR)) {
-      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "jar")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else if (assetKind.equals(AssetKind.ARTIFACT_XML_XZ)) {
-      try (TempBlob newMetadataContent = xmlRewriter.removeMirrorUrlFromArtifactsXml(metadataContent, getRepository(), "xml.xz")) {
-        return saveMetadataAsAsset(assetPath, newMetadataContent, payload, assetKind);
-      }
-    }
-    else {
-      return saveMetadataAsAsset(assetPath, metadataContent, payload, assetKind);
-    }
+    return resultContent;
   }
 
   @TransactionalStoreBlob
@@ -187,88 +223,62 @@ public class P2ProxyFacetImpl
     StorageTx tx = UnitOfWork.currentTx();
     Bucket bucket = tx.findBucket(getRepository());
 
-    Asset asset = p2DataAccess.findAsset(tx, bucket, assetPath);
+    Asset asset = facet(P2Facet.class).findAsset(tx, bucket, assetPath);
     if (asset == null) {
       asset = tx.createAsset(bucket, getRepository().getFormat());
       asset.name(assetPath);
       asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
     }
 
-    return p2DataAccess.saveAsset(tx, asset, metadataContent, payload);
+    return facet(P2Facet.class).saveAsset(tx, asset, metadataContent, payload);
   }
 
   private Content putBinary(final P2Attributes p2attributes,
-                               final Content content) throws IOException {
+                            final Content content) throws IOException
+  {
     StorageFacet storageFacet = facet(StorageFacet.class);
     try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), HASH_ALGORITHMS)) {
       return doPutBinary(p2attributes, tempBlob, content);
     }
   }
 
+  @TransactionalStoreBlob
   private Content doPutBinary(final P2Attributes p2Attributes,
-                               final TempBlob componentContent,
-                               final Payload payload) throws IOException {
-    return doCreateOrSaveComponent(p2Attributes, componentContent, payload, COMPONENT_BINARY);
+                              final TempBlob componentContent,
+                              final Payload payload) throws IOException
+  {
+    return facet(P2Facet.class).doCreateOrSaveComponent(p2Attributes, componentContent, payload, COMPONENT_BINARY);
   }
 
+  @TransactionalStoreBlob
   private Content putComponent(final P2Attributes p2Attributes,
                                final Content content,
-                               final AssetKind assetKind) throws IOException {
+                               final AssetKind assetKind) throws IOException
+  {
     StorageFacet storageFacet = facet(StorageFacet.class);
     try (TempBlob tempBlob = storageFacet.createTempBlob(content.openInputStream(), HASH_ALGORITHMS)) {
       return doPutComponent(p2Attributes, tempBlob, content, assetKind);
     }
   }
 
-
   private Content doPutComponent(P2Attributes p2Attributes,
-                                   final TempBlob componentContent,
-                                   final Payload payload,
-                                   final AssetKind assetKind) throws IOException {
-    p2Attributes = mergeAttributesFromTempBlob(componentContent, p2Attributes);
-
-    return doCreateOrSaveComponent(p2Attributes, componentContent, payload, assetKind);
-  }
-
-  @TransactionalStoreBlob
-  protected Content doCreateOrSaveComponent(final P2Attributes p2Attributes,
-                                          final TempBlob componentContent,
-                                          final Payload payload,
-                                          final AssetKind assetKind) throws IOException
+                                 final TempBlob componentContent,
+                                 final Payload payload,
+                                 final AssetKind assetKind) throws IOException
   {
-    StorageTx tx = UnitOfWork.currentTx();
-    Bucket bucket = tx.findBucket(getRepository());
+    p2Attributes = p2TempBlobUtils.mergeAttributesFromTempBlob(componentContent, p2Attributes);
 
-    Component component = p2DataAccess.findComponent(tx,
-        getRepository(),
-        p2Attributes.getComponentName(),
-        p2Attributes.getComponentVersion());
-
-    if (component == null) {
-      component = tx.createComponent(bucket, getRepository().getFormat())
-          .name(p2Attributes.getComponentName())
-          .version(p2Attributes.getComponentVersion());
-    }
-    tx.saveComponent(component);
-
-    Asset asset = p2DataAccess.findAsset(tx, bucket, p2Attributes.getPath());
-    if (asset == null) {
-      asset = tx.createAsset(bucket, component);
-      asset.name(p2Attributes.getPath());
-      asset.formatAttributes().set(P_ASSET_KIND, assetKind.name());
-    }
-    return p2DataAccess.saveAsset(tx, asset, componentContent, payload);
+    return facet(P2Facet.class).doCreateOrSaveComponent(p2Attributes, componentContent, payload, assetKind);
   }
 
   @Override
   protected void indicateVerified(final Context context, final Content content, final CacheInfo cacheInfo)
-      throws IOException
   {
     setCacheInfo(content, cacheInfo);
   }
 
   @TransactionalTouchMetadata
-  public void setCacheInfo(final Content content, final CacheInfo cacheInfo) throws IOException {
+  public void setCacheInfo(final Content content, final CacheInfo cacheInfo) {
     StorageTx tx = UnitOfWork.currentTx();
     Asset asset = Content.findAsset(tx, tx.findBucket(getRepository()), content);
     if (asset == null) {
@@ -286,43 +296,19 @@ public class P2ProxyFacetImpl
   protected Content getAsset(final String name) {
     StorageTx tx = UnitOfWork.currentTx();
 
-    Asset asset = p2DataAccess.findAsset(tx, tx.findBucket(getRepository()), name);
+    Asset asset = facet(P2Facet.class).findAsset(tx, tx.findBucket(getRepository()), name);
     if (asset == null) {
       return null;
     }
     if (asset.markAsDownloaded()) {
       tx.saveAsset(asset);
     }
-    return p2DataAccess.toContent(asset, tx.requireBlob(asset.requireBlobRef()));
+    return facet(P2Facet.class).toContent(asset, tx.requireBlob(asset.requireBlobRef()));
   }
 
   @Override
   protected String getUrl(@Nonnull final Context context) {
-    return context.getRequest().getPath().substring(1);
-  }
-
-  @VisibleForTesting
-  protected P2Attributes mergeAttributesFromTempBlob(final TempBlob tempBlob, final P2Attributes p2Attributes) {
-    try (JarInputStream jis = getJar(tempBlob, p2Attributes.getExtension())) {
-      return jarParser
-          .getAttributesFromJarFile(jis)
-          .map(jarP2Attributes -> P2Attributes.builder().merge(p2Attributes, jarP2Attributes).build())
-          .orElse(p2Attributes);
-    }
-    catch (Exception ex) {
-      log.warn("Unable to get version from JarInputStream due to following exception: {}", ex.getMessage());
-    }
-
-    return p2Attributes;
-  }
-
-  @VisibleForTesting
-  protected JarInputStream getJar(final TempBlob tempBlob, final String extension) throws IOException {
-    if (extension.equals("jar")) {
-      return new JarInputStream(tempBlob.get());
-    }
-    else {
-      return new JarInputStream(tempBlobConverter.getJarFromPackGz(tempBlob));
-    }
+    String path = context.getRequest().getPath().substring(1);
+    return unescapePathToUri(path);
   }
 }

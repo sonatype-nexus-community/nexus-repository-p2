@@ -28,28 +28,34 @@ import org.sonatype.nexus.repository.cache.NegativeCacheHandler
 import org.sonatype.nexus.repository.http.HttpHandlers
 import org.sonatype.nexus.repository.http.PartialFetchHandler
 import org.sonatype.nexus.repository.httpclient.HttpClientFacet
+import org.sonatype.nexus.repository.p2.P2Facet
+import org.sonatype.nexus.repository.p2.P2RestoreFacet
 import org.sonatype.nexus.repository.p2.internal.AssetKind
+import org.sonatype.nexus.repository.p2.internal.P2ComponentMaintenance
 import org.sonatype.nexus.repository.p2.internal.P2Format
 import org.sonatype.nexus.repository.p2.internal.security.P2SecurityFacet
 import org.sonatype.nexus.repository.proxy.ProxyHandler
+import org.sonatype.nexus.repository.purge.PurgeUnusedFacet
+import org.sonatype.nexus.repository.routing.RoutingRuleHandler
 import org.sonatype.nexus.repository.search.SearchFacet
 import org.sonatype.nexus.repository.security.SecurityHandler
-import org.sonatype.nexus.repository.storage.DefaultComponentMaintenanceImpl
 import org.sonatype.nexus.repository.storage.StorageFacet
 import org.sonatype.nexus.repository.storage.UnitOfWorkHandler
 import org.sonatype.nexus.repository.types.ProxyType
-import org.sonatype.nexus.repository.purge.PurgeUnusedFacet
 import org.sonatype.nexus.repository.view.ConfigurableViewFacet
 import org.sonatype.nexus.repository.view.Context
 import org.sonatype.nexus.repository.view.Matcher
-import org.sonatype.nexus.repository.view.Route.Builder
+import org.sonatype.nexus.repository.view.Route
 import org.sonatype.nexus.repository.view.Router
+import org.sonatype.nexus.repository.view.Router.Builder
 import org.sonatype.nexus.repository.view.ViewFacet
 import org.sonatype.nexus.repository.view.handlers.BrowseUnsupportedHandler
 import org.sonatype.nexus.repository.view.handlers.ConditionalRequestHandler
 import org.sonatype.nexus.repository.view.handlers.ContentHeadersHandler
 import org.sonatype.nexus.repository.view.handlers.ExceptionHandler
+import org.sonatype.nexus.repository.view.handlers.FormatHighAvailabilitySupportHandler
 import org.sonatype.nexus.repository.view.handlers.HandlerContributor
+import org.sonatype.nexus.repository.view.handlers.HighAvailabilitySupportChecker
 import org.sonatype.nexus.repository.view.handlers.TimingHandler
 import org.sonatype.nexus.repository.view.matchers.ActionMatcher
 import org.sonatype.nexus.repository.view.matchers.RegexMatcher
@@ -58,8 +64,20 @@ import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher
 
 import static org.sonatype.nexus.repository.http.HttpMethods.GET
 import static org.sonatype.nexus.repository.http.HttpMethods.HEAD
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.*
-import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.and
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML_XZ
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_FEATURES
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_PLUGINS
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_JAR
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML_XZ
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.P2_INDEX
 import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.or
 
 /**
@@ -72,14 +90,21 @@ class P2ProxyRecipe
 {
   public static final String NAME = 'p2-proxy'
 
-  private static final CONTENT_NAME = "content"
-  private static final ARTIFACTS_NAME = "artifacts"
-  private static final COMPOSITE_ARTIFACTS = "compositeArtifacts"
-  private static final COMPOSITE_CONTENT = "compositeContent"
-  private static final XML_EXTENSION = ".*[xX][mM][lL]"
-  private static final XML_XZ_EXTENSION = "${XML_EXTENSION}\\.[xX][zZ]"
-  private static final JAR_EXTENSION = ".*[jJ][aA][rR]"
-  private static final INDEX_EXTENSION = ".*[iI][nN][dD][eE][xX]"
+  public  static final String CONTENT_NAME = "content"
+
+  public static final String ARTIFACTS_NAME = "artifacts"
+
+  public static final String COMPOSITE_ARTIFACTS = "compositeArtifacts"
+
+  public static final String COMPOSITE_CONTENT = "compositeContent"
+
+  public static final String XML_EXTENSION = ".*[xX][mM][lL]"
+
+  public static final String XML_XZ_EXTENSION = "${XML_EXTENSION}\\.[xX][zZ]"
+
+  public static final String JAR_EXTENSION = ".*[jJ][aA][rR]"
+
+  public static final String INDEX_EXTENSION = ".*[iI][nN][dD][eE][xX]"
 
   @Inject
   Provider<P2SecurityFacet> securityFacet
@@ -124,7 +149,7 @@ class P2ProxyRecipe
   HandlerContributor handlerContributor
 
   @Inject
-  Provider<DefaultComponentMaintenanceImpl> componentMaintenanceFacet
+  Provider<P2ComponentMaintenance> componentMaintenanceFacet
 
   @Inject
   Provider<HttpClientFacet> httpClientFacet
@@ -145,6 +170,21 @@ class P2ProxyRecipe
   ProxyHandler proxyHandler
 
   @Inject
+  RoutingRuleHandler routingRuleHandler
+
+  @Inject
+  FormatHighAvailabilitySupportHandler highAvailabilitySupportHandler;
+
+  @Inject
+  HighAvailabilitySupportChecker highAvailabilitySupportChecker
+
+  @Inject
+  Provider<P2RestoreFacet> p2RestoreFacet
+
+  @Inject
+  Provider<P2Facet> p2Facet
+
+  @Inject
   P2ProxyRecipe(@Named(ProxyType.NAME) final Type type,
                 @Named(P2Format.NAME) final Format format) {
     super(type, format)
@@ -162,38 +202,26 @@ class P2ProxyRecipe
     repository.attach(searchFacet.get())
     repository.attach(purgeUnusedFacet.get())
     repository.attach(attributesFacet.get())
+    repository.attach(p2Facet.get())
+    repository.attach(p2RestoreFacet.get())
   }
 
-  Closure assetKindHandler = { Context context, AssetKind value ->
-    context.attributes.set(AssetKind, value)
-    return context.proceed()
-  }
-
-  static Builder pluginsMatcher() {
-    new Builder().matcher(
-        and(
-            new ActionMatcher(GET, HEAD),
-            new RegexMatcher('.*plugins\\/.*'),
-            componentFileTypeMatcher()
-        ))
-  }
-
-  static Builder binaryMatcher() {
-    new Builder().matcher(
-        and(
-            new ActionMatcher(GET, HEAD),
-            new RegexMatcher('.*binary\\/.*'),
-            binaryFileTypeMatcher()
-        ))
-  }
-
-  static Builder featuresMatcher() {
-    new Builder().matcher(
-        and(
-            new ActionMatcher(GET, HEAD),
-            new RegexMatcher('.*features\\/.*'),
-            componentFileTypeMatcher()
-        ))
+  static Matcher pluginBinaryAndFeaturesMatcher(final String pattern,
+                                                final AssetKind assetKind,
+                                                final Matcher matcher,
+                                                final String... actions) {
+    LogicMatchers.and(
+        new ActionMatcher(actions),
+        new RegexMatcher(pattern),
+        matcher,
+        new Matcher() {
+          @Override
+          boolean matches(final Context context) {
+            context.attributes.set(AssetKind.class, assetKind)
+            return true
+          }
+        }
+    )
   }
 
   static Matcher componentFileTypeMatcher() {
@@ -207,228 +235,92 @@ class P2ProxyRecipe
     return tokenMatcherForBinary()
   }
 
-  static Builder matchRequestWithExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
-    new Builder().matcher(
-        and(
-            new ActionMatcher(GET, HEAD),
-            tokenMatcherForExtensionAndName(extension, name, path)
-        ))
+  static TokenMatcher tokenMatcherForBinary() {
+    new TokenMatcher("/{path:.*}/{name:.*}_{version:.*}")
   }
 
   static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
-    new TokenMatcher("{path:${path}}/{name:${name}}.{extension:${extension}}")
+    new TokenMatcher("/{path:${path}}/{name:${name}}.{extension:${extension}}")
   }
 
-  static TokenMatcher tokenMatcherForBinary() {
-    new TokenMatcher("{path:.*}/{name:.*}_{version:.*}")
+  static Matcher buildSimpleMatcher(final String path, final String name, final String extension, final AssetKind assetKind) {
+    buildTokenMatcherForPatternAndAssetKind("/{path:${path}}/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
+  }
+
+  static Matcher buildSimpleMatcherAtRoot(final String name, final String extension, final AssetKind assetKind) {
+    buildTokenMatcherForPatternAndAssetKind("/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
+  }
+
+  static Matcher buildTokenMatcherForPatternAndAssetKind(final String pattern,
+                                                         final AssetKind assetKind,
+                                                         final String... actions) {
+    LogicMatchers.and(
+        new ActionMatcher(actions),
+        new TokenMatcher(pattern),
+        new Matcher() {
+          @Override
+          boolean matches(final Context context) {
+            context.attributes.set(AssetKind.class, assetKind)
+            return true
+          }
+        }
+    )
   }
 
   /**
    * Configure {@link ViewFacet}.
    */
   private ViewFacet configure(final ConfigurableViewFacet facet) {
-    Router.Builder builder = new Router.Builder()
+    Builder builder = new Builder()
 
-    builder.route(matchRequestWithExtensionAndName(INDEX_EXTENSION, 'p2', '.?')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(P2_INDEX))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
+    [buildSimpleMatcher('.*', 'p2', 'index', P2_INDEX),
+     buildSimpleMatcherAtRoot('p2', 'index', P2_INDEX),
+     buildSimpleMatcherAtRoot(COMPOSITE_ARTIFACTS, JAR_EXTENSION, COMPOSITE_ARTIFACTS_JAR),
+     buildSimpleMatcherAtRoot(COMPOSITE_ARTIFACTS, XML_EXTENSION, COMPOSITE_ARTIFACTS_XML),
+     buildSimpleMatcherAtRoot(COMPOSITE_CONTENT, JAR_EXTENSION, COMPOSITE_CONTENT_JAR),
+     buildSimpleMatcherAtRoot(COMPOSITE_CONTENT, XML_EXTENSION, COMPOSITE_CONTENT_XML),
 
-    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, COMPOSITE_ARTIFACTS, '.?')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPOSITE_ARTIFACTS_JAR))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
+     buildSimpleMatcherAtRoot(CONTENT_NAME, JAR_EXTENSION, CONTENT_JAR),
+     buildSimpleMatcherAtRoot(CONTENT_NAME, XML_EXTENSION, CONTENT_XML),
+     buildSimpleMatcherAtRoot(CONTENT_NAME, XML_XZ_EXTENSION, CONTENT_XML_XZ),
+     buildSimpleMatcherAtRoot(ARTIFACTS_NAME, JAR_EXTENSION, ARTIFACT_JAR),
+     buildSimpleMatcherAtRoot(ARTIFACTS_NAME, XML_EXTENSION, ARTIFACT_XML),
+     buildSimpleMatcherAtRoot(ARTIFACTS_NAME, XML_XZ_EXTENSION, ARTIFACT_XML_XZ),
 
-    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, COMPOSITE_ARTIFACTS, '.?')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPOSITE_ARTIFACTS_XML))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, COMPOSITE_CONTENT, '.?')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPOSITE_CONTENT_JAR))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, COMPOSITE_CONTENT, '.?')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPOSITE_CONTENT_XML))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, ARTIFACTS_NAME, '.*')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(ARTIFACT_JAR))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, ARTIFACTS_NAME, '.*')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(ARTIFACT_XML))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, ARTIFACTS_NAME, '.*')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(ARTIFACT_XML_XZ))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(matchRequestWithExtensionAndName(JAR_EXTENSION, CONTENT_NAME, '.*')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(CONTENT_JAR))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(matchRequestWithExtensionAndName(XML_EXTENSION, CONTENT_NAME, '.*')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(CONTENT_XML))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(matchRequestWithExtensionAndName(XML_XZ_EXTENSION, CONTENT_NAME, '.*')
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(CONTENT_XML_XZ))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(binaryMatcher()
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPONENT_BINARY))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(featuresMatcher()
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPONENT_FEATURES))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
-
-    builder.route(pluginsMatcher()
-        .handler(timingHandler)
-        .handler(assetKindHandler.rcurry(COMPONENT_PLUGINS))
-        .handler(securityHandler)
-        .handler(exceptionHandler)
-        .handler(handlerContributor)
-        .handler(negativeCacheHandler)
-        .handler(conditionalRequestHandler)
-        .handler(partialFetchHandler)
-        .handler(contentHeadersHandler)
-        .handler(unitOfWorkHandler)
-        .handler(proxyHandler)
-        .create())
+     buildSimpleMatcher('.*', ARTIFACTS_NAME, JAR_EXTENSION, ARTIFACT_JAR),
+     buildSimpleMatcher('.*', ARTIFACTS_NAME, XML_EXTENSION, ARTIFACT_XML),
+     buildSimpleMatcher('.*', ARTIFACTS_NAME, XML_XZ_EXTENSION, ARTIFACT_XML_XZ),
+     buildSimpleMatcher('.*', CONTENT_NAME, JAR_EXTENSION, CONTENT_JAR),
+     buildSimpleMatcher('.*', CONTENT_NAME, XML_EXTENSION, CONTENT_XML),
+     buildSimpleMatcher('.*', CONTENT_NAME, XML_XZ_EXTENSION, CONTENT_XML_XZ),
+     pluginBinaryAndFeaturesMatcher('.*features\\/.*', COMPONENT_FEATURES, componentFileTypeMatcher(), GET, HEAD),
+     pluginBinaryAndFeaturesMatcher('.*binary\\/.*', COMPONENT_BINARY, binaryFileTypeMatcher(), GET, HEAD),
+     pluginBinaryAndFeaturesMatcher('.*plugins\\/.*', COMPONENT_PLUGINS, componentFileTypeMatcher(), GET, HEAD)].each { matcher ->
+      builder.route(new Route.Builder().matcher(matcher)
+          .handler(timingHandler)
+          .handler(securityHandler)
+          .handler(highAvailabilitySupportHandler)
+          .handler(routingRuleHandler)
+          .handler(exceptionHandler)
+          .handler(handlerContributor)
+          .handler(negativeCacheHandler)
+          .handler(conditionalRequestHandler)
+          .handler(partialFetchHandler)
+          .handler(contentHeadersHandler)
+          .handler(unitOfWorkHandler)
+          .handler(proxyHandler)
+          .create())
+    }
 
     builder.defaultHandlers(HttpHandlers.notFound())
 
     facet.configure(builder.create())
 
     return facet
+  }
+
+  @Override
+  boolean isFeatureEnabled() {
+    return highAvailabilitySupportChecker.isSupported(getFormat().getValue());
   }
 }
