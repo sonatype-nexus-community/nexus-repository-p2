@@ -46,10 +46,8 @@ import org.sonatype.nexus.repository.view.ConfigurableViewFacet
 import org.sonatype.nexus.repository.view.Context
 import org.sonatype.nexus.repository.view.Matcher
 import org.sonatype.nexus.repository.view.Route
-import org.sonatype.nexus.repository.view.Router
 import org.sonatype.nexus.repository.view.Router.Builder
 import org.sonatype.nexus.repository.view.ViewFacet
-import org.sonatype.nexus.repository.view.handlers.BrowseUnsupportedHandler
 import org.sonatype.nexus.repository.view.handlers.ConditionalRequestHandler
 import org.sonatype.nexus.repository.view.handlers.ContentHeadersHandler
 import org.sonatype.nexus.repository.view.handlers.ExceptionHandler
@@ -141,9 +139,6 @@ class P2ProxyRecipe
 
   @Inject
   UnitOfWorkHandler unitOfWorkHandler
-
-  @Inject
-  BrowseUnsupportedHandler browseUnsupportedHandler
 
   @Inject
   HandlerContributor handlerContributor
@@ -272,6 +267,8 @@ class P2ProxyRecipe
    */
   private ViewFacet configure(final ConfigurableViewFacet facet) {
     Builder builder = new Builder()
+
+    addBrowseUnsupportedRoute(builder)
 
     [buildSimpleMatcher('.*', 'p2', 'index', P2_INDEX),
      buildSimpleMatcherAtRoot('p2', 'index', P2_INDEX),
