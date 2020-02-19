@@ -71,7 +71,7 @@ The table below outlines what version of Nexus Repository Manager the plugin was
 | Plugin Version    | Nexus Repository Manager Version |
 |-------------------|----------------------------------|
 | v0.0.2            | 3.8.0-02                         |
-| v1.0.0 In product | 3.21.0+                          |
+| v1.0.2 In product | 3.21.0+                          |
 
 If a new version of Nexus Repository Manager is released and the plugin needs changes, a new release will be made, and this
 table will be updated to indicate which version of Nexus Repository Manager it will function against. This is done on a time 
