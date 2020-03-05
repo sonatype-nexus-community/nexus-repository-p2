@@ -106,11 +106,11 @@ then install the plugin with the options shown below:
 Installations done via the Karaf console will be wiped out with every restart of Nexus Repository Manager. This is a
 good installation path if you are just testing or doing development on the plugin.
 
-* Enable Nexus console: edit `<nexus_dir>/bin/nexus.vmoptions` and change `karaf.startLocalConsole`  to `true`.
+* Enable the NXRM console: edit `<nexus_dir>/bin/nexus.vmoptions` and change `karaf.startLocalConsole`  to `true`.
 
   More details here: [Bundle Development](https://help.sonatype.com/display/NXRM3/Bundle+Development+Overview)
 
-* Run Nexus' console:
+* Run NXRM's console:
   ```
   # sudo su - nexus
   $ cd <nexus_dir>/bin
@@ -141,11 +141,11 @@ If you are trying to use the p2 plugin permanently, it likely makes more sense t
 * Make the following additions marked with + to `<nexus_dir>/system/org/sonatype/nexus/assemblies/nexus-core-feature/3.x.y/nexus-core-feature-3.x.y-features.xml`
 
    ```
-         <feature prerequisite="false" dependency="false">nexus-repository-rubygems</feature>
+         <feature prerequisite="false" dependency="false">wrap</feature>
    +     <feature prerequisite="false" dependency="false">nexus-repository-p2</feature>
-         <feature prerequisite="false" dependency="false">nexus-repository-gitlfs</feature>
-     </feature>
    ```
+   to the `<feature name="nexus-core-feature" description="org.sonatype.nexus.assemblies:nexus-core-feature" version="3.x.y.xy">` section below the last (above is an example, the exact last one may vary).
+    
    And
    ```
    + <feature name="nexus-repository-p2" description="org.sonatype.nexus.plugins:nexus-repository-p2" version="1.0.0">
@@ -154,6 +154,8 @@ If you are trying to use the p2 plugin permanently, it likely makes more sense t
    + </feature>
     </features>
    ```
+   as the last feature.
+   
 This will cause the plugin to be loaded and started with each startup of Nexus Repository Manager.
 
 ## The Fine Print
