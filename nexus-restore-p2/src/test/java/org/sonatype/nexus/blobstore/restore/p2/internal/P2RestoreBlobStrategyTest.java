@@ -17,14 +17,12 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.Properties;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mock;
 import org.sonatype.goodies.testsupport.TestSupport;
 import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.blobstore.api.BlobStore;
 import org.sonatype.nexus.blobstore.api.BlobStoreManager;
 import org.sonatype.nexus.blobstore.restore.RestoreBlobData;
+import org.sonatype.nexus.common.hash.HashAlgorithm;
 import org.sonatype.nexus.common.log.DryRunPrefix;
 import org.sonatype.nexus.common.node.NodeAccess;
 import org.sonatype.nexus.repository.Repository;
@@ -33,6 +31,10 @@ import org.sonatype.nexus.repository.p2.P2RestoreFacet;
 import org.sonatype.nexus.repository.storage.AssetBlob;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.StorageTx;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mock;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,7 +46,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sonatype.nexus.common.hash.HashAlgorithm.SHA1;
 
 /**
  * @since 0.next
@@ -119,6 +120,10 @@ public class P2RestoreBlobStrategyTest extends TestSupport
     properties.setProperty("@BlobStore.content-type", "application/java-archive");
     properties.setProperty("@BlobStore.blob-name", PACKAGE_PATH);
     properties.setProperty("sha1", "ac7306bee8742701a1e81a702685a55c17b07e4a");
+    properties.setProperty("sha256", "c96079af9c3b1506894adf617f1db4710974dc947502b8b0f938616a520d35e6");
+    properties.setProperty("sha512",
+        "97c2358a587af72b43095dc6525bf32b34a7391f7d2a4af8087640b5cecba0ef2cd2965e9a749742341a0dc57ebfcd4c7766dc53580def74adf19a58dd2e980d");
+    properties.setProperty("md5", "b20040eb2bfd202bbc5e734885e71549");
   }
 
   @Test
@@ -134,7 +139,8 @@ public class P2RestoreBlobStrategyTest extends TestSupport
 
   @Test
   public void testCorrectHashAlgorithmsAreSupported() {
-    assertThat(restoreBlobStrategy.getHashAlgorithms(), containsInAnyOrder(SHA1));
+    assertThat(restoreBlobStrategy.getHashAlgorithms(),
+        containsInAnyOrder(HashAlgorithm.ALL_HASH_ALGORITHMS.values().toArray()));
   }
 
   @Test

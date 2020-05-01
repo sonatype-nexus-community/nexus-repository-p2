@@ -111,7 +111,7 @@ public class P2RestoreFacetImpl
   {
     P2Attributes attributes;
     AssetKind assetKind = P2PathUtils.getAssetKind(blobName);
-    if (AssetKind.COMPONENT_BINARY == assetKind) {
+    if (AssetKind.BINARY_BUNDLE == assetKind) {
       attributes = P2PathUtils.getBinaryAttributesFromBlobName(blobName);
     }
     else {

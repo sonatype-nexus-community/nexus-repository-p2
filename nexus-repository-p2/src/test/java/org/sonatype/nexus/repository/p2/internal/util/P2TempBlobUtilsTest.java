@@ -14,17 +14,17 @@ package org.sonatype.nexus.repository.p2.internal.util;
 
 import java.io.IOException;
 
+import org.sonatype.goodies.testsupport.TestSupport;
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.storage.TempBlob;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
-import org.sonatype.goodies.testsupport.TestSupport;
-import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
-import org.sonatype.nexus.repository.p2.internal.metadata.ArtifactsXmlAbsoluteUrlRemover;
-import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.storage.TempBlob;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -44,9 +44,6 @@ public class P2TempBlobUtilsTest
   private static final String JAR_NAME = "org.eclipse.core.runtime.feature_1.2.100.v20170912-1859.jar";
 
   private P2TempBlobUtils p2TempBlobUtils;
-
-  @Mock
-  private ArtifactsXmlAbsoluteUrlRemover artifactsXmlAbsoluteUrlRemover;
 
   @Mock
   private TempBlobConverter tempBlobConverter;

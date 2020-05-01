@@ -17,27 +17,24 @@ import java.util.Properties;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.ops4j.pax.exam.Configuration;
-import org.ops4j.pax.exam.Option;
 import org.sonatype.goodies.httpfixture.server.fluent.Behaviours;
 import org.sonatype.goodies.httpfixture.server.fluent.Server;
 import org.sonatype.nexus.blobstore.api.Blob;
 import org.sonatype.nexus.blobstore.api.BlobStoreManager;
 import org.sonatype.nexus.blobstore.restore.RestoreBlobStrategy;
 import org.sonatype.nexus.common.app.BaseUrlHolder;
-import org.sonatype.nexus.pax.exam.NexusPaxExamSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.http.HttpStatus;
 import org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetEntityAdapter;
 import org.sonatype.nexus.repository.storage.StorageTx;
-import org.sonatype.nexus.testsuite.testsupport.NexusITSupport;
 import org.sonatype.nexus.testsuite.testsupport.blobstore.restore.BlobstoreRestoreTestHelper;
+
+import org.hamcrest.Matchers;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -56,31 +53,20 @@ public class P2RestoreBlobIT
   @Named(P2Format.NAME)
   private RestoreBlobStrategy p2RestoreBlobStrategy;
 
-  private Server proxyServer;
-
   private P2Client proxyClient;
 
   private Repository proxyRepository;
-
-  @Configuration
-  public static Option[] configureNexus() {
-    return NexusPaxExamSupport.options(
-        NexusITSupport.configureNexusBase(),
-        nexusFeature("org.sonatype.nexus.plugins", "nexus-repository-p2"),
-        nexusFeature("org.sonatype.nexus.plugins", "nexus-restore-p2")
-    );
-  }
 
   @Before
   public void setup() throws Exception {
     BaseUrlHolder.set(this.nexusUrl.toString());
 
-    proxyServer = Server.withPort(0)
+    server = Server.withPort(0)
         .serve("/" + VALID_PACKAGE_URL)
         .withBehaviours(Behaviours.file(testData.resolveFile(PACKAGE_NAME)))
         .start();
 
-    proxyRepository = repos.createP2Proxy(P2ProxyRecipe.NAME, "http://localhost:" + proxyServer.getPort() + "/");
+    proxyRepository = repos.createP2Proxy(P2ProxyRecipe.NAME, "http://localhost:" + server.getPort() + "/");
     proxyClient = p2Client(proxyRepository);
 
     assertThat(proxyClient.get(VALID_PACKAGE_URL).getStatusLine().getStatusCode(), is(HttpStatus.OK));
@@ -88,8 +74,8 @@ public class P2RestoreBlobIT
 
   @After
   public void tearDown() throws Exception {
-    if (proxyServer != null) {
-      proxyServer.stop();
+    if (server != null) {
+      server.stop();
     }
   }
 

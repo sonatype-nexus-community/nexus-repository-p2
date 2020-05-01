@@ -38,7 +38,6 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 
 import static javax.xml.xpath.XPathConstants.NODE;
-import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
 
 /**
  * @since 1.0.0
@@ -70,7 +69,7 @@ public class AttributesParserFeatureXml
     documentJarExtractor = new JarExtractor<Document>(tempBlobConverter)
     {
       @Override
-      protected Document createSpecificEntity(JarInputStream jis, JarEntry jarEntry)
+      protected Document createSpecificEntity(final JarInputStream jis, final JarEntry jarEntry)
           throws IOException, AttributeParsingException
       {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -103,7 +102,7 @@ public class AttributesParserFeatureXml
         pluginId = extractValueFromDocument(XML_PLUGIN_ID_PATH, document);
       }
 
-      String componentName = normalizeComponentName(propertyParser.extractValueFromProperty(pluginId, propertiesOpt));
+      String componentName = propertyParser.extractValueFromProperty(pluginId, propertiesOpt);
       p2AttributesBuilder
           .componentName(componentName)
           .pluginName(

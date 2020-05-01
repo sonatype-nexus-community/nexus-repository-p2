@@ -22,21 +22,19 @@ import org.sonatype.nexus.repository.browse.BrowseTestSupport;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
 
-import org.junit.Assert;
 import org.junit.Test;
 
-import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.DIVIDER;
+import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.assertThat;
 
 public class P2BrowseNodeGeneratorTest
     extends BrowseTestSupport
 {
+  private static final String SUBSITE = "945d37142fbf9b4c2885a99ebcf353ab852479348e7e86446557f7f05fe87e83";
+
   private static final List<String> COMPONENT_NAME = Arrays.asList("org", "tigris", "subversion", "clientadapter", "svnkit");
 
   private static final String COMPONENT_VERSION = "1.7.5";
-
-  private static final String BASE_URL = "www.dummy-url.com";
-
-  private static final String REMOTE_PREFIX = "http/" + BASE_URL;
 
   private static final String FEATURES = "features";
 
@@ -45,52 +43,65 @@ public class P2BrowseNodeGeneratorTest
   private P2BrowseNodeGenerator generator = new P2BrowseNodeGenerator();
 
   @Test
-  public void testCompositeRepository() {
+  public void testRepositoryAtRoot() {
+    for (String file : componentLessFiles) {
+      Asset asset = createAsset(file);
+
+      List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getBrowsePath)
+          .collect(Collectors.toList());
+      assertThat(paths, contains(file));
+    }
+
+    String assetName = COMPONENT_NAME.stream().collect(Collectors.joining(".")) + '_' + COMPONENT_VERSION;
     Component component = createComponent(String.join(".", COMPONENT_NAME), null, COMPONENT_VERSION);
-    Asset asset = createAsset(REMOTE_PREFIX + DIVIDER + FEATURES + DIVIDER + ASSET_NAME);
+    for (String directory : knownSubDirectories) {
+      Asset asset = createAsset(directory + '/' + assetName);
 
-    List<String> paths = generator.computeAssetPaths(asset, component).stream().map(BrowsePaths::getBrowsePath).collect(
-        Collectors.toList());
-    List<String> expectedResult = new ArrayList<>();
-    expectedResult.add(BASE_URL);
-    expectedResult.addAll(COMPONENT_NAME);
-    expectedResult.addAll(Arrays.asList(COMPONENT_VERSION, FEATURES, ASSET_NAME));
-    Assert.assertEquals(expectedResult, paths);
+      List<String> paths = generator.computeAssetPaths(asset, component).stream()
+          .map(BrowsePaths::getBrowsePath)
+          .collect(Collectors.toList());
+
+      List<String> expectedPaths = new ArrayList<>();
+      expectedPaths.add(directory);
+      expectedPaths.addAll(COMPONENT_NAME);
+      expectedPaths.add(COMPONENT_VERSION);
+      expectedPaths.add(assetName);
+      assertThat(paths, contains(expectedPaths.toArray()));
+    }
   }
 
   @Test
-  public void testCompositeRepositoryWithoutComponent() {
-    Asset asset = createAsset(REMOTE_PREFIX + DIVIDER + ASSET_NAME);
+  public void testNestedRepository() {
+    for (String file : componentLessFiles) {
+      String path = SUBSITE + "/" + file;
+      Asset asset = createAsset(path);
 
-    List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getBrowsePath).collect(
-        Collectors.toList());
-    List<String> expectedResult = new ArrayList<>();
-    expectedResult.add(BASE_URL);
-    expectedResult.add(ASSET_NAME);
-    Assert.assertEquals(expectedResult, paths);
-  }
+      List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getBrowsePath)
+          .collect(Collectors.toList());
+      assertThat(paths, contains(SUBSITE, file));
+    }
 
-  @Test
-  public void testSimpleRepository() {
+    String assetName = COMPONENT_NAME.stream().collect(Collectors.joining(".")) + '_' + COMPONENT_VERSION;
     Component component = createComponent(String.join(".", COMPONENT_NAME), null, COMPONENT_VERSION);
-    Asset asset = createAsset(FEATURES + DIVIDER + ASSET_NAME);
+    for (String directory : knownSubDirectories) {
+      Asset asset = createAsset(SUBSITE + '/' + directory + '/' + assetName);
 
-    List<String> paths = generator.computeAssetPaths(asset, component).stream().map(BrowsePaths::getBrowsePath).collect(
-        Collectors.toList());
-    List<String> expectedResult = new ArrayList<>();
-    expectedResult.addAll(COMPONENT_NAME);
-    expectedResult.addAll(Arrays.asList(COMPONENT_VERSION, FEATURES, ASSET_NAME));
-    Assert.assertEquals(expectedResult, paths);
+      List<String> paths = generator.computeAssetPaths(asset, component).stream().map(BrowsePaths::getBrowsePath)
+          .collect(Collectors.toList());
+
+      List<String> expectedPaths = new ArrayList<>();
+      expectedPaths.add(SUBSITE);
+      expectedPaths.add(directory);
+      expectedPaths.addAll(COMPONENT_NAME);
+      expectedPaths.add(COMPONENT_VERSION);
+      expectedPaths.add(assetName);
+      assertThat(paths, contains(expectedPaths.toArray()));
+    }
   }
 
-  @Test
-  public void testSimpleRepositoryWithoutComponent() {
-    Asset asset = createAsset(ASSET_NAME);
+  private String[] knownSubDirectories = new String[]{"plugins", "features", "binary"};
 
-    List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getBrowsePath).collect(
-        Collectors.toList());
-    List<String> expectedResult = new ArrayList<>();
-    expectedResult.add(ASSET_NAME);
-    Assert.assertEquals(expectedResult, paths);
-  }
+  private String[] componentLessFiles = new String[]{"p2.index", "artifacts.xml", "artifacts.jar", "artifacts.xml.xz",
+      "content.xml", "content.jar", "content.xml.xz", "compositeArtifacts.xml", "compositeArtifacts.jar",
+      "compositeContent.xml", "compositeContent.jar"};
 }

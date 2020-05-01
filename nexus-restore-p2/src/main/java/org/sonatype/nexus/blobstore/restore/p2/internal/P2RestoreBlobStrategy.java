@@ -15,13 +15,13 @@ package org.sonatype.nexus.blobstore.restore.p2.internal;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import com.google.common.collect.ImmutableList;
 import org.sonatype.nexus.blobstore.api.BlobStoreManager;
 import org.sonatype.nexus.blobstore.restore.BaseRestoreBlobStrategy;
 import org.sonatype.nexus.blobstore.restore.RestoreBlobData;
@@ -37,7 +37,6 @@ import org.sonatype.nexus.repository.storage.Query;
 
 import static com.google.common.base.Preconditions.checkState;
 import static org.eclipse.aether.util.StringUtils.isEmpty;
-import static org.sonatype.nexus.common.hash.HashAlgorithm.SHA1;
 
 /**
  * @since 0.next
@@ -91,7 +90,7 @@ public class P2RestoreBlobStrategy
   @Nonnull
   @Override
   protected List<HashAlgorithm> getHashAlgorithms() {
-    return ImmutableList.of(SHA1);
+    return HashAlgorithm.ALL_HASH_ALGORITHMS.values().stream().collect(Collectors.toList());
   }
 
   @Override

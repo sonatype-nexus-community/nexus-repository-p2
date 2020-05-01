@@ -46,8 +46,8 @@ import org.sonatype.nexus.repository.view.ConfigurableViewFacet
 import org.sonatype.nexus.repository.view.Context
 import org.sonatype.nexus.repository.view.Matcher
 import org.sonatype.nexus.repository.view.Route
-import org.sonatype.nexus.repository.view.Router.Builder
 import org.sonatype.nexus.repository.view.ViewFacet
+import org.sonatype.nexus.repository.view.Router.Builder
 import org.sonatype.nexus.repository.view.handlers.ConditionalRequestHandler
 import org.sonatype.nexus.repository.view.handlers.ContentHeadersHandler
 import org.sonatype.nexus.repository.view.handlers.ExceptionHandler
@@ -62,20 +62,7 @@ import org.sonatype.nexus.repository.view.matchers.token.TokenMatcher
 
 import static org.sonatype.nexus.repository.http.HttpMethods.GET
 import static org.sonatype.nexus.repository.http.HttpMethods.HEAD
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_JAR
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.ARTIFACT_XML_XZ
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_BINARY
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_FEATURES
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPONENT_PLUGINS
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_JAR
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_ARTIFACTS_XML
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_JAR
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.COMPOSITE_CONTENT_XML
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_JAR
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.CONTENT_XML_XZ
-import static org.sonatype.nexus.repository.p2.internal.AssetKind.P2_INDEX
+import static org.sonatype.nexus.repository.p2.internal.AssetKind.*
 import static org.sonatype.nexus.repository.view.matchers.logic.LogicMatchers.or
 
 /**
@@ -87,22 +74,6 @@ class P2ProxyRecipe
     extends RecipeSupport
 {
   public static final String NAME = 'p2-proxy'
-
-  public  static final String CONTENT_NAME = "content"
-
-  public static final String ARTIFACTS_NAME = "artifacts"
-
-  public static final String COMPOSITE_ARTIFACTS = "compositeArtifacts"
-
-  public static final String COMPOSITE_CONTENT = "compositeContent"
-
-  public static final String XML_EXTENSION = ".*[xX][mM][lL]"
-
-  public static final String XML_XZ_EXTENSION = "${XML_EXTENSION}\\.[xX][zZ]"
-
-  public static final String JAR_EXTENSION = ".*[jJ][aA][rR]"
-
-  public static final String INDEX_EXTENSION = ".*[iI][nN][dD][eE][xX]"
 
   @Inject
   Provider<P2SecurityFacet> securityFacet
@@ -145,6 +116,9 @@ class P2ProxyRecipe
 
   @Inject
   Provider<P2ComponentMaintenance> componentMaintenanceFacet
+
+  @Inject
+  Provider<P2ProxyCacheInvalidatorFacetImpl> cacheInvalidatorFacet
 
   @Inject
   Provider<HttpClientFacet> httpClientFacet
@@ -199,51 +173,7 @@ class P2ProxyRecipe
     repository.attach(attributesFacet.get())
     repository.attach(p2Facet.get())
     repository.attach(p2RestoreFacet.get())
-  }
-
-  static Matcher pluginBinaryAndFeaturesMatcher(final String pattern,
-                                                final AssetKind assetKind,
-                                                final Matcher matcher,
-                                                final String... actions) {
-    LogicMatchers.and(
-        new ActionMatcher(actions),
-        new RegexMatcher(pattern),
-        matcher,
-        new Matcher() {
-          @Override
-          boolean matches(final Context context) {
-            context.attributes.set(AssetKind.class, assetKind)
-            return true
-          }
-        }
-    )
-  }
-
-  static Matcher componentFileTypeMatcher() {
-    return or(
-        tokenMatcherForExtensionAndName('jar'),
-        tokenMatcherForExtensionAndName('jar.pack.gz')
-    )
-  }
-
-  static Matcher binaryFileTypeMatcher() {
-    return tokenMatcherForBinary()
-  }
-
-  static TokenMatcher tokenMatcherForBinary() {
-    new TokenMatcher("/{path:.*}/{name:.*}_{version:.*}")
-  }
-
-  static TokenMatcher tokenMatcherForExtensionAndName(final String extension, final String name = '.+', final String path = '.+') {
-    new TokenMatcher("/{path:${path}}/{name:${name}}.{extension:${extension}}")
-  }
-
-  static Matcher buildSimpleMatcher(final String path, final String name, final String extension, final AssetKind assetKind) {
-    buildTokenMatcherForPatternAndAssetKind("/{path:${path}}/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
-  }
-
-  static Matcher buildSimpleMatcherAtRoot(final String name, final String extension, final AssetKind assetKind) {
-    buildTokenMatcherForPatternAndAssetKind("/{name:${name}}.{extension:${extension}}", assetKind, GET, HEAD)
+    repository.attach(cacheInvalidatorFacet.get())
   }
 
   static Matcher buildTokenMatcherForPatternAndAssetKind(final String pattern,
@@ -270,29 +200,7 @@ class P2ProxyRecipe
 
     addBrowseUnsupportedRoute(builder)
 
-    [buildSimpleMatcher('.*', 'p2', 'index', P2_INDEX),
-     buildSimpleMatcherAtRoot('p2', 'index', P2_INDEX),
-     buildSimpleMatcherAtRoot(COMPOSITE_ARTIFACTS, JAR_EXTENSION, COMPOSITE_ARTIFACTS_JAR),
-     buildSimpleMatcherAtRoot(COMPOSITE_ARTIFACTS, XML_EXTENSION, COMPOSITE_ARTIFACTS_XML),
-     buildSimpleMatcherAtRoot(COMPOSITE_CONTENT, JAR_EXTENSION, COMPOSITE_CONTENT_JAR),
-     buildSimpleMatcherAtRoot(COMPOSITE_CONTENT, XML_EXTENSION, COMPOSITE_CONTENT_XML),
-
-     buildSimpleMatcherAtRoot(CONTENT_NAME, JAR_EXTENSION, CONTENT_JAR),
-     buildSimpleMatcherAtRoot(CONTENT_NAME, XML_EXTENSION, CONTENT_XML),
-     buildSimpleMatcherAtRoot(CONTENT_NAME, XML_XZ_EXTENSION, CONTENT_XML_XZ),
-     buildSimpleMatcherAtRoot(ARTIFACTS_NAME, JAR_EXTENSION, ARTIFACT_JAR),
-     buildSimpleMatcherAtRoot(ARTIFACTS_NAME, XML_EXTENSION, ARTIFACT_XML),
-     buildSimpleMatcherAtRoot(ARTIFACTS_NAME, XML_XZ_EXTENSION, ARTIFACT_XML_XZ),
-
-     buildSimpleMatcher('.*', ARTIFACTS_NAME, JAR_EXTENSION, ARTIFACT_JAR),
-     buildSimpleMatcher('.*', ARTIFACTS_NAME, XML_EXTENSION, ARTIFACT_XML),
-     buildSimpleMatcher('.*', ARTIFACTS_NAME, XML_XZ_EXTENSION, ARTIFACT_XML_XZ),
-     buildSimpleMatcher('.*', CONTENT_NAME, JAR_EXTENSION, CONTENT_JAR),
-     buildSimpleMatcher('.*', CONTENT_NAME, XML_EXTENSION, CONTENT_XML),
-     buildSimpleMatcher('.*', CONTENT_NAME, XML_XZ_EXTENSION, CONTENT_XML_XZ),
-     pluginBinaryAndFeaturesMatcher('.*features\\/.*', COMPONENT_FEATURES, componentFileTypeMatcher(), GET, HEAD),
-     pluginBinaryAndFeaturesMatcher('.*binary\\/.*', COMPONENT_BINARY, binaryFileTypeMatcher(), GET, HEAD),
-     pluginBinaryAndFeaturesMatcher('.*plugins\\/.*', COMPONENT_PLUGINS, componentFileTypeMatcher(), GET, HEAD)].each { matcher ->
+    (createMatchers('/{site:[0-9a-f]{64\\}}') + createMatchers('')).each { matcher ->
       builder.route(new Route.Builder().matcher(matcher)
           .handler(timingHandler)
           .handler(securityHandler)
@@ -314,6 +222,32 @@ class P2ProxyRecipe
     facet.configure(builder.create())
 
     return facet
+  }
+
+  List<Matcher> createMatchers(String prefix) {
+    String path = '{name:.*}_{version:\\\\d+\\\\.\\\\d+\\\\.\\\\d+(\\\\.[A-Za-z0-9_-]+)?}'
+    return [
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/p2.index', P2_INDEX, GET, HEAD),
+
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/compositeContent.jar', COMPOSITE_CONTENT, GET, HEAD),
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/compositeContent.xml', COMPOSITE_CONTENT, GET, HEAD),
+
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/content.jar', CONTENT_METADATA, GET, HEAD),
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/content.xml.xz', CONTENT_METADATA, GET, HEAD),
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/content.xml', CONTENT_METADATA, GET, HEAD),
+
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/compositeArtifacts.jar', COMPOSITE_ARTIFACTS, GET, HEAD),
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/compositeArtifacts.xml', COMPOSITE_ARTIFACTS, GET, HEAD),
+
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/artifacts.jar', ARTIFACTS_METADATA, GET, HEAD),
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/artifacts.xml.xz', ARTIFACTS_METADATA, GET, HEAD),
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/artifacts.xml', ARTIFACTS_METADATA, GET, HEAD),
+
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/{dir:features|plugins}/' + path + '.{extension:.*}',
+        BUNDLE, GET, HEAD),
+
+      buildTokenMatcherForPatternAndAssetKind(prefix + '/{dir:binary}/' + path, BINARY_BUNDLE, GET, HEAD)
+    ]
   }
 
   @Override

@@ -21,9 +21,9 @@ import com.google.common.collect.ImmutableMap
 import com.orientechnologies.orient.core.collate.OCaseInsensitiveCollate
 import com.orientechnologies.orient.core.db.record.OIdentifiable
 import com.orientechnologies.orient.core.index.OIndex
-import com.orientechnologies.orient.core.metadata.schema.OClass.INDEX_TYPE
 import com.orientechnologies.orient.core.metadata.schema.OSchema
 import com.orientechnologies.orient.core.metadata.schema.OType
+import com.orientechnologies.orient.core.metadata.schema.OClass.INDEX_TYPE
 import com.orientechnologies.orient.core.record.impl.ODocument
 import org.junit.Before
 import org.junit.Rule
