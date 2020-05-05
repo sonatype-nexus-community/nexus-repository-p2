@@ -2,7 +2,7 @@ version: 2.1
 
 orbs:
   github-maven-deploy: github-maven-deploy/github-maven-deploy@1.0.5
-  circleci-maven-release-orb: sonatype-nexus-community/circleci-maven-release-orb@0.0.11
+  circleci-maven-release-orb: sonatype-nexus-community/circleci-maven-release-orb@0.0.15
 
 workflows:
   build-and-test:
@@ -21,6 +21,7 @@ workflows:
             branches:
               only: master
       - circleci-maven-release-orb/run-maven-release:
+          mvn-release-perform-command: mvn --batch-mode release:perform -s .circleci/.maven.xml -PbuildKar
           requires:
             - approve-release
           ssh-fingerprints: "07:aa:02:bc:13:62:4a:4b:ec:9a:b2:31:3b:5e:fc:60"
