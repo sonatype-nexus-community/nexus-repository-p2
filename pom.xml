@@ -23,7 +23,7 @@
   </parent>
 
   <artifactId>p2-parent</artifactId>
-  <version>1.0.6-SNAPSHOT</version>
+  <version>1.0.6</version>
   <packaging>pom</packaging>
   <name>${project.groupId}:${project.artifactId}</name>
 
@@ -37,7 +37,7 @@
 
   <scm>
     <developerConnection>scm:git:git@github.com:sonatype-nexus-community/nexus-repository-p2.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>p2-parent-1.0.6</tag>
   </scm>
 
   <distributionManagement>
