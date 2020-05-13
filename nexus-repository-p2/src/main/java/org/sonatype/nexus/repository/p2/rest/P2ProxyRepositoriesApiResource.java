@@ -56,7 +56,7 @@ public class P2ProxyRepositoriesApiResource
     super(authorizingRepositoryManager, configurationConverter);
   }
 
-  @ApiOperation("Create P2 proxy repository")
+  @ApiOperation("Create p2 proxy repository")
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = REPOSITORY_CREATED),
       @ApiResponse(code = 401, message = AUTHENTICATION_REQUIRED),
@@ -70,7 +70,7 @@ public class P2ProxyRepositoriesApiResource
     return super.createRepository(request);
   }
 
-  @ApiOperation("Update P2 proxy repository")
+  @ApiOperation("Update p2 proxy repository")
   @ApiResponses(value = {
       @ApiResponse(code = 204, message = REPOSITORY_UPDATED),
       @ApiResponse(code = 401, message = AUTHENTICATION_REQUIRED),
