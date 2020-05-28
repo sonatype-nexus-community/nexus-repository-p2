@@ -29,6 +29,7 @@ import javax.inject.Named;
 
 import org.sonatype.nexus.repository.cache.CacheInfo;
 import org.sonatype.nexus.repository.config.Configuration;
+import org.sonatype.nexus.repository.mime.ContentValidator;
 import org.sonatype.nexus.repository.p2.P2Facet;
 import org.sonatype.nexus.repository.p2.internal.AssetKind;
 import org.sonatype.nexus.repository.p2.internal.P2Format;
@@ -42,7 +43,6 @@ import org.sonatype.nexus.repository.proxy.ProxyFacet;
 import org.sonatype.nexus.repository.proxy.ProxyFacetSupport;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Bucket;
-import org.sonatype.nexus.repository.storage.ContentValidator;
 import org.sonatype.nexus.repository.storage.Query;
 import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.StorageTx;
@@ -78,13 +78,13 @@ import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_
 public class P2ProxyFacetImpl
     extends ProxyFacetSupport
 {
-  private static final String REMOTE_URL = "remote_url";
+  public static final String REMOTE_URL = "remote_url";
 
-  private static final String REMOTE_HASH = "remote_site_hash";
+  public static final String REMOTE_HASH = "remote_site_hash";
 
-  private static final String MIRRORS_URL = "mirrors_url";
+  public static final String MIRRORS_URL = "mirrors_url";
 
-  private static final String CHILD_URLS = "child_urls";
+  public static final String CHILD_URLS = "child_urls";
 
   private final P2TempBlobUtils p2TempBlobUtils;
 

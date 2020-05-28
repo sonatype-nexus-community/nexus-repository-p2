@@ -24,6 +24,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
+
+import com.sonatype.nexus.testsuite.helpers.ComponentAssetTestHelper;
 
 import org.sonatype.goodies.httpfixture.server.fluent.Behaviours;
 import org.sonatype.goodies.httpfixture.server.fluent.Server;
@@ -110,6 +113,9 @@ public class P2ITSupport
   public static final String COMPOSITE_ARTIFACTS_JAR = "compositeArtifacts.jar";
 
   public static final String INVALID_PACKAGE_URL = PACKAGE_BASE_PATH + INVALID_PACKAGE_NAME;
+
+  @Inject
+  protected ComponentAssetTestHelper componentAssetTestHelper;
 
   @Configuration
   public static Option[] configureNexus() {

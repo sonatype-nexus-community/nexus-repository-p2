@@ -42,8 +42,10 @@ import org.sonatype.nexus.repository.view.payloads.BlobPayload;
 import org.sonatype.nexus.transaction.UnitOfWork;
 
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 
 import static java.util.Collections.singletonList;
+import static org.sonatype.nexus.common.hash.HashAlgorithm.SHA1;
 import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.PLUGIN_NAME;
 import static org.sonatype.nexus.repository.storage.AssetEntityAdapter.P_ASSET_KIND;
 import static org.sonatype.nexus.repository.storage.ComponentEntityAdapter.P_VERSION;
@@ -59,7 +61,7 @@ public class P2FacetImpl
     extends FacetSupport
     implements P2Facet
 {
-  public static final Collection<HashAlgorithm> HASH_ALGORITHMS = HashAlgorithm.ALL_HASH_ALGORITHMS.values();
+  public static final Collection<HashAlgorithm> HASH_ALGORITHMS = ImmutableList.of(SHA1);
 
   @Override
   public Component findOrCreateComponent(final StorageTx tx, final P2Attributes attributes) {

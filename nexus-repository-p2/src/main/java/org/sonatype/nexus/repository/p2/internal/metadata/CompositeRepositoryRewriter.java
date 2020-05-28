@@ -16,6 +16,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLEventFactory;
@@ -28,7 +29,7 @@ import javax.xml.stream.events.XMLEvent;
 
 /**
  * Rewrites a p2 composite site collecting child site references and replacing them with site hashes.
- * 
+ *
  * @since 1.next
  */
 public class CompositeRepositoryRewriter
@@ -40,12 +41,24 @@ public class CompositeRepositoryRewriter
 
   private List<String> urls = new ArrayList<>();
 
+  private final Function<String, String> uriConverter;
+
   /**
-   * @param baseUri the base URI of the remote composite repository
+   * This constructor is intended for use by an upgrade step, not general use.
    */
-  public CompositeRepositoryRewriter(final URI baseUri, final boolean isRoot) {
+  public CompositeRepositoryRewriter(final URI baseUri, final boolean isRoot, final Function<String, String> uriConverter ) {
     this.baseUri = baseUri;
     this.isRoot = isRoot;
+    this.uriConverter = uriConverter;
+  }
+
+  /**
+   * @param baseUri the base URI of the remote composite repository
+   * @param isRoot indicates whether this composite  site occurs at the root of the NXRM repository
+   *
+   */
+  public CompositeRepositoryRewriter(final URI baseUri, final boolean isRoot) {
+    this(baseUri, isRoot, Function.identity());
   }
 
   /**
@@ -84,7 +97,8 @@ public class CompositeRepositoryRewriter
       return locationElement;
     }
 
-    String remoteUrl = baseUri.resolve(locationAttribute.getValue()).toString();
+    String location = uriConverter.apply(locationAttribute.getValue());
+    String remoteUrl = baseUri.resolve(location).toString();
     if (!remoteUrl.endsWith("/")) {
       remoteUrl += '/';
     }

@@ -27,6 +27,7 @@ import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 
 import org.sonatype.goodies.common.ComponentSupport;
+import org.sonatype.nexus.common.io.SafeXml;
 import org.sonatype.nexus.repository.p2.internal.proxy.StreamCopier.StreamTransformer;
 
 import org.apache.commons.io.IOUtils;
@@ -44,10 +45,7 @@ public abstract class XmlTransformer
 
   @Override
   public void transform(final InputStream in, final OutputStream out) throws IOException {
-    XMLInputFactory inputFactory = XMLInputFactory.newFactory();
-    inputFactory.setProperty(XMLInputFactory.SUPPORT_DTD, false);
-    inputFactory.setProperty("javax.xml.stream.isSupportingExternalEntities", false);
-
+    XMLInputFactory inputFactory = SafeXml.newXmlInputFactory();
     XMLOutputFactory outputFactory = XMLOutputFactory.newFactory();
     XMLEventReader reader = null;
     XMLEventWriter writer = null;

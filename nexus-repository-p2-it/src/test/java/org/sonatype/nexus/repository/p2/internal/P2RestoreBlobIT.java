@@ -28,6 +28,7 @@ import org.sonatype.nexus.repository.http.HttpStatus;
 import org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetEntityAdapter;
+import org.sonatype.nexus.repository.storage.StorageFacet;
 import org.sonatype.nexus.repository.storage.StorageTx;
 import org.sonatype.nexus.testsuite.testsupport.blobstore.restore.BlobstoreRestoreTestHelper;
 
@@ -139,5 +140,9 @@ public class P2RestoreBlobIT
     testHelper.assertAssetAssociatedWithComponent(proxyRepository, COMPONENT_NAME, VALID_PACKAGE_URL);
 
     assertThat(proxyClient.get(VALID_PACKAGE_URL).getStatusLine().getStatusCode(), is(HttpStatus.OK));
+  }
+
+  protected static StorageTx getStorageTx(final Repository repository) {
+    return repository.facet(StorageFacet.class).txSupplier().get();
   }
 }

@@ -25,7 +25,6 @@ import org.sonatype.nexus.common.entity.EntityHelper;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.http.HttpStatus;
 import org.sonatype.nexus.repository.storage.Asset;
-import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.ComponentMaintenance;
 
 import org.apache.commons.io.IOUtils;
@@ -387,7 +386,7 @@ public class P2ProxyIT
     Asset asset = findAsset(repository, path);
 
     assertNotNull(asset);
-    assertNotNull(findComponent(repository, identifier));
+    componentAssetTestHelper.assertComponentExists(repository, identifier);
 
     ComponentMaintenance maintenanceFacet = repository.facet(ComponentMaintenance.class);
 
@@ -478,10 +477,7 @@ public class P2ProxyIT
   {
     testPath(repository, path, mimeType, assetKind);
 
-    final Component component = findComponent(repository, identifier);
-    assertNotNull(component);
-    assertThat(component.version(), is(equalTo(version)));
-    assertThat(component.name(), is(equalTo(identifier)));
+    componentAssetTestHelper.assertComponentExists(repository, identifier, version);
   }
 
   @After

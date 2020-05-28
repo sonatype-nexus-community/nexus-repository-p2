@@ -29,10 +29,10 @@ import org.sonatype.nexus.scheduling.TaskScheduler;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sonatype.nexus.common.app.ManagedLifecycle.Phase.TASKS;
 import static org.sonatype.nexus.repository.p2.upgrade.P2Upgrade_1_2.MARKER_FILE;
-import static org.sonatype.nexus.repository.p2.upgrade.tasks.P2DeleteLegacyProxyAssetsTaskDescriptor.TYPE_ID;
+import static org.sonatype.nexus.repository.p2.upgrade.tasks.P2RewriteCompositeMetadataTaskDescriptor.TYPE_ID;
 
 /**
- * Instantiates the legacy p2 proxy asset deletion task based on the existence of a marker
+ * Instantiates rewriting composite metadata sites to use site hashes based on the existence of a marker
  * file created by the upgrade {@link P2Upgrade_1_2}.
  *
  * @since 1.next
@@ -40,7 +40,7 @@ import static org.sonatype.nexus.repository.p2.upgrade.tasks.P2DeleteLegacyProxy
 @Named
 @Singleton
 @ManagedLifecycle(phase = TASKS)
-public class P2DeleteLegacyProxyAssetsService
+public class P2RewriteCompositeMetadataService
     extends LifecycleSupport
 {
   private final Path markerFile;
@@ -48,7 +48,7 @@ public class P2DeleteLegacyProxyAssetsService
   private final TaskScheduler taskScheduler;
 
   @Inject
-  public P2DeleteLegacyProxyAssetsService(
+  public P2RewriteCompositeMetadataService(
       final ApplicationDirectories directories,
       final TaskScheduler taskScheduler)
   {

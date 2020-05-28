@@ -28,6 +28,7 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
+import org.sonatype.nexus.common.io.SafeXml;
 import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes.Builder;
@@ -63,21 +64,23 @@ public class AttributesParserFeatureXml
 
   private PropertyParser propertyParser;
 
+  private final DocumentBuilderFactory documentBuilderFactory;
+
   @Inject
-  public AttributesParserFeatureXml(final TempBlobConverter tempBlobConverter, final PropertyParser propertyParser) {
+  public AttributesParserFeatureXml(final TempBlobConverter tempBlobConverter, final PropertyParser propertyParser) throws ParserConfigurationException {
     this.propertyParser = propertyParser;
+
+    documentBuilderFactory = SafeXml.newdocumentBuilderFactory();
+    documentBuilderFactory.setValidating(false);
+
     documentJarExtractor = new JarExtractor<Document>(tempBlobConverter)
     {
       @Override
       protected Document createSpecificEntity(final JarInputStream jis, final JarEntry jarEntry)
           throws IOException, AttributeParsingException
       {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setValidating(false);
         try {
-          factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", false);
-          factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-          return factory.newDocumentBuilder().parse(jis);
+          return documentBuilderFactory.newDocumentBuilder().parse(jis);
         }
         catch (ParserConfigurationException | SAXException e) {
           throw new AttributeParsingException(e);

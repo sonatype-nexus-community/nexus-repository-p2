@@ -18,20 +18,20 @@ import javax.inject.Singleton;
 import org.sonatype.nexus.scheduling.TaskDescriptorSupport;
 
 /**
- * Task descriptor for {@link P2DeleteLegacyProxyAssetsTask}.
+ * Task descriptor for {@link P2RewriteCompositeMetadataTask}.
  *
  * @since 1.next
  */
 @Named
 @Singleton
-public class P2DeleteLegacyProxyAssetsTaskDescriptor
+public class P2RewriteCompositeMetadataTaskDescriptor
     extends TaskDescriptorSupport
 {
-  public static final String TASK_NAME = "P2 - Delete legacy proxy assets";
+  public static final String TASK_NAME = "p2 - rewrite composite metdata";
 
-  public static final String TYPE_ID = "repository.p2.delete-legacy-proxy-assets";
+  public static final String TYPE_ID = "repository.p2.rewrite-composite-metdata";
 
-  public P2DeleteLegacyProxyAssetsTaskDescriptor() {
-    super(TYPE_ID, P2DeleteLegacyProxyAssetsTask.class, TASK_NAME, VISIBLE, EXPOSED);
+  public P2RewriteCompositeMetadataTaskDescriptor() {
+    super(TYPE_ID, P2RewriteCompositeMetadataTask.class, TASK_NAME, VISIBLE, EXPOSED);
   }
 }
