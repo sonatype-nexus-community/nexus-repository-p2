@@ -17,13 +17,11 @@ import java.io.InputStream;
 
 import org.sonatype.goodies.httpfixture.server.fluent.Behaviours;
 import org.sonatype.goodies.httpfixture.server.fluent.Server;
-import org.sonatype.nexus.pax.exam.NexusPaxExamSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.http.HttpStatus;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.Component;
 import org.sonatype.nexus.repository.storage.ComponentMaintenance;
-import org.sonatype.nexus.testsuite.testsupport.NexusITSupport;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
@@ -37,6 +35,7 @@ import org.ops4j.pax.exam.Option;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.sonatype.nexus.repository.p2.P2ITConfig.configureP2Base;
 import static org.sonatype.nexus.testsuite.testsupport.FormatClientSupport.status;
 
 public class P2ProxyIT
@@ -152,10 +151,7 @@ public class P2ProxyIT
 
   @Configuration
   public static Option[] configureNexus() {
-    return NexusPaxExamSupport.options(
-        NexusITSupport.configureNexusBase(),
-        nexusFeature("org.sonatype.nexus.plugins", "nexus-repository-p2")
-    );
+    return configureP2Base();
   }
 
   @Before

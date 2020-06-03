@@ -36,7 +36,6 @@ import org.sonatype.nexus.repository.p2.internal.proxy.P2ProxyRecipe;
 import org.sonatype.nexus.repository.storage.Asset;
 import org.sonatype.nexus.repository.storage.AssetEntityAdapter;
 import org.sonatype.nexus.repository.storage.StorageTx;
-import org.sonatype.nexus.testsuite.testsupport.NexusITSupport;
 import org.sonatype.nexus.testsuite.testsupport.blobstore.restore.BlobstoreRestoreTestHelper;
 
 import static org.hamcrest.Matchers.is;
@@ -44,6 +43,7 @@ import static org.junit.Assert.assertThat;
 import static org.sonatype.nexus.blobstore.api.BlobAttributesConstants.HEADER_PREFIX;
 import static org.sonatype.nexus.blobstore.api.BlobStore.BLOB_NAME_HEADER;
 import static org.sonatype.nexus.blobstore.api.BlobStore.CONTENT_TYPE_HEADER;
+import static org.sonatype.nexus.repository.p2.P2ITConfig.configureP2Base;
 import static org.sonatype.nexus.repository.storage.Bucket.REPO_NAME_HEADER;
 
 public class P2RestoreBlobIT
@@ -65,8 +65,7 @@ public class P2RestoreBlobIT
   @Configuration
   public static Option[] configureNexus() {
     return NexusPaxExamSupport.options(
-        NexusITSupport.configureNexusBase(),
-        nexusFeature("org.sonatype.nexus.plugins", "nexus-repository-p2"),
+        configureP2Base(),
         nexusFeature("org.sonatype.nexus.plugins", "nexus-restore-p2")
     );
   }

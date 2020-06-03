@@ -27,15 +27,14 @@ import org.ops4j.pax.exam.Option;
 import org.sonatype.goodies.httpfixture.server.fluent.Behaviours;
 import org.sonatype.goodies.httpfixture.server.fluent.Server;
 import org.sonatype.nexus.common.entity.EntityId;
-import org.sonatype.nexus.pax.exam.NexusPaxExamSupport;
 import org.sonatype.nexus.repository.Repository;
-import org.sonatype.nexus.testsuite.testsupport.NexusITSupport;
 import org.sonatype.nexus.testsuite.testsupport.raw.RawClient;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.sonatype.nexus.repository.p2.P2ITConfig.configureP2Base;
 
 /**
  * @since 0.next
@@ -48,10 +47,7 @@ public class P2RoutingRuleIT extends P2RoutingRuleITSupport
 
   @Configuration
   public static Option[] configureNexus() {
-    return NexusPaxExamSupport.options(
-        NexusITSupport.configureNexusBase(),
-        nexusFeature("org.sonatype.nexus.plugins", "nexus-repository-p2")
-    );
+    return configureP2Base();
   }
 
   @Before

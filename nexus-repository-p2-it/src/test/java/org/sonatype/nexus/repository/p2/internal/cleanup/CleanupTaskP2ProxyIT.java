@@ -31,13 +31,13 @@ import org.sonatype.nexus.pax.exam.NexusPaxExamSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.p2.internal.P2Client;
 import org.sonatype.nexus.repository.p2.internal.fixtures.RepositoryRuleP2;
-import org.sonatype.nexus.testsuite.testsupport.NexusITSupport;
 import org.sonatype.nexus.testsuite.testsupport.cleanup.CleanupITSupport;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.sonatype.nexus.repository.http.HttpStatus.OK;
+import static org.sonatype.nexus.repository.p2.P2ITConfig.configureP2Base;
 import static org.sonatype.nexus.repository.p2.internal.P2ITSupport.PACKAGE_NAME;
 import static org.sonatype.nexus.repository.p2.internal.P2ITSupport.HELP_PACKAGE_NAME;
 import static org.sonatype.nexus.repository.p2.internal.P2ITSupport.VALID_HELP_PACKAGE_URL;
@@ -58,10 +58,7 @@ public class CleanupTaskP2ProxyIT
 
   @Configuration
   public static Option[] configureNexus() {
-    return NexusPaxExamSupport.options(
-        NexusITSupport.configureNexusBase(),
-        nexusFeature("org.sonatype.nexus.plugins", "nexus-repository-p2")
-    );
+    return configureP2Base();
   }
 
   @Before
