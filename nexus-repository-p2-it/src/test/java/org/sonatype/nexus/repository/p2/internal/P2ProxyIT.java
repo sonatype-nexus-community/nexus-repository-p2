@@ -386,7 +386,7 @@ public class P2ProxyIT
     Asset asset = findAsset(repository, path);
 
     assertNotNull(asset);
-    componentAssetTestHelper.assertComponentExists(repository, identifier);
+    assertTrue(componentAssetTestHelper.assertComponentExists(repository, identifier));
 
     ComponentMaintenance maintenanceFacet = repository.facet(ComponentMaintenance.class);
 
