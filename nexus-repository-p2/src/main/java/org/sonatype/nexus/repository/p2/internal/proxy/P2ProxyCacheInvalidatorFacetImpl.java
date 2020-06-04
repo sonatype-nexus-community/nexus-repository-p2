@@ -12,7 +12,6 @@
  */
 package org.sonatype.nexus.repository.p2.internal.proxy;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -85,11 +84,6 @@ public class P2ProxyCacheInvalidatorFacetImpl
   }
 
   private static Object getRemoteUrl(final Configuration configuration) {
-    return Optional.ofNullable(configuration.getAttributes().get("proxy")).map(proxy -> {
-      if (proxy instanceof Map) {
-        return proxy.get("remoteUrl");
-      }
-      return null;
-    }).orElse(null);
+    return Optional.ofNullable(configuration.getAttributes().get("proxy")).map(proxy -> proxy.get("remoteUrl")).orElse(null);
   }
 }
