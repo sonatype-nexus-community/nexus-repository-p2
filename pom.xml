@@ -60,13 +60,22 @@
   </repositories>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>1.4.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.sonatype.plugins</groupId>
+          <artifactId>nexus-staging-maven-plugin</artifactId>
+          <version>1.6.8</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
-      <!--
-          Ensure use of Java 8, as required by NXRM
-          -->
       <plugin>
         <artifactId>maven-enforcer-plugin</artifactId>
-        <version>1.4.1</version>
         <executions>
           <execution>
             <id>enforce-java</id>
@@ -75,46 +84,39 @@
             </goals>
             <configuration>
               <rules>
+                <!--
+                Ensure use of Java 8, as required by NXRM
+                -->
                 <requireJavaVersion>
                   <version>[1.8,1.9)</version>
                 </requireJavaVersion>
+                <!--
+                Require Maven 3.3.3+
+                -->
+                <requireMavenVersion>
+                  <version>[3.3.3,)</version>
+                </requireMavenVersion>
               </rules>
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-release-plugin</artifactId>
+        <configuration>
+          <!-- Something in the pom hierarchy overrides the default 'pushChanges == true', so we reset that here. -->
+          <pushChanges>true</pushChanges>
+          <!-- Tests will have been run by CI prior to release. -->
+          <arguments>-DskipTests</arguments>
+        </configuration>
       </plugin>
     </plugins>
   </build>
 
   <profiles>
     <profile>
-      <id>jenkins-release</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.sonatype.plugins</groupId>
-            <artifactId>nexus-staging-maven-plugin</artifactId>
-            <version>1.6.8</version>
-            <extensions>true</extensions>
-            <configuration>
-              <!--              TODO BEFORE RELEASE SET TRUE-->
-              <autoReleaseAfterClose>false</autoReleaseAfterClose>
-            </configuration>
-          </plugin>
-          <plugin>
-            <artifactId>maven-release-plugin</artifactId>
-            <configuration>
-              <!-- Something in the pom hierarchy overrides the default 'pushChanges == true', so we reset that here. -->
-              <pushChanges>true</pushChanges>
-              <!-- Tests will have been run by CI prior to release. -->
-              <arguments>-DskipTests</arguments>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-    <profile>
-      <id>circle-ci-release</id>
+      <id>gpg-sign</id>
       <!--
       only sign during deploy phase
       -->
@@ -139,6 +141,20 @@
               </execution>
             </executions>
           </plugin>
+        </plugins>
+      </build>
+      <properties>
+        <gpg.passphrase>${env.GPG_PASSPHRASE}</gpg.passphrase>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>circle-ci-release</id>
+      <!--
+      only sign during deploy phase
+      -->
+      <build>
+        <plugins>
           <plugin>
             <groupId>org.sonatype.plugins</groupId>
             <artifactId>nexus-staging-maven-plugin</artifactId>
@@ -152,22 +168,27 @@
           <plugin>
             <artifactId>maven-release-plugin</artifactId>
             <configuration>
-              <!-- Something in the pom hierarchy overrides the default 'pushChanges == true', so we reset that here. -->
-              <pushChanges>true</pushChanges>
               <releaseProfiles>gpg-sign</releaseProfiles>
-              <!--
-              CI build runs out of memory during release, with error like this:
-              Failed to execute goal org.apache.maven.plugins:maven-release-plugin:2.5.2:prepare (default-cli) on project nexus-repository-base: Maven execution failed, exit code: '137' -> [Help 1]
-              TODO: Investigate increasing available memory for the CI build
-              -->
-              <arguments>-DskipTests</arguments>
             </configuration>
           </plugin>
         </plugins>
       </build>
-      <properties>
-        <gpg.passphrase>${env.GPG_PASSPHRASE}</gpg.passphrase>
-      </properties>
+    </profile>
+
+    <profile>
+      <id>jenkins-release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <extensions>true</extensions>
+            <configuration>
+              <autoReleaseAfterClose>true</autoReleaseAfterClose>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 </project>
