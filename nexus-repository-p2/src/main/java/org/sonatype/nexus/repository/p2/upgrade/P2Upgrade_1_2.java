@@ -65,8 +65,6 @@ public class P2Upgrade_1_2
 {
   private static final String P_NAME = "name";
 
-  private static final String ASSET_CLASS_NAME = "asset";
-
   private static final String SELECT_BY_ASSET_KIND = "SELECT FROM asset WHERE bucket = ? AND attributes.p2.asset_kind IN ?";
 
   private static final String SELECT_NESTED_ASSETS =

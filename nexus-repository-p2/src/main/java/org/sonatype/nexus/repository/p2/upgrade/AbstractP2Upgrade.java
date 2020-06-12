@@ -50,7 +50,7 @@ abstract class AbstractP2Upgrade
   private static final String I_REPOSITORY_NAME =
       new OIndexNameBuilder().type("bucket").property(P_REPOSITORY_NAME).build();
 
-  private static final String ASSET_CLASS_NAME = "asset";
+  protected static final String ASSET_CLASS_NAME = "asset";
 
   protected final Provider<DatabaseInstance> configDatabaseInstance;
 

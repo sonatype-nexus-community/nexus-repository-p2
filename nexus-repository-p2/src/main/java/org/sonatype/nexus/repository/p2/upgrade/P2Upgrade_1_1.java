@@ -44,8 +44,6 @@ public class P2Upgrade_1_1
   private static final String REMOVE_UNNECESSARY_SLASH_FROM_ASSET_NAME =
       "update asset set name = name.subString(1) where bucket = ? and name like '/%'";
 
-  private static final String ASSET_CLASS_NAME = "asset";
-
   @Inject
   public P2Upgrade_1_1(
       @Named(DatabaseInstanceNames.CONFIG) final Provider<DatabaseInstance> configDatabaseInstance,
