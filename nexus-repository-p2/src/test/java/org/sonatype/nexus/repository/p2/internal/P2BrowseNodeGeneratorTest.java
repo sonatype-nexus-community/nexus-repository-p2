@@ -36,10 +36,6 @@ public class P2BrowseNodeGeneratorTest
 
   private static final String COMPONENT_VERSION = "1.7.5";
 
-  private static final String FEATURES = "features";
-
-  private static final String ASSET_NAME = "assetName";
-
   private P2BrowseNodeGenerator generator = new P2BrowseNodeGenerator();
 
   @Test

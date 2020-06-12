@@ -33,6 +33,6 @@ public class P2FormatTest
 
   @Test
   public void P2FormatName() {
-    assertThat(p2Format.NAME, is(equalTo("p2")));
+    assertThat(P2Format.NAME, is(equalTo("p2")));
   }
 }
