@@ -139,8 +139,7 @@ public class P2RestoreBlobStrategyTest extends TestSupport
 
   @Test
   public void testCorrectHashAlgorithmsAreSupported() {
-    assertThat(restoreBlobStrategy.getHashAlgorithms(),
-        containsInAnyOrder(HashAlgorithm.ALL_HASH_ALGORITHMS.values().toArray()));
+    assertThat(restoreBlobStrategy.getHashAlgorithms(), containsInAnyOrder(HashAlgorithm.SHA1));
   }
 
   @Test

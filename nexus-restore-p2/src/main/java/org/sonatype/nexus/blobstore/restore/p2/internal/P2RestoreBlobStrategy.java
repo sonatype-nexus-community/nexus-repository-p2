@@ -13,9 +13,9 @@
 package org.sonatype.nexus.blobstore.restore.p2.internal;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
@@ -90,7 +90,7 @@ public class P2RestoreBlobStrategy
   @Nonnull
   @Override
   protected List<HashAlgorithm> getHashAlgorithms() {
-    return HashAlgorithm.ALL_HASH_ALGORITHMS.values().stream().collect(Collectors.toList());
+    return Collections.singletonList(HashAlgorithm.SHA1);
   }
 
   @Override
