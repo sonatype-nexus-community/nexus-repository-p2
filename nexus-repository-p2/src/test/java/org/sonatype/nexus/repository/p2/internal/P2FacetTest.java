@@ -39,6 +39,7 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -106,7 +107,7 @@ public class P2FacetTest
 
   @Test
   public void immutableListIsSha1() {
-    assertThat(HASH_ALGORITHMS, is(equalTo(HashAlgorithm.ALL_HASH_ALGORITHMS.values())));
+    assertThat(HASH_ALGORITHMS, contains(HashAlgorithm.SHA1));
   }
 
   @Test
@@ -150,7 +151,7 @@ public class P2FacetTest
   @Test
   public void toContent() {
     Content content = underTest.toContent(asset, blob);
-    assertThat(content.getAttributes().get("lastModified"), is(notNullValue()));
+    assertThat(content.getAttributes().get(Content.CONTENT_LAST_MODIFIED), is(notNullValue()));
   }
 
   @Test

@@ -26,14 +26,13 @@ import java.util.zip.ZipOutputStream;
 import javax.annotation.Nonnull;
 import javax.inject.Inject;
 
-import com.sonatype.nexus.testsuite.helpers.ComponentAssetTestHelper;
-
 import org.sonatype.goodies.httpfixture.server.fluent.Behaviours;
 import org.sonatype.goodies.httpfixture.server.fluent.Server;
 import org.sonatype.goodies.httpfixture.server.jetty.behaviour.Content;
 import org.sonatype.nexus.pax.exam.NexusPaxExamSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.p2.internal.fixtures.RepositoryRuleP2;
+import org.sonatype.nexus.testsuite.helpers.ComponentAssetTestHelper;
 import org.sonatype.nexus.testsuite.testsupport.NexusITSupport;
 import org.sonatype.nexus.testsuite.testsupport.RepositoryITSupport;
 

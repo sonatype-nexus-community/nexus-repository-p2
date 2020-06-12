@@ -21,11 +21,8 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipInputStream;
 
 import org.sonatype.goodies.httpfixture.server.fluent.Server;
-import org.sonatype.nexus.common.entity.EntityHelper;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.http.HttpStatus;
-import org.sonatype.nexus.repository.storage.Asset;
-import org.sonatype.nexus.repository.storage.ComponentMaintenance;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
@@ -39,11 +36,10 @@ import org.tukaani.xz.XZInputStream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.sonatype.nexus.testsuite.testsupport.FormatClientSupport.status;
 
@@ -75,8 +71,6 @@ public class P2ProxyIT
   private static final String ASSET_KIND_CONTENT_METADATA = "CONTENT_METADATA";
 
   private static final String ASSET_KIND_P2_INDEX = "P2_INDEX";
-
-  private static final String FORMAT_NAME = "p2";
 
   private static final String ARTIFACTS_JAR = "artifacts.jar";
 
@@ -371,29 +365,27 @@ public class P2ProxyIT
 
   @Test
   public void checkComponentRemovedWhenAssetRemoved() throws Exception {
-    assertComponentCleanedUp(siteRepo, BINARY_PATH, "org.eclipse.platform.ide.executable.gtk.linux.x86_64");
-    assertComponentCleanedUp(siteRepo, FEATURE_PATH, "com.sonatype.nexus.feature");
-    assertComponentCleanedUp(siteRepo, PATH_PLUGIN, "com.sonatype.nexus");
+    assertComponentCleanedUp(siteRepo, BINARY_PATH, "org.eclipse.platform.ide.executable.gtk.linux.x86_64", "4.15.0.I20200110-0905");
+    assertComponentCleanedUp(siteRepo, FEATURE_PATH, "com.sonatype.nexus.feature", "1.2.0.v20170518-1049");
+    assertComponentCleanedUp(siteRepo, PATH_PLUGIN, "com.sonatype.nexus", "1.2.0.v20170518-1049");
   }
 
   private void assertComponentCleanedUp(
       final Repository repository,
       final String path,
-      final String identifier) throws Exception
+      final String identifier,
+      final String version) throws Exception
   {
     P2Client client = p2Client(repository);
     assertOk(client, path);
-    Asset asset = findAsset(repository, path);
 
-    assertNotNull(asset);
-    assertTrue(componentAssetTestHelper.assertComponentExists(repository, identifier));
+    assertTrue(componentAssetTestHelper.assetExists(repository, path));
+    assertTrue(componentAssetTestHelper.componentExists(repository, identifier, version));
 
-    ComponentMaintenance maintenanceFacet = repository.facet(ComponentMaintenance.class);
+    componentAssetTestHelper.removeAsset(repository, path);
 
-    maintenanceFacet.deleteAsset(EntityHelper.id(asset));
-
-    assertNull(findAsset(repository, path));
-    assertNull(findComponent(repository, identifier));
+    assertFalse(componentAssetTestHelper.assetExists(repository, path));
+    assertFalse(componentAssetTestHelper.componentExists(repository, identifier, version));
   }
 
   private static void assertOk(final P2Client client, final String path) throws IOException {
@@ -446,7 +438,7 @@ public class P2ProxyIT
     return null;
   }
 
-  private Asset testPath(
+  private void testPath(
       final Repository repository,
       final String path,
       final String mimeType,
@@ -456,15 +448,13 @@ public class P2ProxyIT
 
     assertOk(client, path);
 
-    Asset asset = findAsset(repository, path);
-    assertThat(asset.name(), is(equalTo(path)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    assertTrue(componentAssetTestHelper.assetExists(repository, path));
     if (mimeType != null) {
-      assertThat(asset.contentType(), is(equalTo(mimeType)));
+      assertThat(componentAssetTestHelper.contentTypeFor(repository.getName(), path), is(mimeType));
     }
-    assertThat(asset.formatAttributes().get("asset_kind", String.class), is(assetKind));
-
-    return asset;
+    assertThat(
+        componentAssetTestHelper.attributes(repository, path).child(P2Format.NAME).get("asset_kind", String.class),
+        is(assetKind));
   }
 
   private void testPath(
@@ -477,7 +467,7 @@ public class P2ProxyIT
   {
     testPath(repository, path, mimeType, assetKind);
 
-    componentAssetTestHelper.assertComponentExists(repository, identifier, version);
+    assertTrue(componentAssetTestHelper.componentExists(repository, identifier, version));
   }
 
   @After
