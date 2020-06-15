@@ -53,7 +53,7 @@ import static org.sonatype.nexus.repository.storage.MetadataNodeEntityAdapter.P_
  * browse_node entries for p2 repositories forcing them to be rebuilt by
  * {@link org.sonatype.nexus.repository.browse.internal.RebuildBrowseNodesManager}.
  *
- * @since 1.next
+ * @since 1.1
  */
 @Named
 @Singleton

@@ -20,7 +20,7 @@ import org.sonatype.nexus.scheduling.TaskDescriptorSupport;
 /**
  * Task descriptor for {@link P2RewriteCompositeMetadataTask}.
  *
- * @since 1.next
+ * @since 1.1
  */
 @Named
 @Singleton

@@ -74,7 +74,7 @@ import static org.sonatype.nexus.repository.p2.upgrade.P2Upgrade_1_2.MARKER_FILE
 /**
  * Rewrites composite metadata to reference site hashes rather than URL paths.
  *
- * @since 1.next
+ * @since 1.1
  */
 @Named
 public class P2RewriteCompositeMetadataTask

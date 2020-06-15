@@ -35,7 +35,7 @@ import static org.sonatype.nexus.repository.p2.upgrade.tasks.P2RewriteCompositeM
  * Instantiates rewriting composite metadata sites to use site hashes based on the existence of a marker
  * file created by the upgrade {@link P2Upgrade_1_2}.
  *
- * @since 1.next
+ * @since 1.1
  */
 @Named
 @Singleton

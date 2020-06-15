@@ -20,7 +20,7 @@ import com.google.common.hash.Hashing;
 /**
  * Nomralizes and maps URIs to a hash.
  *
- * @since 1.next
+ * @since 1.1
  */
 public class UriToSiteHashUtil
 {

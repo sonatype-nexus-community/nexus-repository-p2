@@ -35,7 +35,7 @@ import static com.google.common.collect.Streams.stream;
 /**
  * Handles invalidating p2 proxy cache when the URL for the repository changes.
  *
- * @since 1.next
+ * @since 1.1
  */
 @Named
 @Facet.Exposed
