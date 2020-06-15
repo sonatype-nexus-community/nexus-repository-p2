@@ -127,8 +127,6 @@ public class P2Upgrade_1_2
 
           Matcher metadataMatcher = metadataPattern.matcher(name);
           Matcher bundleMatcher = bundlePattern.matcher(name);
-
-
           if (!metadataMatcher.matches() && !bundleMatcher.matches()) {
             log.warn("Skipping unknown asset: {}", name);
             continue;
