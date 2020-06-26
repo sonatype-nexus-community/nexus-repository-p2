@@ -1,7 +1,7 @@
 library('private-pipeline-library')
 library('jenkins-shared')
 
-mavenSnapshotPipeline(performSonarAnalysis: true, usePublicSettingsXmlFile: true,
+mavenSnapshotPipeline(performSonarAnalysis: true, usePublicSettingsXmlFile: true, deployBranch: 'testing-jenkins',
     onSuccess: { build, env ->
       notifyChat(env: env, currentBuild: build, room: 'nxrm-notifications')
     },
