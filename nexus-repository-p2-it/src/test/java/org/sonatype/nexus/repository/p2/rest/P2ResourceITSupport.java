@@ -23,6 +23,21 @@ import java.util.UUID;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
+import org.sonatype.nexus.repository.p2.api.P2ProxyRepositoryApiRequest;
+import org.sonatype.nexus.repository.p2.internal.P2Format;
+import org.sonatype.nexus.repository.p2.internal.fixtures.RepositoryRuleP2;
+import org.sonatype.nexus.repository.rest.api.model.AbstractRepositoryApiRequest;
+import org.sonatype.nexus.repository.rest.api.model.CleanupPolicyAttributes;
+import org.sonatype.nexus.repository.rest.api.model.HttpClientAttributes;
+import org.sonatype.nexus.repository.rest.api.model.HttpClientConnectionAttributes;
+import org.sonatype.nexus.repository.rest.api.model.NegativeCacheAttributes;
+import org.sonatype.nexus.repository.rest.api.model.ProxyAttributes;
+import org.sonatype.nexus.repository.rest.api.model.StorageAttributes;
+import org.sonatype.nexus.repository.types.ProxyType;
+import org.sonatype.nexus.security.role.Role;
+import org.sonatype.nexus.testsuite.testsupport.RepositoryITSupport;
+import org.sonatype.nexus.testsuite.testsupport.fixtures.SecurityRule;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.net.HttpHeaders;
 import org.apache.commons.io.IOUtils;
@@ -35,22 +50,6 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.junit.Rule;
-import org.sonatype.nexus.repository.p2.api.P2ProxyRepositoryApiRequest;
-import org.sonatype.nexus.repository.p2.internal.P2Format;
-import org.sonatype.nexus.repository.p2.internal.fixtures.RepositoryRuleP2;
-import org.sonatype.nexus.repository.p2.internal.util.P2PathUtils;
-import org.sonatype.nexus.repository.rest.api.model.AbstractRepositoryApiRequest;
-import org.sonatype.nexus.repository.rest.api.model.CleanupPolicyAttributes;
-import org.sonatype.nexus.repository.rest.api.model.HttpClientAttributes;
-import org.sonatype.nexus.repository.rest.api.model.HttpClientConnectionAttributes;
-import org.sonatype.nexus.repository.rest.api.model.HttpClientConnectionAuthenticationAttributes;
-import org.sonatype.nexus.repository.rest.api.model.NegativeCacheAttributes;
-import org.sonatype.nexus.repository.rest.api.model.ProxyAttributes;
-import org.sonatype.nexus.repository.rest.api.model.StorageAttributes;
-import org.sonatype.nexus.repository.types.ProxyType;
-import org.sonatype.nexus.security.role.Role;
-import org.sonatype.nexus.testsuite.testsupport.RepositoryITSupport;
-import org.sonatype.nexus.testsuite.testsupport.fixtures.SecurityRule;
 
 import static javax.ws.rs.core.Response.status;
 
@@ -91,7 +90,7 @@ public class P2ResourceITSupport extends RepositoryITSupport
   }
 
   protected String getCreateRepositoryPathUrl(final String type) {
-    return new StringJoiner(P2PathUtils.DIVIDER)
+    return new StringJoiner("/")
         .add(REPOSITORIES_API_URL)
         .add(FORMAT_VALUE)
         .add(type)
@@ -99,7 +98,7 @@ public class P2ResourceITSupport extends RepositoryITSupport
   }
 
   protected String getUpdateRepositoryPathUrl(final String type, final String name) {
-    return new StringJoiner(P2PathUtils.DIVIDER)
+    return new StringJoiner("/")
         .add(REPOSITORIES_API_URL)
         .add(FORMAT_VALUE)
         .add(type)
@@ -107,7 +106,7 @@ public class P2ResourceITSupport extends RepositoryITSupport
         .toString();
   }
 
-  protected AbstractRepositoryApiRequest createProxyRequest(boolean strictContentTypeValidation) {
+  protected AbstractRepositoryApiRequest createProxyRequest(final boolean strictContentTypeValidation) {
     StorageAttributes storage =
         new StorageAttributes("default", strictContentTypeValidation);
     CleanupPolicyAttributes cleanup = new CleanupPolicyAttributes(Collections.emptyList());
@@ -135,7 +134,7 @@ public class P2ResourceITSupport extends RepositoryITSupport
     return execute(request);
   }
 
-  private Response execute(HttpEntityEnclosingRequestBase request) throws Exception {
+  private Response execute(final HttpEntityEnclosingRequestBase request) throws Exception {
     try (CloseableHttpResponse response = clientBuilder().build().execute(request)) {
       Response.ResponseBuilder responseBuilder = status(response.getStatusLine().getStatusCode());
       Arrays.stream(response.getAllHeaders()).forEach(h -> responseBuilder.header(h.getName(), h.getValue()));
@@ -148,7 +147,7 @@ public class P2ResourceITSupport extends RepositoryITSupport
     }
   }
 
-  private void prepareRequest(HttpEntityEnclosingRequestBase request, String url, Object body) throws Exception {
+  private void prepareRequest(final HttpEntityEnclosingRequestBase request, final String url, final Object body) throws Exception {
     request.setEntity(new ByteArrayEntity(OBJECT_MAPPER.writeValueAsBytes(body), ContentType.APPLICATION_JSON));
     UriBuilder uriBuilder = UriBuilder.fromUri(nexusUrl.toString()).path(url);
     request.setURI(uriBuilder.build());

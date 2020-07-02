@@ -12,24 +12,52 @@
  */
 package org.sonatype.nexus.repository.p2.internal;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 
+import org.sonatype.goodies.httpfixture.server.fluent.Behaviours;
+import org.sonatype.goodies.httpfixture.server.fluent.Server;
+import org.sonatype.goodies.httpfixture.server.jetty.behaviour.Content;
 import org.sonatype.nexus.pax.exam.NexusPaxExamSupport;
-import org.sonatype.nexus.repository.p2.internal.fixtures.RepositoryRuleP2;
 import org.sonatype.nexus.repository.Repository;
+import org.sonatype.nexus.repository.p2.internal.fixtures.RepositoryRuleP2;
+import org.sonatype.nexus.testsuite.helpers.ComponentAssetTestHelper;
+import org.sonatype.nexus.testsuite.testsupport.NexusITSupport;
 import org.sonatype.nexus.testsuite.testsupport.RepositoryITSupport;
+
+import com.google.common.hash.Hashing;
+import org.apache.commons.compress.compressors.xz.XZCompressorOutputStream;
+import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
+import org.ops4j.pax.exam.Configuration;
+import org.ops4j.pax.exam.Option;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 public class P2ITSupport
     extends RepositoryITSupport
 {
-  public static final String FORMAT_NAME = "p2";
+  protected static final String GZIP_MIME_TYPE = "application/x-gzip";
 
-  public static final String MIME_TYPE = "application/java-archive";
+  protected static final String JAR_MIME_TYPE = "application/java-archive";
+
+  protected static final String XML_MIME_TYPE = "application/xml";
+
+  protected static final String XZ_MIME_TYPE = "application/x-xz";
+
+  public static final String FORMAT_NAME = "p2";
 
   public static final String COMPONENT_NAME = "org.eclipse.cvs.source";
 
@@ -47,7 +75,9 @@ public class P2ITSupport
 
   public static final String PACKAGE_NAME = COMPONENT_NAME + "_" + VERSION_NUMBER + EXTENSION_JAR;
 
-  public static final String PACKAGE_BASE_PATH = "R-4.7.3a-201803300640/features/";
+  public static final String PACKAGE_SITE = "R-4.7.3a-201803300640/";
+
+  public static final String PACKAGE_BASE_PATH = "features/";
 
   public static final String HELP_COMPONENT_NAME = "org.eclipse.help.source";
 
@@ -83,8 +113,21 @@ public class P2ITSupport
 
   public static final String INVALID_PACKAGE_URL = PACKAGE_BASE_PATH + INVALID_PACKAGE_NAME;
 
+  @Inject
+  protected ComponentAssetTestHelper componentAssetTestHelper;
+
+  @Configuration
+  public static Option[] configureNexus() {
+    return NexusPaxExamSupport.options(NexusITSupport.configureNexusBase(),
+        systemProperty("nexus-exclude-features").value("nexus-cma-community"),
+        nexusFeature("org.sonatype.nexus.plugins", "nexus-repository-p2"),
+        nexusFeature("org.sonatype.nexus.plugins", "nexus-restore-p2"));
+  }
+
   @Rule
   public RepositoryRuleP2 repos = new RepositoryRuleP2(() -> repositoryManager);
+
+  protected Server server;
 
   @Override
   protected RepositoryRuleP2 createRepositoryRule() {
@@ -102,10 +145,52 @@ public class P2ITSupport
   }
 
   protected P2Client p2Client(final URL repositoryUrl) throws Exception {
-    return new P2Client(
-        clientBuilder(repositoryUrl).build(),
-        clientContext(),
-        repositoryUrl.toURI()
-    );
+    return new P2Client(clientBuilder(repositoryUrl).build(), clientContext(), repositoryUrl.toURI());
+  }
+
+  protected String childSitePath(final String childSitePath, final String filePath) {
+    return childSiteHash(childSitePath) + "/" + filePath;
+  }
+
+  protected String childSiteHash(final String childSitePath) {
+    return Hashing.sha256()
+        .hashString(String.format("http://localhost:%s/%s/", server.getPort(), childSitePath), StandardCharsets.UTF_8)
+        .toString();
+  }
+
+  protected void buildSite(final File directory) throws IOException {
+    Files.walk(directory.toPath()).filter(Files::isRegularFile).forEach(path -> {
+      String relativizedPath = directory.toPath().relativize(path).toString().replace('\\', '/');
+      server.serve("/" + relativizedPath).withBehaviours(Behaviours.file(path.toFile()));
+      if (relativizedPath.endsWith(".xml")) {
+        server.serve("/" + relativizedPath + ".xz").withBehaviours(createXz(path));
+        server.serve("/" + relativizedPath.replace("xml", "jar"))
+            .withBehaviours(createJar(path));
+      }
+    });
+  }
+
+  protected Content createJar(final Path file) {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    try (InputStream in = Files.newInputStream(file); ZipOutputStream zipOut = new ZipOutputStream(out)) {
+      zipOut.putNextEntry(new ZipEntry(file.getFileName().toString()));
+      IOUtils.copy(in, zipOut);
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return Behaviours.content(out.toByteArray(), "application/zip");
+  }
+
+  protected Content createXz(final Path file) {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    try (InputStream in = Files.newInputStream(file);
+        XZCompressorOutputStream xzOut = new XZCompressorOutputStream(out)) {
+      IOUtils.copy(in, xzOut);
+    }
+    catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+    return Behaviours.content(out.toByteArray(), "application/x-xz");
   }
 }

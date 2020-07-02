@@ -12,15 +12,6 @@
  */
 package org.sonatype.nexus.repository.p2.internal.util;
 
-import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
-import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
-import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes.Builder;
-import org.sonatype.nexus.repository.storage.TempBlob;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
-
 import java.io.IOException;
 import java.util.Optional;
 import java.util.PropertyResourceBundle;
@@ -29,7 +20,14 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
-import static org.sonatype.nexus.repository.p2.internal.util.P2PathUtils.normalizeComponentName;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+
+import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
+import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes.Builder;
+import org.sonatype.nexus.repository.storage.TempBlob;
 
 /**
  * @since 1.0.0
@@ -53,7 +51,7 @@ public class AttributesParserManifest
     manifestJarExtractor = new JarExtractor<Manifest>(tempBlobConverter)
     {
       @Override
-      protected Manifest createSpecificEntity(JarInputStream jis, JarEntry jarEntry) throws IOException
+      protected Manifest createSpecificEntity(final JarInputStream jis, final JarEntry jarEntry) throws IOException
       {
         Manifest manifest = jis.getManifest();
         if (manifest != null) {
@@ -97,6 +95,6 @@ public class AttributesParserManifest
     if (name != null) {
       resultName = name.split(";")[0];
     }
-    return normalizeComponentName(resultName);
+    return resultName;
   }
 }

@@ -20,14 +20,13 @@ import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.junit.Rule;
 import org.sonatype.goodies.httpfixture.server.api.Behaviour;
-import org.sonatype.nexus.common.entity.EntityHelper;
 import org.sonatype.nexus.common.entity.EntityId;
 import org.sonatype.nexus.repository.Repository;
-import org.sonatype.nexus.repository.routing.RoutingRule;
 import org.sonatype.nexus.repository.routing.RoutingRuleStore;
 import org.sonatype.nexus.testsuite.testsupport.fixtures.RoutingRuleRule;
+
+import org.junit.Rule;
 
 /**
  * Support class for P2 Routing Rule ITs.

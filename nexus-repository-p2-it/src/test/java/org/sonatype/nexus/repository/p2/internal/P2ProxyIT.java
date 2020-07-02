@@ -12,95 +12,71 @@
  */
 package org.sonatype.nexus.repository.p2.internal;
 
-import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.ZipInputStream;
 
-import org.sonatype.goodies.httpfixture.server.fluent.Behaviours;
 import org.sonatype.goodies.httpfixture.server.fluent.Server;
-import org.sonatype.nexus.pax.exam.NexusPaxExamSupport;
 import org.sonatype.nexus.repository.Repository;
 import org.sonatype.nexus.repository.http.HttpStatus;
-import org.sonatype.nexus.repository.storage.Asset;
-import org.sonatype.nexus.repository.storage.Component;
-import org.sonatype.nexus.repository.storage.ComponentMaintenance;
-import org.sonatype.nexus.testsuite.testsupport.NexusITSupport;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.util.EntityUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.ops4j.pax.exam.Configuration;
-import org.ops4j.pax.exam.Option;
+import org.tukaani.xz.XZInputStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.arrayContaining;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.sonatype.nexus.testsuite.testsupport.FormatClientSupport.status;
 
 public class P2ProxyIT
     extends P2ITSupport
 {
-  private static final String FORMAT_NAME = "p2";
+  private static final String PATH_PLUGIN = "plugins/com.sonatype.nexus_1.2.0.v20170518-1049.jar.pack.gz";
 
-  private static final String MIME_TYPE = "application/java-archive";
+  private static final String BINARY_PATH = "binary/org.eclipse.platform.ide.executable.gtk.linux.x86_64_4.15.0.I20200110-0905";
 
-  private static final String X_GZIP_TYPE = "application/x-gzip";
+  private static final String FEATURE_PATH = "features/com.sonatype.nexus.feature_1.2.0.v20170518-1049.jar";
 
-  private static final String COMPONENT_NAME = "org.eclipse.cvs.source";
+  private static final String TEXT_MIME_TYPE = "text/plain";
 
-  private static final String ARTIFACT_NAME = "artifacts";
+  private static final String PATH_COMPOSITE_CHILD = "composite-child";
 
-  private static final String ARTIFACT_WITHOUT_MIRROR_NAME = "artifacts-mirror-removed";
+  private static final String PATH_CHILD_SITE = "child";
 
-  private static final String VERSION_NUMBER = "1.4.404.v20180330-0640";
+  private static final String ASSET_KIND_ARTIFACTS_METADATA = "ARTIFACTS_METADATA";
 
-  private static final String EXTENSION_JAR = ".jar";
+  private static final String ASSET_KIND_BUNDLE = "BUNDLE";
 
-  private static final String EXTENSION_XML = ".xml";
+  private static final String ASSET_KIND_BINARY_BUNDLE = "BINARY_BUNDLE";
 
-  private static final String EXTENSION_XML_XZ = ".xml.xz";
+  private static final String ASSET_KIND_COMPOSITE_CONTENT = "COMPOSITE_CONTENT";
 
-  private static final String PACKAGE_NAME = COMPONENT_NAME + "_" + VERSION_NUMBER + EXTENSION_JAR;
+  private static final String ASSET_KIND_COMPOSITE_ARTIFACTS = "COMPOSITE_ARTIFACTS";
 
-  private static final String ARTIFACTS_BASE_PATH = "R-4.7-201706120950/";
+  private static final String ASSET_KIND_CONTENT_METADATA = "CONTENT_METADATA";
 
-  private static final String ARTIFACT_JAR = ARTIFACT_NAME + EXTENSION_JAR;
+  private static final String ASSET_KIND_P2_INDEX = "P2_INDEX";
 
-  private static final String ARTIFACT_XML = ARTIFACT_NAME + EXTENSION_XML;
+  private static final String ARTIFACTS_JAR = "artifacts.jar";
 
-  private static final String ARTIFACT_XML_TEST_PATH = ARTIFACTS_BASE_PATH + ARTIFACT_XML;
+  private static final String ARTIFACTS_XML = "artifacts.xml";
 
-  private static final String ARTIFACT_XML_XZ = ARTIFACT_NAME + EXTENSION_XML_XZ;
-
-  private static final String ARTIFACT_XML_XZ_TEST_PATH = ARTIFACTS_BASE_PATH + ARTIFACT_XML_XZ;
-
-  private static final String ARTIFACT_WITHOUT_MIRROR_XML = ARTIFACT_WITHOUT_MIRROR_NAME + EXTENSION_XML;
-
-  private static final String INVALID_PACKAGE_NAME = COMPONENT_NAME + "-0.24.zip";
-
-  private static final String PACKAGE_BASE_PATH = "R-4.7.3a-201803300640/features/";
-
-  private static final String CONTENT_BASE_PATH = "R-4.7-201706120950/";
-
-  private static final String CONTENT_JAR = "content.jar";
-
-  private static final String CONTENT_XML = "content.xml";
-
-  private static final String CONTENT_XML_XZ = "content.xml.xz";
-
-  private static final String CONTENT_JAR_PATH = CONTENT_BASE_PATH + CONTENT_JAR;
-
-  private static final String CONTENT_XML_XZ_PATH = CONTENT_BASE_PATH + CONTENT_XML_XZ;
-
-  private static final String CONTENT_XML_PATH = CONTENT_BASE_PATH + CONTENT_XML;
-
-  private static final String BAD_PATH = "/this/path/is/not/valid";
-
-  private static final String VALID_PACKAGE_URL = PACKAGE_BASE_PATH + PACKAGE_NAME;
-
-  private static final String P2_INDEX = "p2.index";
+  private static final String ARTIFACTS_XML_XZ = "artifacts.xml.xz";
 
   private static final String COMPOSITE_ARTIFACTS_JAR = "compositeArtifacts.jar";
 
@@ -110,290 +86,388 @@ public class P2ProxyIT
 
   private static final String COMPOSITE_CONTENT_XML = "compositeContent.xml";
 
-  private static final String BINARY = "org.eclipse.equinox.executable_root.cocoa.macosx.x86_64_3.7.0.v20170531-1133";
+  private static final String CONTENT_JAR = "content.jar";
 
-  private static final String BINARY_BASE_PATH = "R-4.7-201706120950/binary/";
+  private static final String CONTENT_XML = "content.xml";
 
-  private static final String BINARY_TEST_PATH = BINARY_BASE_PATH + BINARY;
+  private static final String CONTENT_XML_XZ = "content.xml.xz";
 
-  private static final String PLUGIN = "com.google.code.atinject.tck_1.1.0.v20160901-1938.jar";
+  private static final String P2_INDEX = "p2.index";
 
-  private static final String PLUGIN_BASE_PATH = "R-4.7-201706120950/plugins/";
+  private P2Client compositeSiteClient;
 
-  private static final String PLUGIN_TEST_PATH = PLUGIN_BASE_PATH + PLUGIN;
+  private Repository compositeSiteRepo;
 
-  private static final String FEATURE = "org.eclipse.core.runtime.feature_1.2.0.v20170518-1049.jar";
-
-  private static final String FEATURE_BASE_PATH = "R-4.7-201706120950/features/";
-
-  private static final String FEATURE_TEST_PATH = FEATURE_BASE_PATH + FEATURE;
-
-  private static final String INVALID_PACKAGE_URL = PACKAGE_BASE_PATH + INVALID_PACKAGE_NAME;
-
-  private static final String ACCELEO_FEATURE_JAR = "org.eclipse.acceleo.equinox.launcher_3.7.8.201902261618.jar";
-
-  private static final String ACCELEO_PLUGIN_GZ = "org.eclipse.acceleo.equinox.launcher_3.7.8.201902261618.jar.pack.gz";
-
-  private static final String ACCELEO_COMPONENT_NAME = "org.eclipse.acceleo.equinox.launcher";
-
-  private static final String ACCELEO_COMPONENT_VERSION = "3.7.8.201902261618";
-
-  private static final String
-      ACCELEO_FEATURE = ACCELEO_COMPONENT_NAME + ACCELEO_COMPONENT_VERSION + "/features/" + ACCELEO_FEATURE_JAR;
-
-  private static final String
-      ACCELEO_PLUGIN = ACCELEO_COMPONENT_NAME + ACCELEO_COMPONENT_VERSION + "/plugins/" + ACCELEO_PLUGIN_GZ;
-
-  private P2Client proxyClient;
-
-  private Repository proxyRepo;
-
-  private Server server;
-
-  @Configuration
-  public static Option[] configureNexus() {
-    return NexusPaxExamSupport.options(
-        NexusITSupport.configureNexusBase(),
-        nexusFeature("org.sonatype.nexus.plugins", "nexus-repository-p2")
-    );
-  }
+  private Repository siteRepo;
 
   @Before
   public void setup() throws Exception {
-    server = Server.withPort(0)
-        .serve("/" + VALID_PACKAGE_URL)
-        .withBehaviours(Behaviours.file(testData.resolveFile(PACKAGE_NAME)))
-        .serve("/" + ARTIFACT_JAR)
-        .withBehaviours(Behaviours.file(testData.resolveFile(ARTIFACT_JAR)))
-        .serve("/" + ARTIFACT_XML_TEST_PATH)
-        .withBehaviours(Behaviours.file(testData.resolveFile(ARTIFACT_XML)))
-        .serve("/" + ARTIFACT_XML_XZ_TEST_PATH)
-        .withBehaviours(Behaviours.file(testData.resolveFile(ARTIFACT_XML_XZ)))
-        .serve("/" + P2_INDEX)
-        .withBehaviours(Behaviours.file(testData.resolveFile(P2_INDEX)))
-        .serve("/folder/" + P2_INDEX)
-        .withBehaviours(Behaviours.file(testData.resolveFile(P2_INDEX)))
-        .serve("/" + COMPOSITE_ARTIFACTS_JAR)
-        .withBehaviours(Behaviours.file(testData.resolveFile(COMPOSITE_ARTIFACTS_JAR)))
-        .serve("/" + COMPOSITE_ARTIFACTS_XML)
-        .withBehaviours(Behaviours.file(testData.resolveFile(COMPOSITE_ARTIFACTS_XML)))
-        .serve("/" + COMPOSITE_CONTENT_JAR)
-        .withBehaviours(Behaviours.file(testData.resolveFile(COMPOSITE_CONTENT_JAR)))
-        .serve("/" + COMPOSITE_CONTENT_XML)
-        .withBehaviours(Behaviours.file(testData.resolveFile(COMPOSITE_CONTENT_XML)))
-        .serve("/" + CONTENT_XML_PATH)
-        .withBehaviours(Behaviours.file(testData.resolveFile(CONTENT_XML)))
-        .serve("/" + CONTENT_JAR_PATH)
-        .withBehaviours(Behaviours.file(testData.resolveFile(CONTENT_JAR)))
-        .serve("/" + CONTENT_XML_XZ_PATH)
-        .withBehaviours(Behaviours.file(testData.resolveFile(CONTENT_XML_XZ)))
-        .serve("/" + BINARY_TEST_PATH)
-        .withBehaviours(Behaviours.file(testData.resolveFile(BINARY)))
-        .serve("/" + PLUGIN_TEST_PATH)
-        .withBehaviours(Behaviours.file(testData.resolveFile(PLUGIN)))
-        .serve("/" + FEATURE_TEST_PATH)
-        .withBehaviours(Behaviours.file(testData.resolveFile(FEATURE)))
-        .serve("/" + ACCELEO_COMPONENT_NAME + ACCELEO_COMPONENT_VERSION + "/features/" + ACCELEO_FEATURE_JAR)
-        .withBehaviours(Behaviours.file(testData.resolveFile(ACCELEO_FEATURE_JAR)))
-        .serve("/" + ACCELEO_COMPONENT_NAME + ACCELEO_COMPONENT_VERSION + "/plugins/" + ACCELEO_PLUGIN_GZ)
-        .withBehaviours(Behaviours.file(testData.resolveFile(ACCELEO_PLUGIN_GZ)))
-        .start();
+    server = Server.withPort(0);
+    buildSite(testData.resolveFile("sample-site"));
+    server.start();
 
-    proxyRepo = repos.createP2Proxy("p2-test-proxy", server.getUrl().toExternalForm());
-    proxyClient = p2Client(proxyRepo);
+    compositeSiteRepo = repos.createP2Proxy("p2-test-composite-proxy", server.getUrl().toExternalForm());
+    compositeSiteClient = p2Client(compositeSiteRepo);
+
+    siteRepo = repos.createP2Proxy("p2-test-proxy", server.getUrl().toExternalForm() + "/" + PATH_CHILD_SITE);
   }
 
   @Test
-  public void unresponsiveRemoteProduces404() throws Exception {
-    assertThat(status(proxyClient.get(BAD_PATH)), is(HttpStatus.NOT_FOUND));
+  public void unresponsiveRemoteProduces502() throws Exception {
+    server.stop();
+    assertThat(status(compositeSiteClient.get(COMPOSITE_ARTIFACTS_JAR)), is(HttpStatus.BAD_GATEWAY));
   }
 
   @Test
-  public void retrieveJarFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(VALID_PACKAGE_URL)), is(HttpStatus.OK));
+  public void testArtifacts() throws Exception {
+    testPath(siteRepo, ARTIFACTS_JAR, JAR_MIME_TYPE, ASSET_KIND_ARTIFACTS_METADATA);
+    testPath(siteRepo, ARTIFACTS_XML, XML_MIME_TYPE, ASSET_KIND_ARTIFACTS_METADATA);
+    testPath(siteRepo, ARTIFACTS_XML_XZ, XZ_MIME_TYPE, ASSET_KIND_ARTIFACTS_METADATA);
 
-    final Asset asset = findAsset(proxyRepo, VALID_PACKAGE_URL);
-    assertThat(asset.name(), is(equalTo(VALID_PACKAGE_URL)));
-    assertThat(asset.contentType(), is(equalTo(MIME_TYPE)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    // test non-root
+    assertOk(compositeSiteClient, COMPOSITE_ARTIFACTS_XML); // prime
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, ARTIFACTS_JAR), JAR_MIME_TYPE,
+        ASSET_KIND_ARTIFACTS_METADATA);
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, ARTIFACTS_XML), XML_MIME_TYPE,
+        ASSET_KIND_ARTIFACTS_METADATA);
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, ARTIFACTS_XML_XZ), XZ_MIME_TYPE,
+        ASSET_KIND_ARTIFACTS_METADATA);
 
-    final Component component = findComponent(proxyRepo, COMPONENT_NAME);
-    assertThat(component.version(), is(equalTo(VERSION_NUMBER)));
-    assertThat(component.name(), is(equalTo(COMPONENT_NAME)));
+    // Uses cached assets when remote offline
+    server.stop();
+    testPath(siteRepo, ARTIFACTS_JAR, JAR_MIME_TYPE, ASSET_KIND_ARTIFACTS_METADATA);
+    testPath(siteRepo, ARTIFACTS_XML, XML_MIME_TYPE, ASSET_KIND_ARTIFACTS_METADATA);
+    testPath(siteRepo, ARTIFACTS_XML_XZ, XZ_MIME_TYPE, ASSET_KIND_ARTIFACTS_METADATA);
+
+    // test non-root
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, ARTIFACTS_JAR),
+        JAR_MIME_TYPE,
+        ASSET_KIND_ARTIFACTS_METADATA);
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, ARTIFACTS_XML),
+        XML_MIME_TYPE,
+        ASSET_KIND_ARTIFACTS_METADATA);
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, ARTIFACTS_XML_XZ),
+        XZ_MIME_TYPE,
+        ASSET_KIND_ARTIFACTS_METADATA);
   }
 
   @Test
-  public void retrieveP2IndexFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(P2_INDEX)), is(HttpStatus.OK));
+  public void testContent() throws Exception {
+    testPath(siteRepo, CONTENT_JAR, JAR_MIME_TYPE, ASSET_KIND_CONTENT_METADATA);
+    testPath(siteRepo, CONTENT_XML, XML_MIME_TYPE, ASSET_KIND_CONTENT_METADATA);
+    testPath(siteRepo, CONTENT_XML_XZ, XZ_MIME_TYPE, ASSET_KIND_CONTENT_METADATA);
 
-    final Asset asset = findAsset(proxyRepo, P2_INDEX);
-    assertThat(asset.name(), is(equalTo(P2_INDEX)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    // test non-root
+    assertOk(compositeSiteClient, COMPOSITE_CONTENT_XML); // prime
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, CONTENT_JAR), JAR_MIME_TYPE,
+        ASSET_KIND_CONTENT_METADATA);
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, CONTENT_XML), XML_MIME_TYPE,
+        ASSET_KIND_CONTENT_METADATA);
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, CONTENT_XML_XZ), XZ_MIME_TYPE,
+        ASSET_KIND_CONTENT_METADATA);
 
-    assertThat(status(proxyClient.get("folder/" + P2_INDEX)), is(HttpStatus.OK));
+    // Uses cached assets when remote offline
+    server.stop();
+    testPath(siteRepo, CONTENT_JAR, JAR_MIME_TYPE, ASSET_KIND_CONTENT_METADATA);
+    testPath(siteRepo, CONTENT_XML, XML_MIME_TYPE, ASSET_KIND_CONTENT_METADATA);
+    testPath(siteRepo, CONTENT_XML_XZ, XZ_MIME_TYPE, ASSET_KIND_CONTENT_METADATA);
+
+    // test non-root
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, CONTENT_JAR), JAR_MIME_TYPE,
+        ASSET_KIND_CONTENT_METADATA);
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, CONTENT_XML), XML_MIME_TYPE,
+        ASSET_KIND_CONTENT_METADATA);
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, CONTENT_XML_XZ), XZ_MIME_TYPE,
+        ASSET_KIND_CONTENT_METADATA);
   }
 
   @Test
-  public void retrieveCompositeArtifactsJarFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(COMPOSITE_ARTIFACTS_JAR)), is(HttpStatus.OK));
+  public void testCompositeArtifacts() throws Exception {
+    testPath(compositeSiteRepo, COMPOSITE_ARTIFACTS_XML, XML_MIME_TYPE, ASSET_KIND_COMPOSITE_ARTIFACTS);
+    testPath(compositeSiteRepo, COMPOSITE_ARTIFACTS_JAR, JAR_MIME_TYPE, ASSET_KIND_COMPOSITE_ARTIFACTS);
 
-    final Asset asset = findAsset(proxyRepo, COMPOSITE_ARTIFACTS_JAR);
-    assertThat(asset.name(), is(equalTo(COMPOSITE_ARTIFACTS_JAR)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    // test non-root (already primed)
+    testPath(compositeSiteRepo, childSitePath(PATH_COMPOSITE_CHILD, COMPOSITE_ARTIFACTS_JAR), JAR_MIME_TYPE,
+        ASSET_KIND_COMPOSITE_ARTIFACTS);
+    testPath(compositeSiteRepo, childSitePath(PATH_COMPOSITE_CHILD, COMPOSITE_ARTIFACTS_XML), XML_MIME_TYPE,
+        ASSET_KIND_COMPOSITE_ARTIFACTS);
+
+    // Uses cached assets when remote offline
+    server.stop();
+    testPath(compositeSiteRepo, COMPOSITE_ARTIFACTS_JAR, JAR_MIME_TYPE, ASSET_KIND_COMPOSITE_ARTIFACTS);
+    testPath(compositeSiteRepo, COMPOSITE_ARTIFACTS_XML, XML_MIME_TYPE, ASSET_KIND_COMPOSITE_ARTIFACTS);
+
+    // test non-root (already primed)
+    testPath(compositeSiteRepo, childSitePath(PATH_COMPOSITE_CHILD, COMPOSITE_ARTIFACTS_JAR), JAR_MIME_TYPE,
+        ASSET_KIND_COMPOSITE_ARTIFACTS);
+    testPath(compositeSiteRepo, childSitePath(PATH_COMPOSITE_CHILD, COMPOSITE_ARTIFACTS_XML), XML_MIME_TYPE,
+        ASSET_KIND_COMPOSITE_ARTIFACTS);
   }
 
   @Test
-  public void retrieveCompositeArtifactsXmlFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(COMPOSITE_ARTIFACTS_XML)), is(HttpStatus.OK));
+  public void testCompositeContent() throws Exception {
+    testPath(compositeSiteRepo, COMPOSITE_CONTENT_JAR, JAR_MIME_TYPE, ASSET_KIND_COMPOSITE_CONTENT);
+    testPath(compositeSiteRepo, COMPOSITE_CONTENT_XML, XML_MIME_TYPE, ASSET_KIND_COMPOSITE_CONTENT);
 
-    final Asset asset = findAsset(proxyRepo, COMPOSITE_ARTIFACTS_XML);
-    assertThat(asset.name(), is(equalTo(COMPOSITE_ARTIFACTS_XML)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    // test non-root (already primed)
+    testPath(compositeSiteRepo, childSitePath(PATH_COMPOSITE_CHILD, COMPOSITE_CONTENT_JAR), JAR_MIME_TYPE,
+        ASSET_KIND_COMPOSITE_CONTENT);
+    testPath(compositeSiteRepo, childSitePath(PATH_COMPOSITE_CHILD, COMPOSITE_CONTENT_XML), XML_MIME_TYPE,
+        ASSET_KIND_COMPOSITE_CONTENT);
+
+    // Uses cached assets when remote offline
+    server.stop();
+    testPath(compositeSiteRepo, COMPOSITE_CONTENT_JAR, JAR_MIME_TYPE, ASSET_KIND_COMPOSITE_CONTENT);
+    testPath(compositeSiteRepo, COMPOSITE_CONTENT_XML, XML_MIME_TYPE, ASSET_KIND_COMPOSITE_CONTENT);
+
+    // test non-root (already primed)
+    testPath(compositeSiteRepo, childSitePath(PATH_COMPOSITE_CHILD, COMPOSITE_CONTENT_JAR), JAR_MIME_TYPE,
+        ASSET_KIND_COMPOSITE_CONTENT);
+    testPath(compositeSiteRepo, childSitePath(PATH_COMPOSITE_CHILD, COMPOSITE_CONTENT_XML), XML_MIME_TYPE,
+        ASSET_KIND_COMPOSITE_CONTENT);
   }
 
   @Test
-  public void retrieveCompositeContentJarFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(COMPOSITE_CONTENT_JAR)), is(HttpStatus.OK));
+  public void testP2Index() throws Exception {
+    testPath(compositeSiteRepo, P2_INDEX, TEXT_MIME_TYPE, ASSET_KIND_P2_INDEX);
 
-    final Asset asset = findAsset(proxyRepo, COMPOSITE_CONTENT_JAR);
-    assertThat(asset.name(), is(equalTo(COMPOSITE_CONTENT_JAR)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    // test non-root
+    assertOk(compositeSiteClient, COMPOSITE_CONTENT_XML); // prime
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, P2_INDEX), TEXT_MIME_TYPE, ASSET_KIND_P2_INDEX);
+
+    // Uses cached assets when remote offline
+    server.stop();
+    testPath(compositeSiteRepo, P2_INDEX, TEXT_MIME_TYPE, ASSET_KIND_P2_INDEX);
+
+    // test non-root
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, P2_INDEX), TEXT_MIME_TYPE, ASSET_KIND_P2_INDEX);
   }
 
   @Test
-  public void retrieveCompositeContentXmlFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(COMPOSITE_CONTENT_XML)), is(HttpStatus.OK));
+  public void testBinary() throws Exception {
+    testPath(siteRepo, BINARY_PATH, null, ASSET_KIND_BINARY_BUNDLE);
 
-    final Asset asset = findAsset(proxyRepo, COMPOSITE_CONTENT_XML);
-    assertThat(asset.name(), is(equalTo(COMPOSITE_CONTENT_XML)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    // test non-root
+    assertOk(compositeSiteClient, COMPOSITE_CONTENT_XML); // prime
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, BINARY_PATH), null, ASSET_KIND_BINARY_BUNDLE);
+
+    // Uses cached assets when remote offline
+    server.stop();
+    testPath(siteRepo, BINARY_PATH, null, ASSET_KIND_BINARY_BUNDLE);
+
+    // test non-root
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, BINARY_PATH), null, ASSET_KIND_BINARY_BUNDLE);
   }
 
   @Test
-  public void retrieveContentXmlFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(CONTENT_XML_PATH)), is(HttpStatus.OK));
+  public void testFeatures() throws Exception {
+    String identifier = "com.sonatype.nexus.feature";
+    String version = "1.2.0.v20170518-1049";
 
-    final Asset asset = findAsset(proxyRepo, CONTENT_XML_PATH);
-    assertThat(asset.name(), is(equalTo(CONTENT_XML_PATH)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    testPath(siteRepo, FEATURE_PATH, JAR_MIME_TYPE, ASSET_KIND_BUNDLE, identifier, version);
+
+    // test non-root
+    assertOk(compositeSiteClient, COMPOSITE_CONTENT_XML); // prime
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, FEATURE_PATH), JAR_MIME_TYPE, ASSET_KIND_BUNDLE,
+        identifier, version);
+
+    // Uses cached assets when remote offline
+    server.stop();
+    testPath(siteRepo, FEATURE_PATH, JAR_MIME_TYPE, ASSET_KIND_BUNDLE, identifier, version);
+
+    // test non-root
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, FEATURE_PATH), JAR_MIME_TYPE, ASSET_KIND_BUNDLE,
+        identifier, version);
   }
 
   @Test
-  public void retrieveContentXmlXzFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(CONTENT_XML_XZ_PATH)), is(HttpStatus.OK));
+  public void testPlugin() throws Exception {
+    String identifier = "com.sonatype.nexus";
+    String version = "1.2.0.v20170518-1049";
 
-    final Asset asset = findAsset(proxyRepo, CONTENT_XML_XZ_PATH);
-    assertThat(asset.name(), is(equalTo(CONTENT_XML_XZ_PATH)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    testPath(siteRepo, PATH_PLUGIN, GZIP_MIME_TYPE, ASSET_KIND_BUNDLE, identifier, version);
+
+    // test non-root
+    assertOk(compositeSiteClient, COMPOSITE_CONTENT_XML); // prime
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, PATH_PLUGIN), GZIP_MIME_TYPE, ASSET_KIND_BUNDLE,
+        identifier, version);
+
+    // Uses cached assets when remote offline
+    server.stop();
+    testPath(siteRepo, PATH_PLUGIN, GZIP_MIME_TYPE, ASSET_KIND_BUNDLE, identifier, version);
+
+    // test non-root
+    testPath(compositeSiteRepo, childSitePath(PATH_CHILD_SITE, PATH_PLUGIN), GZIP_MIME_TYPE,
+        ASSET_KIND_BUNDLE,
+        identifier, version);
   }
 
   @Test
-  public void retrieveContentJarFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(CONTENT_JAR_PATH)), is(HttpStatus.OK));
+  public void testMissingPaths() throws Exception {
+    assertMissing(compositeSiteClient, CONTENT_XML);
+    assertMissing(compositeSiteClient, CONTENT_JAR);
+    assertMissing(compositeSiteClient, CONTENT_XML_XZ);
 
-    final Asset asset = findAsset(proxyRepo, CONTENT_JAR_PATH);
-    assertThat(asset.name(), is(equalTo(CONTENT_JAR_PATH)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    assertMissing(compositeSiteClient, ARTIFACTS_XML_XZ);
+    assertMissing(compositeSiteClient, ARTIFACTS_XML_XZ);
+    assertMissing(compositeSiteClient, ARTIFACTS_XML_XZ);
+
+    assertMissing(compositeSiteClient, BINARY_PATH);
+    assertMissing(compositeSiteClient, FEATURE_PATH);
+    assertMissing(compositeSiteClient, PATH_PLUGIN);
+
+    P2Client childClient = p2Client(siteRepo);
+    assertMissing(childClient, COMPOSITE_CONTENT_XML);
+    assertMissing(childClient, COMPOSITE_CONTENT_JAR);
+
+    assertMissing(childClient, COMPOSITE_ARTIFACTS_XML);
+    assertMissing(childClient, COMPOSITE_ARTIFACTS_JAR);
   }
 
   @Test
-  public void retrieveBinaryFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(BINARY_TEST_PATH)), is(HttpStatus.OK));
+  public void testChildSite() throws Exception {
+    // Test child site when repo is not primed
+    assertMissing(compositeSiteClient, childSitePath("child", CONTENT_XML));
 
-    final Asset asset = findAsset(proxyRepo, BINARY_TEST_PATH);
-    assertThat(asset.name(), is(equalTo(BINARY_TEST_PATH)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+    String[] expectedHashes = new String[]{childSiteHash("child"), childSiteHash("composite-child")};
+
+    assertThat(retrieveChildPaths(compositeSiteClient, COMPOSITE_ARTIFACTS_JAR), arrayContaining(expectedHashes));
+    assertThat(retrieveChildPaths(compositeSiteClient, COMPOSITE_ARTIFACTS_XML), arrayContaining(expectedHashes));
+    assertThat(retrieveChildPaths(compositeSiteClient, COMPOSITE_CONTENT_JAR), arrayContaining(expectedHashes));
+    assertThat(retrieveChildPaths(compositeSiteClient, COMPOSITE_CONTENT_XML), arrayContaining(expectedHashes));
+
+    expectedHashes = new String[]{"../" + childSiteHash("relative-child")};
+    assertThat(retrieveChildPaths(compositeSiteClient, childSitePath("composite-child", COMPOSITE_ARTIFACTS_JAR)),
+        arrayContaining(expectedHashes));
+    assertThat(retrieveChildPaths(compositeSiteClient, childSitePath("composite-child", COMPOSITE_ARTIFACTS_XML)),
+        arrayContaining(expectedHashes));
+    assertThat(retrieveChildPaths(compositeSiteClient, childSitePath("composite-child", COMPOSITE_CONTENT_JAR)),
+        arrayContaining(expectedHashes));
+    assertThat(retrieveChildPaths(compositeSiteClient, childSitePath("composite-child", COMPOSITE_CONTENT_XML)),
+        arrayContaining(expectedHashes));
+
+    // Test child site when repo is primed
+    assertMissing(compositeSiteClient, childSitePath("unknown-site", CONTENT_XML));
   }
 
   @Test
-  public void retrievePluginFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(PLUGIN_TEST_PATH)), is(HttpStatus.OK));
+  public void testArtifacts_mirrorRemoved() throws Exception {
+    P2Client client = p2Client(siteRepo);
 
-    final Asset asset = findAsset(proxyRepo, PLUGIN_TEST_PATH);
-    assertThat(asset.name(), is(equalTo(PLUGIN_TEST_PATH)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
-  }
-
-  @Test
-  public void retrieveFeatureFromProxyWhenRemoteOnline() throws Exception {
-    assertThat(status(proxyClient.get(FEATURE_TEST_PATH)), is(HttpStatus.OK));
-
-    final Asset asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
-    assertThat(asset.name(), is(equalTo(FEATURE_TEST_PATH)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
-  }
-
-  @Test
-  public void retrieveZipFromProxyShouldNotWork() throws Exception {
-    assertThat(status(proxyClient.get(INVALID_PACKAGE_URL)), is(HttpStatus.NOT_FOUND));
-  }
-
-  @Test
-  public void removeMirrorURLFromXML() throws Exception {
-    assertThat(status(proxyClient.get(ARTIFACT_XML_TEST_PATH)), is(HttpStatus.OK));
-
-    try (CloseableHttpResponse response = proxyClient.get(ARTIFACT_XML_TEST_PATH)) {
-      HttpEntity entity = response.getEntity();
-      String result = IOUtils.toString(entity.getContent()).replaceAll("\\s+", "");
-
-      InputStream targetStream = new FileInputStream(testData.resolveFile(ARTIFACT_WITHOUT_MIRROR_XML));
-      String expected = IOUtils.toString(targetStream).replaceAll("\\s+", "");
-
-      assertThat(result, equalTo(expected));
+    for (String path : new String[]{ARTIFACTS_XML, ARTIFACT_JAR, ARTIFACT_XML_XZ}) {
+      try (CloseableHttpResponse response = client.get(path)) {
+        assertThat(status(response), is(HttpStatus.OK));
+        String metadata = IOUtils.toString(openMetadata(response.getEntity()));
+        assertThat("Links mirrors: " + path, metadata, not(containsString("p2.mirrorsURL")));
+      }
     }
   }
 
   @Test
-  public void checkCache() throws Exception {
-    assertThat(status(proxyClient.get(FEATURE_TEST_PATH)), is(HttpStatus.OK));
-
-    // fetch in cache and stop remote
-    Asset asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
-    assertThat(asset.name(), is(equalTo(FEATURE_TEST_PATH)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
-    server.stop();
-
-    // verify that fetch from cache works
-    assertThat(status(proxyClient.get(FEATURE_TEST_PATH)), is(HttpStatus.OK));
-    asset = findAsset(proxyRepo, FEATURE_TEST_PATH);
-    assertThat(asset.name(), is(equalTo(FEATURE_TEST_PATH)));
-    assertThat(asset.format(), is(equalTo(FORMAT_NAME)));
+  public void checkComponentRemovedWhenAssetRemoved() throws Exception {
+    assertComponentCleanedUp(siteRepo, BINARY_PATH, "org.eclipse.platform.ide.executable.gtk.linux.x86_64", "4.15.0.I20200110-0905");
+    assertComponentCleanedUp(siteRepo, FEATURE_PATH, "com.sonatype.nexus.feature", "1.2.0.v20170518-1049");
+    assertComponentCleanedUp(siteRepo, PATH_PLUGIN, "com.sonatype.nexus", "1.2.0.v20170518-1049");
   }
 
-  @Test
-  public void checkComponentRemovedWhenAssetRemoved() throws Exception {
+  private void assertComponentCleanedUp(
+      final Repository repository,
+      final String path,
+      final String identifier,
+      final String version) throws Exception
+  {
+    P2Client client = p2Client(repository);
+    assertOk(client, path);
+
+    assertTrue(componentAssetTestHelper.assetExists(repository, path));
+    assertTrue(componentAssetTestHelper.componentExists(repository, identifier, version));
+
+    componentAssetTestHelper.removeAsset(repository, path);
+
+    assertFalse(componentAssetTestHelper.assetExists(repository, path));
+    assertFalse(componentAssetTestHelper.componentExists(repository, identifier, version));
+  }
+
+  private static void assertOk(final P2Client client, final String path) throws IOException {
+    try (CloseableHttpResponse response = client.get(path)) {
+      assertThat(status(response), is(HttpStatus.OK));
+    }
+  }
+
+  private static void assertMissing(final P2Client client, final String path) throws IOException {
+    try (CloseableHttpResponse response = client.get(path)) {
+      assertThat(status(response), is(HttpStatus.NOT_FOUND));
+    }
+  }
+
+  private static String[] retrieveChildPaths(final P2Client client, final String path) throws Exception {
+    try (CloseableHttpResponse response = client.get(path)) {
+      assertThat(status(response), is(HttpStatus.OK));
+
+      HttpEntity entity = response.getEntity();
+      try (InputStream in = openMetadata(entity)) {
+        String metadata = IOUtils.toString(in);
+
+        List<String> children = new ArrayList<>();
+        Matcher matcher = Pattern.compile("location=\"(.*)\\/\"").matcher(metadata);
+        while (matcher.find()) {
+          children.add(matcher.group(1));
+        }
+        return children.toArray(new String[children.size()]);
+      }
+      finally {
+        EntityUtils.consumeQuietly(entity);
+      }
+    }
+  }
+
+  private static InputStream openMetadata(final HttpEntity entity) throws Exception {
+    String contentType = entity.getContentType().getValue();
+    if (contentType.contains(XML_MIME_TYPE)) {
+      return entity.getContent();
+    }
+    else if (contentType.contains(XZ_MIME_TYPE)) {
+      return new XZInputStream(entity.getContent());
+    }
+    else if (contentType.contains(JAR_MIME_TYPE)) {
+      ZipInputStream in = new ZipInputStream(entity.getContent());
+      in.getNextEntry();
+      return in;
+    }
+    fail("Unexpected mimetype " + contentType);
+    return null;
+  }
+
+  private void testPath(
+      final Repository repository,
+      final String path,
+      final String mimeType,
+      final String assetKind) throws Exception
+  {
+    P2Client client = p2Client(repository);
+
+    assertOk(client, path);
+
+    assertTrue(componentAssetTestHelper.assetExists(repository, path));
+    if (mimeType != null) {
+      assertThat(componentAssetTestHelper.contentTypeFor(repository.getName(), path), is(mimeType));
+    }
     assertThat(
-        status(proxyClient.get(ACCELEO_FEATURE)),
-        is(HttpStatus.OK));
-    assertThat(
-        status(proxyClient.get(ACCELEO_PLUGIN)),
-        is(HttpStatus.OK));
+        componentAssetTestHelper.attributes(repository, path).child(P2Format.NAME).get("asset_kind", String.class),
+        is(assetKind));
+  }
 
-    Asset assetFeature = findAsset(proxyRepo, ACCELEO_FEATURE);
-    assertThat(assetFeature.name(), is(equalTo(ACCELEO_FEATURE)));
-    assertThat(assetFeature.contentType(), is(equalTo(MIME_TYPE)));
-    assertThat(assetFeature.format(), is(equalTo(FORMAT_NAME)));
+  private void testPath(
+      final Repository repository,
+      final String path,
+      final String mimeType,
+      final String assetKind,
+      final String identifier,
+      final String version) throws Exception
+  {
+    testPath(repository, path, mimeType, assetKind);
 
-    Asset assetPlugin = findAsset(proxyRepo, ACCELEO_PLUGIN);
-    assertThat(assetPlugin.name(), is(equalTo(ACCELEO_PLUGIN)));
-    assertThat(assetPlugin.contentType(), is(equalTo(X_GZIP_TYPE)));
-    assertThat(assetPlugin.format(), is(equalTo(FORMAT_NAME)));
-
-    assertThat(assetFeature.componentId(), is(equalTo(assetPlugin.componentId())));
-
-    Component component = findComponent(proxyRepo, ACCELEO_COMPONENT_NAME);
-    assertThat(component.version(), is(equalTo(ACCELEO_COMPONENT_VERSION)));
-    assertThat(component.name(), is(equalTo(ACCELEO_COMPONENT_NAME)));
-
-    ComponentMaintenance maintenanceFacet = proxyRepo.facet(ComponentMaintenance.class);
-
-    maintenanceFacet.deleteAsset(assetFeature.getEntityMetadata().getId());
-
-    component = findComponent(proxyRepo, ACCELEO_COMPONENT_NAME);
-    assertThat(component, is(equalTo(null)));
-
-    assetPlugin = findAsset(proxyRepo, ACCELEO_PLUGIN);
-    assertThat(assetPlugin, is(equalTo(null)));
+    assertTrue(componentAssetTestHelper.componentExists(repository, identifier, version));
   }
 
   @After

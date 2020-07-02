@@ -14,6 +14,8 @@ package org.sonatype.nexus.repository.p2.internal.util;
 
 import java.io.IOException;
 
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.sonatype.goodies.testsupport.TestSupport;
 import org.sonatype.nexus.repository.p2.internal.exception.AttributeParsingException;
 import org.sonatype.nexus.repository.p2.internal.metadata.P2Attributes;
@@ -47,7 +49,7 @@ public class AttributesParserFeatureXmlTest
   private static final String XML_PLUGIN_NAME = "Eclipse Core Runtime Infrastructure";
 
   @Before
-  public void setUp() {
+  public void setUp() throws ParserConfigurationException {
     TempBlobConverter tempBlobConverter = new TempBlobConverter();
     underTest = new AttributesParserFeatureXml(tempBlobConverter, new PropertyParser(tempBlobConverter));
   }

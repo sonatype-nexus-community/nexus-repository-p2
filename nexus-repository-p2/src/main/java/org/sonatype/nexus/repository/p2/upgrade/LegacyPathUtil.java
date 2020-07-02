@@ -10,29 +10,32 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.internal;
+package org.sonatype.nexus.repository.p2.upgrade;
 
-import org.sonatype.goodies.testsupport.TestSupport;
-
-import org.junit.Before;
-import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
-public class P2FormatTest
-    extends TestSupport
+/**
+ * @since 3.next
+ */
+public class LegacyPathUtil
 {
-  P2Format p2Format;
+  private static final String HTTP_NXRM_PREFIX = "http/";
 
-  @Before
-  public void setUp() {
-    p2Format = new P2Format();
-  }
+  private static final String HTTPS_NXRM_PREFIX = "https/";
 
-  @Test
-  public void P2FormatName() {
-    assertThat(P2Format.NAME, is(equalTo("p2")));
+  private static final String HTTP_URL_PREFIX = "http://";
+
+  private static final String HTTPS_URL_PREFIX = "https://";
+
+  /**
+   * Convert a legacy URI encoded path back to a URI
+   */
+  public static String unescapePathToUri(final String path) {
+    String resultPath = path;
+    if (path.startsWith(HTTP_NXRM_PREFIX)) {
+      resultPath = path.replaceFirst(HTTP_NXRM_PREFIX, HTTP_URL_PREFIX);
+    }
+    else if (path.startsWith(HTTPS_NXRM_PREFIX)) {
+      resultPath = path.replaceFirst(HTTPS_NXRM_PREFIX, HTTPS_URL_PREFIX);
+    }
+    return resultPath;
   }
 }

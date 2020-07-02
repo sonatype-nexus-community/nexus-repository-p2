@@ -1,6 +1,6 @@
 /*
  * Sonatype Nexus (TM) Open Source Version
- * Copyright (c) 2017-present Sonatype, Inc.
+ * Copyright (c) 2008-present Sonatype, Inc.
  * All rights reserved. Includes the third-party code listed at http://links.sonatype.com/products/nexus/oss/attributions.
  *
  * This program and the accompanying materials are made available under the terms of the Eclipse Public License Version 1.0,
@@ -10,29 +10,28 @@
  * of Sonatype, Inc. Apache Maven is a trademark of the Apache Software Foundation. M2eclipse is a trademark of the
  * Eclipse Foundation. All other trademarks are the property of their respective owners.
  */
-package org.sonatype.nexus.repository.p2.internal;
+package org.sonatype.nexus.repository.p2.upgrade.tasks;
 
-import org.sonatype.goodies.testsupport.TestSupport;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.sonatype.nexus.scheduling.TaskDescriptorSupport;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
-public class P2FormatTest
-    extends TestSupport
+/**
+ * Task descriptor for {@link P2RewriteCompositeMetadataTask}.
+ *
+ * @since 1.1
+ */
+@Named
+@Singleton
+public class P2RewriteCompositeMetadataTaskDescriptor
+    extends TaskDescriptorSupport
 {
-  P2Format p2Format;
+  public static final String TASK_NAME = "p2 - rewrite composite metdata";
 
-  @Before
-  public void setUp() {
-    p2Format = new P2Format();
-  }
+  public static final String TYPE_ID = "repository.p2.rewrite-composite-metdata";
 
-  @Test
-  public void P2FormatName() {
-    assertThat(P2Format.NAME, is(equalTo("p2")));
+  public P2RewriteCompositeMetadataTaskDescriptor() {
+    super(TYPE_ID, P2RewriteCompositeMetadataTask.class, TASK_NAME, VISIBLE, EXPOSED);
   }
 }
