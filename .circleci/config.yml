@@ -14,7 +14,7 @@ executors:
 
 build-and-test-commands: &build-and-test-commands
   executor: nxrm-maven-executor
-  mvn-build-test-command: mvn clean verify license:check -PbuildKar -Dit -N
+  mvn-build-test-command: mvn clean verify license:check -PbuildKar -Dit
   mvn-collect-artifacts-command: |
     mkdir -p ~/project/artifacts/junit/
     find . -type f -regex ".*/target/surefire-reports/.*xml" -exec cp {} ~/project/artifacts/junit/ \;
