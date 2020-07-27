@@ -54,7 +54,7 @@ public class P2BrowseNodeGeneratorTest
       Asset asset = createAsset(directory + '/' + assetName);
 
       List<String> paths = generator.computeAssetPaths(asset, component).stream()
-          .map(BrowsePaths::getBrowsePath)
+          .map(BrowsePaths::getDisplayName)
           .collect(Collectors.toList());
 
       List<String> expectedPaths = new ArrayList<>();
