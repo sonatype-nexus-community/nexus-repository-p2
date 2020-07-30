@@ -19,11 +19,11 @@
   <parent>
     <groupId>org.sonatype.nexus.plugins</groupId>
     <artifactId>nexus-plugins</artifactId>
-    <version>3.25.1-01</version>
+    <version>3.25.1-03</version>
   </parent>
 
   <artifactId>p2-parent</artifactId>
-  <version>1.1.8-SNAPSHOT</version>
+  <version>1.1.8</version>
   <packaging>pom</packaging>
   <name>${project.groupId}:${project.artifactId}</name>
 
@@ -48,7 +48,7 @@
   </distributionManagement>
 
   <properties>
-    <nxrm-version>3.25.1-01</nxrm-version>
+    <nxrm-version>3.25.1-03</nxrm-version>
   </properties>
 
   <repositories>
