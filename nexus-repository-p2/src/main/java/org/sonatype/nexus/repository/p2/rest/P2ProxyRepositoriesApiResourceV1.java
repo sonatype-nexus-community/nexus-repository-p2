@@ -22,6 +22,9 @@ import org.sonatype.nexus.repository.rest.api.AbstractRepositoryApiRequestToConf
 import org.sonatype.nexus.repository.rest.api.AuthorizingRepositoryManager;
 import org.sonatype.nexus.repository.rest.api.RepositoriesApiResourceV1;
 
+/**
+ * @since 1.1.7
+ */
 @Named
 @Singleton
 @Path(RepositoriesApiResourceV1.RESOURCE_URI + "/p2/proxy")
