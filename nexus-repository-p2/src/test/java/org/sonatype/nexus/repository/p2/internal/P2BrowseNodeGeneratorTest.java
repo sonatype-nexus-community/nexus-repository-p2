@@ -43,7 +43,7 @@ public class P2BrowseNodeGeneratorTest
     for (String file : componentLessFiles) {
       Asset asset = createAsset(file);
 
-      List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getBrowsePath)
+      List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getDisplayName)
           .collect(Collectors.toList());
       assertThat(paths, contains(file));
     }
@@ -54,7 +54,7 @@ public class P2BrowseNodeGeneratorTest
       Asset asset = createAsset(directory + '/' + assetName);
 
       List<String> paths = generator.computeAssetPaths(asset, component).stream()
-          .map(BrowsePaths::getBrowsePath)
+          .map(BrowsePaths::getDisplayName)
           .collect(Collectors.toList());
 
       List<String> expectedPaths = new ArrayList<>();
@@ -72,7 +72,7 @@ public class P2BrowseNodeGeneratorTest
       String path = SUBSITE + "/" + file;
       Asset asset = createAsset(path);
 
-      List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getBrowsePath)
+      List<String> paths = generator.computeAssetPaths(asset, null).stream().map(BrowsePaths::getDisplayName)
           .collect(Collectors.toList());
       assertThat(paths, contains(SUBSITE, file));
     }
@@ -82,7 +82,7 @@ public class P2BrowseNodeGeneratorTest
     for (String directory : knownSubDirectories) {
       Asset asset = createAsset(SUBSITE + '/' + directory + '/' + assetName);
 
-      List<String> paths = generator.computeAssetPaths(asset, component).stream().map(BrowsePaths::getBrowsePath)
+      List<String> paths = generator.computeAssetPaths(asset, component).stream().map(BrowsePaths::getDisplayName)
           .collect(Collectors.toList());
 
       List<String> expectedPaths = new ArrayList<>();

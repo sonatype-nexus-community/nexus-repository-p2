@@ -42,10 +42,7 @@ import static org.sonatype.nexus.rest.ApiDocConstants.REPOSITORY_CREATED;
 import static org.sonatype.nexus.rest.ApiDocConstants.REPOSITORY_UPDATED;
 
 @Api(value = API_REPOSITORY_MANAGEMENT)
-@Named
-@Singleton
-@Path(RepositoriesApiResource.RESOURCE_URI + "/p2/proxy")
-public class P2ProxyRepositoriesApiResource
+public abstract class P2ProxyRepositoriesApiResource
     extends AbstractRepositoriesApiResource<P2ProxyRepositoryApiRequest>
 {
   @Inject
