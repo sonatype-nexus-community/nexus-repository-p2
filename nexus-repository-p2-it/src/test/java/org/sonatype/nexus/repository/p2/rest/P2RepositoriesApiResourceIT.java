@@ -30,6 +30,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 public class P2RepositoriesApiResourceIT
     extends P2ResourceITSupport
@@ -40,6 +41,7 @@ public class P2RepositoriesApiResourceIT
   public static Option[] configureNexus() {
     return options(
         configureNexusBase(),
+        systemProperty("nexus-exclude-features").value("nexus-cma-community"),
         nexusFeature("org.sonatype.nexus.plugins", "nexus-repository-p2")
     );
   }

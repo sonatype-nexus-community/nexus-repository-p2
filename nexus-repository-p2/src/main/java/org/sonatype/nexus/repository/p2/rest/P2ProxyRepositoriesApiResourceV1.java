@@ -12,14 +12,10 @@
  */
 package org.sonatype.nexus.repository.p2.rest;
 
-import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.ws.rs.Path;
 
-import org.sonatype.nexus.repository.p2.api.P2ProxyRepositoryApiRequest;
-import org.sonatype.nexus.repository.rest.api.AbstractRepositoryApiRequestToConfigurationConverter;
-import org.sonatype.nexus.repository.rest.api.AuthorizingRepositoryManager;
 import org.sonatype.nexus.repository.rest.api.RepositoriesApiResourceV1;
 
 /**
@@ -30,10 +26,4 @@ import org.sonatype.nexus.repository.rest.api.RepositoriesApiResourceV1;
 @Path(RepositoriesApiResourceV1.RESOURCE_URI + "/p2/proxy")
 public class P2ProxyRepositoriesApiResourceV1 extends P2ProxyRepositoriesApiResource
 {
-  @Inject
-  public P2ProxyRepositoriesApiResourceV1(final AuthorizingRepositoryManager authorizingRepositoryManager,
-                                          final AbstractRepositoryApiRequestToConfigurationConverter<P2ProxyRepositoryApiRequest> configurationConverter)
-  {
-    super(authorizingRepositoryManager, configurationConverter);
-  }
 }

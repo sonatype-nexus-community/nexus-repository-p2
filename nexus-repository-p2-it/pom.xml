@@ -18,7 +18,7 @@
   <parent>
     <groupId>org.sonatype.nexus.plugins</groupId>
     <artifactId>p2-parent</artifactId>
-    <version>1.1.9-SNAPSHOT</version>
+    <version>1.1.12-SNAPSHOT</version>
   </parent>
   <artifactId>nexus-repository-p2-it</artifactId>
   <packaging>bundle</packaging>
