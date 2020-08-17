@@ -63,7 +63,7 @@ public class P2ResourceITSupport extends RepositoryITSupport
   // SET YOUR FORMAT DATA
   public static final String UNRELATED_PRIVILEGE = "nx-analytics-all";
 
-  private static final String REPOSITORIES_API_URL = "service/rest/beta/repositories";
+  private static final String REPOSITORIES_API_URL = "service/rest/v1/repositories";
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
